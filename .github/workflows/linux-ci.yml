@@ -31,11 +31,11 @@ jobs:
         run: dpkg-buildpackage -b -us -uc
 
       - name: Run Lintian
-        run: lintian ../wgestures_2.1.0ubuntu1_all.deb
+        run: lintian ../wgestures_*_all.deb
 
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
         with:
           name: wgestures-deb
-          path: ../wgestures_2.1.0ubuntu1_all.deb
+          path: ../wgestures_*_all.deb
           if-no-files-found: error

@@ -22,3 +22,9 @@ override_dh_auto_install:
 
 override_dh_installgsettings:
 	dh_installgsettings
+
+# Ubuntu 18.04 ships dpkg older than zstd-compressed .deb support.  Force
+# uniform xz members so one Architecture: all package installs on Bionic and
+# current Debian-family systems alike.
+override_dh_builddeb:
+	dh_builddeb -- -Zxz

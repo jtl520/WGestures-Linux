@@ -1,6 +1,6 @@
 # WGestures Linux 安装说明
 
-本文适用于当前构建的 `wgestures_2.1.0ubuntu1_all.deb`。
+本文适用于当前构建的 `wgestures_2.1.1ubuntu1_all.deb`。
 
 ## 1. 支持的桌面会话
 
@@ -42,7 +42,7 @@ Ubuntu 24.04 桌面版已有 GNOME Shell，无需另外安装桌面环境。
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.0ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.1ubuntu1_all.deb
 ```
 
 本地文件名前面的 `./` 不能省略。安装后先运行诊断：
@@ -134,7 +134,7 @@ wgestures --diagnose --json
 sudo apt update
 sudo apt install python3 python3-xlib python3-gi python3-cairo \
   gir1.2-gtk-3.0 dconf-gsettings-backend
-sudo apt install ./wgestures_2.1.0ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.1ubuntu1_all.deb
 ```
 
 完全离线时，除了 WGestures 的 `.deb`，还必须准备目标发行版和版本对应的上述
@@ -195,5 +195,5 @@ sudo apt install --reinstall python3-xlib python3-gi python3-cairo gir1.2-gtk-3.
 在 Linux 上计算 SHA-256，并与发布方在包外提供的校验值比较：
 
 ```sh
-sha256sum wgestures_2.1.0ubuntu1_all.deb
+sha256sum wgestures_2.1.1ubuntu1_all.deb
 ```

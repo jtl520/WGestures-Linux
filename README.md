@@ -24,7 +24,7 @@ GNOME/KDE 的其他 Wayland 组合暂不支持。Ubuntu 18.04 已结束标准安
 从仓库的 **Releases** 页面下载：
 
 ```text
-wgestures_2.1.0ubuntu1_all.deb
+wgestures_2.1.1ubuntu1_all.deb
 ```
 
 联网安装时依赖会由 APT 自动解决：
@@ -32,7 +32,7 @@ wgestures_2.1.0ubuntu1_all.deb
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.0ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.1ubuntu1_all.deb
 wgestures --diagnose
 ```
 

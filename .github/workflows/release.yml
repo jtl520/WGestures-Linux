@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing Git tag to publish
         required: true
-        default: v2.1.0
+        default: v2.1.1
 
 permissions:
   contents: write
@@ -48,6 +48,7 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
           package="$(find .. -maxdepth 1 -name 'wgestures_*_all.deb' -print -quit)"
+          package_name="$(basename "$package")"
           sha256="$(sha256sum "$package" | cut -d ' ' -f 1)"
           notes="$(printf '%s\n\n%s\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n\n%s' \
             'Ubuntu/Kali/Debian 双后端首个公开版本。' \
@@ -55,7 +56,7 @@ jobs:
             '- Ubuntu 18.04 GNOME/Xorg' \
             '- Kali 2026.2 Xfce/X11' \
             '- 其他 Debian 系 X11 桌面尽力兼容' \
-            '安装：`sudo apt install ./wgestures_2.1.0ubuntu1_all.deb`' \
+            "安装：\`sudo apt install ./$package_name\`" \
             '首次运行：`wgestures --diagnose`，然后执行 `wgestures --enable`。' \
             "SHA-256: \`$sha256\`" \
             'Kali Xfce/X11 完整验收通过；Ubuntu 24.04 Wayland 和 Ubuntu 18.04 Xorg 仍建议按仓库说明完成目标机器实机确认。')"

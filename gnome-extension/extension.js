@@ -221,7 +221,10 @@ export default class WGesturesExtension extends Extension {
         }
 
         try {
-            this._executor.execute(matched.action, {window: active.window});
+            this._executor.execute(matched.action, {
+                window: active.window,
+                identity: active.identity,
+            });
             this._overlay.finish(matched.gesture.name, false);
         } catch (error) {
             logError(error, `WGestures action failed: ${matched.action.name}`);

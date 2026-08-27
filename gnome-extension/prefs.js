@@ -8,11 +8,13 @@ import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Ex
 import {GestureRecognizer, BUTTONS, DIRECTIONS, gestureKey} from './core/gesture.js';
 import {ACTION_TYPES, createDefaultConfig} from './core/config.js';
 import {importLegacyConfig} from './core/importer.js';
+import {displayAccelerator, normalizeAccelerator} from './core/shortcut.js';
 import {ConfigStore} from './shell/storage.js';
 
 const BUTTON_LABELS = Object.freeze({right: '右键', middle: '中键', x1: 'X1', x2: 'X2'});
 const ACTION_LABELS = Object.freeze({
     ShortcutAction: '快捷键',
+    CopyAction: '智能复制（自动适配终端）',
     WindowAction: '窗口控制',
     CommandAction: 'Shell 命令',
     LaunchAction: '打开文件、应用或网址',
@@ -169,8 +171,10 @@ class GestureEditor {
             this._actionValueBox.append(inputRow(_('窗口操作'), this._actionValue));
         } else if (type === 'ShortcutAction') {
             this._actionValue = new Gtk.Entry({
-                text: this._action?.accelerator || '',
-                placeholder_text: '<Control><Shift>t',
+                text: this._action?.accelerator
+                    ? displayAccelerator(this._action.accelerator)
+                    : '',
+                placeholder_text: 'Ctrl+Shift+T',
             });
             this._actionValueBox.append(inputRow(_('快捷键'), this._actionValue));
         } else if (type === 'CommandAction') {
@@ -221,6 +225,15 @@ class GestureEditor {
         }
 
         const type = ACTION_TYPES[this._actionType.selected];
+        let accelerator = null;
+        if (type === 'ShortcutAction') {
+            try {
+                accelerator = normalizeAccelerator(this._actionValue.text);
+            } catch (error) {
+                this._owner._toast(error.message);
+                return;
+            }
+        }
         const action = this._action || {
             id: `action-${GLib.uuid_string_random()}`,
             enabled: true,
@@ -232,7 +245,7 @@ class GestureEditor {
         delete action.command;
         delete action.target;
         if (type === 'ShortcutAction')
-            action.accelerator = this._actionValue.text.trim();
+            action.accelerator = accelerator;
         else if (type === 'WindowAction')
             action.operation = WINDOW_OPERATIONS[this._actionValue.selected][0];
         else if (type === 'CommandAction')

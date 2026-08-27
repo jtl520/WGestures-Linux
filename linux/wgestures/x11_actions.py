@@ -7,6 +7,8 @@ from Xlib import X, XK, Xatom, Xutil
 from Xlib.ext import xtest
 from Xlib.protocol import event as xevent
 
+from .shortcut import copy_accelerator, normalize_accelerator
+
 XK.load_keysym_group("xf86")
 
 
@@ -27,7 +29,7 @@ KEY_ALIASES = {
 
 
 def parse_accelerator(accelerator):
-    text = str(accelerator or "").strip()
+    text = normalize_accelerator(accelerator)
     modifiers = []
     for match in re.findall(r"<([^>]+)>", text):
         key = MODIFIER_KEYS.get(match.lower())
@@ -52,6 +54,8 @@ class X11ActionExecutor(object):
         action_type = action.get("type")
         if action_type == "ShortcutAction":
             self._shortcut(action.get("accelerator"))
+        elif action_type == "CopyAction":
+            self._shortcut(copy_accelerator(context.get("identity")))
         elif action_type == "WindowAction":
             self._window(action.get("operation"), context.get("window"))
         elif action_type == "CommandAction":

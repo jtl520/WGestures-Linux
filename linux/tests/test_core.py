@@ -19,6 +19,8 @@ from wgestures.gesture import (GestureRecognizer, GestureSession,
                                direction_from_delta, gesture_key)
 from wgestures.importer import import_legacy_config
 from wgestures.storage import ConfigStore
+from wgestures.shortcut import (copy_accelerator, display_accelerator,
+                                is_terminal_identity, normalize_accelerator)
 
 
 class ConformanceTests(unittest.TestCase):
@@ -63,6 +65,31 @@ class ConformanceTests(unittest.TestCase):
 
 
 class ConfigurationTests(unittest.TestCase):
+    def test_shortcuts_accept_friendly_and_legacy_formats(self):
+        for value in ("Ctrl+C", "Control+C", "Ctrl C", "control c",
+                      "<Control>c"):
+            self.assertEqual(normalize_accelerator(value), "<Control>c")
+            self.assertEqual(display_accelerator(value), "Ctrl+C")
+        self.assertEqual(normalize_accelerator("Ctrl+Shift+T"),
+                         "<Control><Shift>t")
+        self.assertEqual(display_accelerator("<Alt>Left"), "Alt+Left")
+        with self.assertRaises(ValueError):
+            normalize_accelerator("Ctrl+")
+
+    def test_smart_copy_uses_terminal_specific_shortcut(self):
+        terminals = (
+            {"desktopId": "org.gnome.Terminal.desktop"},
+            {"wmClass": "xfce4-terminal"},
+            {"gtkApplicationId": "org.gnome.Ptyxis"},
+            {"desktopId": "org.kde.konsole.desktop"},
+        )
+        for identity in terminals:
+            self.assertTrue(is_terminal_identity(identity))
+            self.assertEqual(copy_accelerator(identity), "<Control><Shift>c")
+        self.assertFalse(is_terminal_identity({"desktopId": "firefox.desktop"}))
+        self.assertEqual(copy_accelerator({"wmClass": "libreoffice-writer"}),
+                         "<Control>c")
+
     def test_packaged_default_matches_python_default(self):
         path = os.path.join(REPOSITORY_ROOT, "gnome-extension", "defaults",
                             "gestures-v1.json")

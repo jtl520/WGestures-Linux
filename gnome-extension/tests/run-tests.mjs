@@ -4,6 +4,9 @@ import {GestureRecognizer, directionFromDelta, gestureKey} from '../core/gesture
 import {createDefaultConfig, findMatchingProfile, normalizeConfig, resolveGesture} from '../core/config.js';
 import {importLegacyConfig} from '../core/importer.js';
 import {GestureSession, ReplayGuard} from '../core/input-state.js';
+import {
+    copyAccelerator, displayAccelerator, isTerminalIdentity, normalizeAccelerator,
+} from '../core/shortcut.js';
 
 const tests = [];
 function test(name, callback) {
@@ -56,6 +59,30 @@ test('recognizer ignores jitter and compresses repeated directions', () => {
 test('gesture keys reject invalid input', () => {
     assert.equal(gestureKey('right', ['left', 'up']), 'right:left,up');
     assert.throws(() => gestureKey('left-button', ['left']));
+});
+
+test('shortcuts accept friendly and legacy formats', () => {
+    for (const value of ['Ctrl+C', 'Control+C', 'Ctrl C', 'control c', '<Control>c']) {
+        assert.equal(normalizeAccelerator(value), '<Control>c');
+        assert.equal(displayAccelerator(value), 'Ctrl+C');
+    }
+    assert.equal(normalizeAccelerator('Ctrl+Shift+T'), '<Control><Shift>t');
+    assert.equal(displayAccelerator('<Alt>Left'), 'Alt+Left');
+    assert.throws(() => normalizeAccelerator('Ctrl+'));
+});
+
+test('smart copy uses the terminal-specific shortcut', () => {
+    for (const identity of [
+        {desktopId: 'org.gnome.Terminal.desktop'},
+        {wmClass: 'xfce4-terminal'},
+        {gtkApplicationId: 'org.gnome.Ptyxis'},
+        {desktopId: 'org.kde.konsole.desktop'},
+    ]) {
+        assert.equal(isTerminalIdentity(identity), true);
+        assert.equal(copyAccelerator(identity), '<Control><Shift>c');
+    }
+    assert.equal(isTerminalIdentity({desktopId: 'firefox.desktop'}), false);
+    assert.equal(copyAccelerator({wmClass: 'libreoffice-writer'}), '<Control>c');
 });
 
 test('application identity uses documented precedence and inherits global gestures', () => {

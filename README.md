@@ -24,7 +24,7 @@ GNOME/KDE 的其他 Wayland 组合暂不支持。Ubuntu 18.04 已结束标准安
 从仓库的 **Releases** 页面下载：
 
 ```text
-wgestures_2.1.1ubuntu1_all.deb
+wgestures_2.1.2ubuntu1_all.deb
 ```
 
 联网安装时依赖会由 APT 自动解决：
@@ -32,7 +32,7 @@ wgestures_2.1.1ubuntu1_all.deb
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.1ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.2ubuntu1_all.deb
 wgestures --diagnose
 ```
 
@@ -41,6 +41,8 @@ wgestures --diagnose
 - Ubuntu 18.04、Kali Xfce 和其他 X11 桌面：运行 `wgestures --enable`
   即可立即启动，后续登录图形桌面会自动后台运行。
 - 使用 `wgestures --settings` 打开设置。
+- 快捷键直接填写 `Ctrl+C`；同时兼容 `Control+C`、`Ctrl C` 和旧写法 `<Control>c`。
+- “智能复制”动作让同一手势在终端发送 `Ctrl+Shift+C`，在其他软件发送 `Ctrl+C`。
 
 详细步骤见[中文安装说明](README.install.zh-CN.md)。完整功能、构建方式和
 测试门槛见 [Linux 开发说明](README.ubuntu.md)。

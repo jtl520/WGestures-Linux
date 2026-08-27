@@ -3,6 +3,8 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 
+import {copyAccelerator, normalizeAccelerator} from '../core/shortcut.js';
+
 const MODIFIER_KEYVALS = Object.freeze({
     control: 'Control_L',
     ctrl: 'Control_L',
@@ -48,7 +50,7 @@ function clutterKeyval(name) {
 
 export function parseAccelerator(accelerator) {
     const modifiers = [];
-    const text = String(accelerator || '').trim();
+    const text = normalizeAccelerator(accelerator);
     const keyName = text.replace(/<([^>]+)>/g, (_match, modifier) => {
         const mapped = MODIFIER_KEYVALS[modifier.toLocaleLowerCase()];
         if (!mapped)
@@ -72,6 +74,9 @@ export class ActionExecutor {
         switch (action.type) {
         case 'ShortcutAction':
             this._executeShortcut(action.accelerator);
+            break;
+        case 'CopyAction':
+            this._executeShortcut(copyAccelerator(context.identity));
             break;
         case 'WindowAction':
             this._executeWindow(action.operation, context.window);

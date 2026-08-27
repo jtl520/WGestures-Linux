@@ -3,6 +3,7 @@ import {BUTTONS, DIRECTIONS, gestureKey} from './gesture.js';
 export const SCHEMA_VERSION = 1;
 export const ACTION_TYPES = Object.freeze([
     'ShortcutAction',
+    'CopyAction',
     'WindowAction',
     'CommandAction',
     'LaunchAction',

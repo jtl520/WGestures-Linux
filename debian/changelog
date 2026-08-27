@@ -1,3 +1,12 @@
+wgestures (2.1.2ubuntu1) noble; urgency=medium
+
+  * Display shortcuts in familiar Ctrl+C notation in both settings interfaces.
+  * Accept Ctrl+C, Control+C, Ctrl C and legacy <Control>c input formats.
+  * Normalize saved shortcuts consistently across the Wayland and X11 backends.
+  * Add Smart Copy, using Ctrl+Shift+C in terminals and Ctrl+C elsewhere.
+
+ -- WGestures Contributors <Ying@YingDev.com>  Thu, 27 Aug 2026 23:30:00 +0800
+
 wgestures (2.1.1ubuntu1) noble; urgency=medium
 
   * Force xz compression for Ubuntu 18.04 dpkg compatibility.

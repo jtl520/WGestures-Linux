@@ -12,12 +12,14 @@ from .config import ACTION_TYPES, WINDOW_OPERATIONS, create_default_config
 from .gesture import BUTTONS, DIRECTIONS, GestureRecognizer, gesture_key
 from .importer import import_legacy_config
 from .settings import Settings
+from .shortcut import display_accelerator, normalize_accelerator
 from .storage import ConfigStore
 
 
 BUTTON_LABELS = {"right": "右键", "middle": "中键", "x1": "X1", "x2": "X2"}
 ACTION_LABELS = {
-    "ShortcutAction": "快捷键", "WindowAction": "窗口控制",
+    "ShortcutAction": "快捷键", "CopyAction": "智能复制（自动适配终端）",
+    "WindowAction": "窗口控制",
     "CommandAction": "Shell 命令", "LaunchAction": "打开文件、应用或网址",
     "PauseAction": "暂停", "NoopAction": "空操作",
 }
@@ -166,12 +168,15 @@ class GestureDialog(Gtk.Dialog):
         elif action_type in ("ShortcutAction", "CommandAction", "LaunchAction"):
             keys = {"ShortcutAction": "accelerator", "CommandAction": "command",
                     "LaunchAction": "target"}
-            placeholders = {"ShortcutAction": "<Control><Shift>t",
+            placeholders = {"ShortcutAction": "Ctrl+Shift+T",
                             "CommandAction": "notify-send 'Hello'",
                             "LaunchAction": "网址、文件路径或 org.example.App.desktop"}
             self.action_value = Gtk.Entry()
             self.action_value.set_placeholder_text(placeholders[action_type])
-            self.action_value.set_text(self.action.get(keys[action_type], "") if self.action else "")
+            current = self.action.get(keys[action_type], "") if self.action else ""
+            if action_type == "ShortcutAction" and current:
+                current = display_accelerator(current)
+            self.action_value.set_text(current)
             self.action_box.pack_start(self.action_value, False, False, 0)
             if action_type == "CommandAction":
                 warning = Gtk.Label(
@@ -204,7 +209,8 @@ class GestureDialog(Gtk.Dialog):
         if action_type == "WindowAction":
             action["operation"] = self.action_value.get_active_id()
         elif action_type == "ShortcutAction":
-            action["accelerator"] = self.action_value.get_text().strip()
+            action["accelerator"] = normalize_accelerator(
+                self.action_value.get_text())
         elif action_type == "CommandAction":
             action["command"] = self.action_value.get_text()
         elif action_type == "LaunchAction":

@@ -7,7 +7,7 @@ from .gesture import BUTTONS, DIRECTIONS, gesture_key
 
 SCHEMA_VERSION = 1
 ACTION_TYPES = (
-    "ShortcutAction", "WindowAction", "CommandAction",
+    "ShortcutAction", "CopyAction", "WindowAction", "CommandAction",
     "LaunchAction", "PauseAction", "NoopAction",
 )
 WINDOW_OPERATIONS = (
@@ -214,4 +214,3 @@ def resolve_gesture(config, identity, button, directions):
                 if action and action.get("enabled", True):
                     return {"gesture": gesture, "action": action, "profile": candidate}
     return None
-

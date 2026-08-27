@@ -23,7 +23,8 @@ operating system's security lifecycle.
 - Four- or eight-direction recognition with jitter and duplicate filtering.
 - Transparent, input-pass-through path rendering with 60 Hz frame coalescing.
 - Per-application profiles using sandbox, desktop, GTK application and WM class IDs.
-- Shortcut, EWMH/GNOME window, shell command, launch, pause and no-op actions.
+- Shortcut, smart copy, EWMH/GNOME window, shell command, launch, pause and no-op actions.
+- Smart Copy sends Ctrl+Shift+C to terminal windows and Ctrl+C to other applications.
 - Libadwaita preferences on GNOME 46 and a GTK3 preferences application on X11.
 - Atomic configuration at
   `$XDG_CONFIG_HOME/wgestures/gestures-v1.json`, with last-valid backup recovery.
@@ -63,13 +64,13 @@ sudo apt install build-essential debhelper libglib2.0-bin nodejs npm \
 make -f Makefile.ubuntu check
 make -f Makefile.ubuntu test
 make -f Makefile.ubuntu deb
-lintian ../wgestures_2.1.1ubuntu1_all.deb
+lintian ../wgestures_2.1.2ubuntu1_all.deb
 ```
 
 Install the same `Architecture: all` package on all supported targets:
 
 ```sh
-sudo apt install ../wgestures_2.1.1ubuntu1_all.deb
+sudo apt install ../wgestures_2.1.2ubuntu1_all.deb
 wgestures --diagnose
 ```
 
@@ -105,7 +106,7 @@ account, run the matrix against the built package:
 
 ```powershell
 .\tools\test-matrix.ps1 `
-  -PackagePath ..\wgestures_2.1.1ubuntu1_all.deb `
+  -PackagePath ..\wgestures_2.1.2ubuntu1_all.deb `
   -Ubuntu18User <vm-user> `
   -Ubuntu24Host <physical-host-ip> `
   -Ubuntu24User <physical-host-user>

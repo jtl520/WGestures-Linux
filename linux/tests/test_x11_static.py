@@ -24,6 +24,10 @@ class X11StaticTests(unittest.TestCase):
     def test_accelerator_parser_includes_xf86_audio_keysyms(self):
         self.assertEqual(parse_accelerator("<Control><Shift>t"),
                          (["Control_L", "Shift_L"], "t"))
+        self.assertEqual(parse_accelerator("Ctrl+Shift+T"),
+                         (["Control_L", "Shift_L"], "t"))
+        self.assertEqual(parse_accelerator("control c"),
+                         (["Control_L"], "c"))
         _modifiers, audio = parse_accelerator("AudioMute")
         self.assertNotEqual(XK.string_to_keysym(audio), 0)
 
@@ -94,8 +98,9 @@ class X11StaticTests(unittest.TestCase):
             ("window", operation, window))
         executor._command = lambda value: calls.append(("command", value))
         executor._launch = lambda value: calls.append(("launch", value))
-        context = {"window": "target"}
+        context = {"window": "target", "identity": {"wmClass": "xfce4-terminal"}}
         executor.execute({"type": "ShortcutAction", "accelerator": "<Alt>Left"}, context)
+        executor.execute({"type": "CopyAction"}, context)
         executor.execute({"type": "WindowAction", "operation": "close"}, context)
         executor.execute({"type": "CommandAction", "command": "true"}, context)
         executor.execute({"type": "LaunchAction", "target": "org.example.App.desktop"}, context)
@@ -103,6 +108,7 @@ class X11StaticTests(unittest.TestCase):
         executor.execute({"type": "NoopAction"}, context)
         self.assertEqual(calls, [
             ("shortcut", "<Alt>Left"),
+            ("shortcut", "<Control><Shift>c"),
             ("window", "close", "target"),
             ("command", "true"),
             ("launch", "org.example.App.desktop"),

@@ -1,6 +1,6 @@
 # WGestures Linux 安装说明
 
-本文适用于当前构建的 `wgestures_2.1.1ubuntu1_all.deb`。
+本文适用于当前构建的 `wgestures_2.1.2ubuntu1_all.deb`。
 
 ## 1. 支持的桌面会话
 
@@ -42,7 +42,7 @@ Ubuntu 24.04 桌面版已有 GNOME Shell，无需另外安装桌面环境。
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.1ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.2ubuntu1_all.deb
 ```
 
 本地文件名前面的 `./` 不能省略。安装后先运行诊断：
@@ -108,6 +108,16 @@ wgestures --settings
 默认触发键是鼠标右键。短按右键仍产生一次普通右键单击；按住右键并移动形成
 有效手势后，原右键菜单不会弹出。
 
+快捷键按常见格式填写，例如复制填写 `Ctrl+C`，终端复制填写
+`Ctrl+Shift+C`。`Control+C`、`Ctrl C`、`control c` 以及旧配置中的
+`<Control>c` 也兼容；设置界面会统一显示为 `Ctrl+C`。
+
+如果希望同一个鼠标手势在所有软件中复制，请把“动作类型”选为
+“智能复制（自动适配终端）”。它会在 GNOME Terminal、Xfce Terminal、
+Ptyxis、Konsole 等终端发送 `Ctrl+Shift+C`，在浏览器、编辑器、办公软件等
+普通窗口发送 `Ctrl+C`。不要用连续发送两组按键代替，否则终端中的
+`Ctrl+C` 可能中断正在运行的命令。
+
 ```sh
 wgestures --pause       # 临时暂停
 wgestures --resume      # 恢复
@@ -134,7 +144,7 @@ wgestures --diagnose --json
 sudo apt update
 sudo apt install python3 python3-xlib python3-gi python3-cairo \
   gir1.2-gtk-3.0 dconf-gsettings-backend
-sudo apt install ./wgestures_2.1.1ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.2ubuntu1_all.deb
 ```
 
 完全离线时，除了 WGestures 的 `.deb`，还必须准备目标发行版和版本对应的上述
@@ -195,5 +205,5 @@ sudo apt install --reinstall python3-xlib python3-gi python3-cairo gir1.2-gtk-3.
 在 Linux 上计算 SHA-256，并与发布方在包外提供的校验值比较：
 
 ```sh
-sha256sum wgestures_2.1.1ubuntu1_all.deb
+sha256sum wgestures_2.1.2ubuntu1_all.deb
 ```

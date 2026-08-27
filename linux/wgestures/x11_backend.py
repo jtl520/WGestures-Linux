@@ -352,7 +352,7 @@ class X11Backend(object):
             return
         matched = resolve_gesture(
             self.config, context["identity"], context["button_name"],
-            result["directions"])
+            result["directions"], result)
         if not matched:
             self.overlay.complete(False, "无匹配手势")
             return

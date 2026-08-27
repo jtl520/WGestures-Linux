@@ -1,4 +1,4 @@
-import {BUTTONS, DIRECTIONS, gestureKey} from './gesture.js';
+import {BUTTONS, DIRECTIONS, directionErrorDegrees, gestureKey} from './gesture.js';
 
 export const SCHEMA_VERSION = 1;
 export const ACTION_TYPES = Object.freeze([
@@ -19,6 +19,7 @@ const WINDOW_OPERATIONS = Object.freeze([
     'toggle-fullscreen',
     'toggle-above',
 ]);
+const SINGLE_DIRECTION_TOLERANCE = 35;
 
 function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -215,7 +216,7 @@ export function findMatchingProfile(config, identity = {}) {
     return null;
 }
 
-export function resolveGesture(config, identity, button, directions) {
+export function resolveGesture(config, identity, button, directions, movement = null) {
     const key = gestureKey(button, directions);
     const profile = findMatchingProfile(config, identity);
     const candidates = [];
@@ -242,6 +243,29 @@ export function resolveGesture(config, identity, button, directions) {
         const matchedAction = actions.get(matched.actionId);
         if (matchedAction?.enabled)
             return {gesture: matched, action: matchedAction, profile: candidate};
+    }
+
+    const origin = movement?.origin;
+    const end = movement?.end;
+    if (!origin || !end)
+        return null;
+    const dx = end.x - origin.x;
+    const dy = end.y - origin.y;
+    for (const candidate of candidates) {
+        if (!candidate.enabled)
+            continue;
+        let best = null;
+        for (const gesture of candidate.gestures) {
+            if (!gesture.enabled || gesture.button !== button || gesture.directions.length !== 1)
+                continue;
+            const error = directionErrorDegrees(gesture.directions[0], dx, dy);
+            const action = actions.get(gesture.actionId);
+            if (error !== null && error <= SINGLE_DIRECTION_TOLERANCE && action?.enabled &&
+                (!best || error < best.error))
+                best = {error, gesture, action};
+        }
+        if (best)
+            return {gesture: best.gesture, action: best.action, profile: candidate};
     }
 
     return null;

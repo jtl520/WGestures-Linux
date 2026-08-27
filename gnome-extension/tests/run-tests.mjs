@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {GestureRecognizer, directionFromDelta, gestureKey} from '../core/gesture.js';
+import {
+    GestureRecognizer, directionErrorDegrees, directionFromDelta, gestureKey,
+} from '../core/gesture.js';
 import {createDefaultConfig, findMatchingProfile, normalizeConfig, resolveGesture} from '../core/config.js';
 import {importLegacyConfig} from '../core/importer.js';
 import {GestureSession, ReplayGuard} from '../core/input-state.js';
@@ -22,6 +24,10 @@ const sharedFixtures = JSON.parse(readFileSync(
 test('JavaScript recognizer matches cross-backend conformance fixtures', () => {
     for (const item of sharedFixtures.directionCases) {
         assert.equal(directionFromDelta(item.dx, item.dy, item.mode), item.expected);
+    }
+    for (const item of sharedFixtures.directionToleranceCases) {
+        const error = directionErrorDegrees(item.direction, item.dx, item.dy);
+        assert.equal(error <= item.maximumError, item.matches);
     }
     for (const item of sharedFixtures.recognizerCases) {
         const recognizer = new GestureRecognizer(item.options);
@@ -116,6 +122,24 @@ test('normalization drops conflicts and unknown actions', () => {
     const normalized = normalizeConfig(config);
     assert.ok(normalized.warnings.length >= 2);
     assert.equal(normalized.config.actions.some(item => item.id === 'bad'), false);
+});
+
+test('single-direction gestures allow moderate drawing error', () => {
+    const config = createDefaultConfig();
+    const upward = resolveGesture(config, {}, 'right', ['up-right', 'up'], {
+        origin: {x: 0, y: 0}, end: {x: 60, y: -100},
+    });
+    assert.equal(upward.action.id, 'window-maximize');
+    const downward = resolveGesture(config, {}, 'right', ['down-left', 'down'], {
+        origin: {x: 0, y: 0}, end: {x: -50, y: 100},
+    });
+    assert.equal(downward.action.id, 'window-minimize');
+    assert.equal(resolveGesture(config, {}, 'right', ['up-right'], {
+        origin: {x: 0, y: 0}, end: {x: 100, y: -100},
+    }), null);
+    assert.equal(resolveGesture(config, {}, 'middle', ['up-right', 'up'], {
+        origin: {x: 0, y: 0}, end: {x: 60, y: -100},
+    }), null);
 });
 
 test('packaged default configuration is valid and matches the generated defaults', () => {

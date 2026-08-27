@@ -7,6 +7,12 @@
     {"dx": 10, "dy": -10, "mode": 8, "expected": "up-right"},
     {"dx": -10, "dy": 10, "mode": 8, "expected": "down-left"}
   ],
+  "directionToleranceCases": [
+    {"direction": "up", "dx": 60, "dy": -100, "maximumError": 35, "matches": true},
+    {"direction": "down", "dx": -50, "dy": 100, "maximumError": 35, "matches": true},
+    {"direction": "up", "dx": 100, "dy": -100, "maximumError": 35, "matches": false},
+    {"direction": "down", "dx": 100, "dy": 0, "maximumError": 35, "matches": false}
+  ],
   "recognizerCases": [
     {
       "options": {"directionMode": 8, "startThreshold": 5, "segmentThreshold": 5},
@@ -28,4 +34,3 @@
     }
   ]
 }
-

@@ -16,7 +16,8 @@ from wgestures.config import (create_default_config, find_matching_profile,
                               normalize_config, resolve_gesture)
 from wgestures.diagnostics import select_backend
 from wgestures.gesture import (GestureRecognizer, GestureSession,
-                               direction_from_delta, gesture_key)
+                               direction_error_degrees, direction_from_delta,
+                               gesture_key)
 from wgestures.importer import import_legacy_config
 from wgestures.storage import ConfigStore
 from wgestures.shortcut import (copy_accelerator, display_accelerator,
@@ -37,6 +38,10 @@ class ConformanceTests(unittest.TestCase):
             self.assertEqual(
                 direction_from_delta(case["dx"], case["dy"], case["mode"]),
                 case["expected"])
+        for case in self.fixtures["directionToleranceCases"]:
+            error = direction_error_degrees(
+                case["direction"], case["dx"], case["dy"])
+            self.assertEqual(error <= case["maximumError"], case["matches"])
 
     def test_recognizer_matches_shared_fixtures(self):
         for case in self.fixtures["recognizerCases"]:
@@ -123,6 +128,25 @@ class ConfigurationTests(unittest.TestCase):
         self.assertGreaterEqual(len(normalized["warnings"]), 2)
         self.assertFalse(any(item["id"] == "bad"
                              for item in normalized["config"]["actions"]))
+
+    def test_single_direction_gestures_allow_moderate_drawing_error(self):
+        config = create_default_config()
+        upward = resolve_gesture(
+            config, {}, "right", ["up-right", "up"],
+            {"origin": (0, 0), "end": (60, -100)})
+        self.assertEqual(upward["action"]["id"], "window-maximize")
+        downward = resolve_gesture(
+            config, {}, "right", ["down-left", "down"],
+            {"origin": (0, 0), "end": (-50, 100)})
+        self.assertEqual(downward["action"]["id"], "window-minimize")
+        diagonal = resolve_gesture(
+            config, {}, "right", ["up-right"],
+            {"origin": (0, 0), "end": (100, -100)})
+        self.assertIsNone(diagonal)
+        wrong_button = resolve_gesture(
+            config, {}, "middle", ["up-right", "up"],
+            {"origin": (0, 0), "end": (60, -100)})
+        self.assertIsNone(wrong_button)
 
     def test_invalid_schema_fails_closed(self):
         with self.assertRaises(ValueError):

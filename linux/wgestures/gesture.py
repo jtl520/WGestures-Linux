@@ -13,6 +13,11 @@ EIGHT_DIRECTIONS = (
     "right", "down-right", "down", "down-left",
     "left", "up-left", "up", "up-right",
 )
+DIRECTION_ANGLES = {
+    "right": 0.0, "down-right": 45.0, "down": 90.0,
+    "down-left": 135.0, "left": 180.0, "up-left": -135.0,
+    "up": -90.0, "up-right": -45.0,
+}
 
 
 def direction_from_delta(dx, dy, direction_mode=8):
@@ -25,6 +30,15 @@ def direction_from_delta(dx, dy, direction_mode=8):
     # a sector boundary are rare, but matching it keeps both backends stable.
     index = int(math.floor(angle / sector_size + 0.5))
     return names[index % len(names)]
+
+
+def direction_error_degrees(direction, dx, dy):
+    """Return the smallest angle between a movement and a named direction."""
+    if direction not in DIRECTION_ANGLES or (dx == 0 and dy == 0):
+        return None
+    actual = math.degrees(math.atan2(dy, dx))
+    difference = (actual - DIRECTION_ANGLES[direction] + 180.0) % 360.0 - 180.0
+    return abs(difference)
 
 
 def gesture_key(button, directions):
@@ -130,4 +144,3 @@ class GestureSession(object):
         self.active = None
         self.recognizer.reset()
         return had_active
-

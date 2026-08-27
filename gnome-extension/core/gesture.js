@@ -22,6 +22,16 @@ const EIGHT_DIRECTIONS = Object.freeze([
     'up',
     'up-right',
 ]);
+const DIRECTION_ANGLES = Object.freeze({
+    right: 0,
+    'down-right': 45,
+    down: 90,
+    'down-left': 135,
+    left: 180,
+    'up-left': -135,
+    up: -90,
+    'up-right': -45,
+});
 
 function distance(a, b) {
     return Math.hypot(b.x - a.x, b.y - a.y);
@@ -36,6 +46,14 @@ export function directionFromDelta(dx, dy, directionMode = 8) {
     const angle = Math.atan2(dy, dx);
     const index = Math.round(angle / sectorSize);
     return names[(index + names.length) % names.length];
+}
+
+export function directionErrorDegrees(direction, dx, dy) {
+    if (!(direction in DIRECTION_ANGLES) || (dx === 0 && dy === 0))
+        return null;
+    const actual = Math.atan2(dy, dx) * 180 / Math.PI;
+    const difference = (actual - DIRECTION_ANGLES[direction] + 540) % 360 - 180;
+    return Math.abs(difference);
 }
 
 export function gestureKey(button, directions) {

@@ -2,7 +2,8 @@ from __future__ import unicode_literals
 
 import copy
 
-from .gesture import BUTTONS, DIRECTIONS, gesture_key
+from .gesture import (BUTTONS, DIRECTIONS, direction_error_degrees,
+                      gesture_key)
 
 
 SCHEMA_VERSION = 1
@@ -14,6 +15,7 @@ WINDOW_OPERATIONS = (
     "toggle-maximized", "minimize", "close",
     "toggle-fullscreen", "toggle-above",
 )
+SINGLE_DIRECTION_TOLERANCE = 35.0
 
 
 def _action(action_id, name, action_type, **extra):
@@ -191,7 +193,7 @@ def find_matching_profile(config, identity=None):
     return None
 
 
-def resolve_gesture(config, identity, button, directions):
+def resolve_gesture(config, identity, button, directions, movement=None):
     key = gesture_key(button, directions)
     profile = find_matching_profile(config, identity)
     if profile and not profile.get("enabled", True):
@@ -213,4 +215,29 @@ def resolve_gesture(config, identity, button, directions):
                 action = actions.get(gesture["actionId"])
                 if action and action.get("enabled", True):
                     return {"gesture": gesture, "action": action, "profile": candidate}
+
+    movement = movement if isinstance(movement, dict) else {}
+    origin = movement.get("origin")
+    end = movement.get("end")
+    try:
+        dx, dy = end[0] - origin[0], end[1] - origin[1]
+    except (IndexError, KeyError, TypeError):
+        return None
+    for candidate in candidates:
+        if not candidate.get("enabled", True):
+            continue
+        best = None
+        for gesture in candidate.get("gestures", []):
+            gesture_directions = gesture.get("directions", [])
+            if (not gesture.get("enabled", True) or gesture.get("button") != button or
+                    len(gesture_directions) != 1):
+                continue
+            error = direction_error_degrees(gesture_directions[0], dx, dy)
+            action = actions.get(gesture.get("actionId"))
+            if (error is not None and error <= SINGLE_DIRECTION_TOLERANCE and
+                    action and action.get("enabled", True) and
+                    (best is None or error < best[0])):
+                best = (error, gesture, action)
+        if best is not None:
+            return {"gesture": best[1], "action": best[2], "profile": candidate}
     return None

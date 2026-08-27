@@ -214,7 +214,9 @@ export default class WGesturesExtension extends Extension {
             return Clutter.EVENT_STOP;
         }
 
-        const matched = resolveGesture(this._config, active.identity, buttonName, result.directions);
+        const matched = resolveGesture(
+            this._config, active.identity, buttonName, result.directions, result
+        );
         if (!matched) {
             this._overlay.finish(_('未匹配手势'), true);
             return Clutter.EVENT_STOP;

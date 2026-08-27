@@ -44,6 +44,7 @@ wgestures --diagnose
 - 快捷键直接填写 `Ctrl+C`；同时兼容 `Control+C`、`Ctrl C` 和旧写法 `<Control>c`。
 - “智能复制”动作让同一手势在终端发送 `Ctrl+Shift+C`，在其他软件发送 `Ctrl+C`。
 - “智能粘贴”动作让同一手势在终端发送 `Ctrl+Shift+V`，在其他软件发送 `Ctrl+V`。
+- 单方向手势提供约 ±35° 的轨迹容错，鼠标按钮和精确多段手势仍严格匹配。
 
 详细步骤见[中文安装说明](README.install.zh-CN.md)。完整功能、构建方式和
 测试门槛见 [Linux 开发说明](README.ubuntu.md)。

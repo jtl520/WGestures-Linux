@@ -20,7 +20,8 @@ from wgestures.gesture import (GestureRecognizer, GestureSession,
 from wgestures.importer import import_legacy_config
 from wgestures.storage import ConfigStore
 from wgestures.shortcut import (copy_accelerator, display_accelerator,
-                                is_terminal_identity, normalize_accelerator)
+                                is_terminal_identity, normalize_accelerator,
+                                paste_accelerator)
 
 
 class ConformanceTests(unittest.TestCase):
@@ -76,7 +77,7 @@ class ConfigurationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             normalize_accelerator("Ctrl+")
 
-    def test_smart_copy_uses_terminal_specific_shortcut(self):
+    def test_smart_clipboard_actions_use_terminal_specific_shortcuts(self):
         terminals = (
             {"desktopId": "org.gnome.Terminal.desktop"},
             {"wmClass": "xfce4-terminal"},
@@ -86,9 +87,12 @@ class ConfigurationTests(unittest.TestCase):
         for identity in terminals:
             self.assertTrue(is_terminal_identity(identity))
             self.assertEqual(copy_accelerator(identity), "<Control><Shift>c")
+            self.assertEqual(paste_accelerator(identity), "<Control><Shift>v")
         self.assertFalse(is_terminal_identity({"desktopId": "firefox.desktop"}))
         self.assertEqual(copy_accelerator({"wmClass": "libreoffice-writer"}),
                          "<Control>c")
+        self.assertEqual(paste_accelerator({"wmClass": "libreoffice-writer"}),
+                         "<Control>v")
 
     def test_packaged_default_matches_python_default(self):
         path = os.path.join(REPOSITORY_ROOT, "gnome-extension", "defaults",

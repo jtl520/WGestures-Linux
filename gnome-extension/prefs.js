@@ -15,6 +15,7 @@ const BUTTON_LABELS = Object.freeze({right: '右键', middle: '中键', x1: 'X1'
 const ACTION_LABELS = Object.freeze({
     ShortcutAction: '快捷键',
     CopyAction: '智能复制（自动适配终端）',
+    PasteAction: '智能粘贴（自动适配终端）',
     WindowAction: '窗口控制',
     CommandAction: 'Shell 命令',
     LaunchAction: '打开文件、应用或网址',

@@ -3,7 +3,9 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 
-import {copyAccelerator, normalizeAccelerator} from '../core/shortcut.js';
+import {
+    copyAccelerator, normalizeAccelerator, pasteAccelerator,
+} from '../core/shortcut.js';
 
 const MODIFIER_KEYVALS = Object.freeze({
     control: 'Control_L',
@@ -77,6 +79,9 @@ export class ActionExecutor {
             break;
         case 'CopyAction':
             this._executeShortcut(copyAccelerator(context.identity));
+            break;
+        case 'PasteAction':
+            this._executeShortcut(pasteAccelerator(context.identity));
             break;
         case 'WindowAction':
             this._executeWindow(action.operation, context.window);

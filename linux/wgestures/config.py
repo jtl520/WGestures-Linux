@@ -7,7 +7,7 @@ from .gesture import BUTTONS, DIRECTIONS, gesture_key
 
 SCHEMA_VERSION = 1
 ACTION_TYPES = (
-    "ShortcutAction", "CopyAction", "WindowAction", "CommandAction",
+    "ShortcutAction", "CopyAction", "PasteAction", "WindowAction", "CommandAction",
     "LaunchAction", "PauseAction", "NoopAction",
 )
 WINDOW_OPERATIONS = (

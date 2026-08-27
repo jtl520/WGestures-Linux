@@ -118,6 +118,9 @@ Ptyxis、Konsole 等终端发送 `Ctrl+Shift+C`，在浏览器、编辑器、办
 普通窗口发送 `Ctrl+C`。不要用连续发送两组按键代替，否则终端中的
 `Ctrl+C` 可能中断正在运行的命令。
 
+粘贴同理，把另一个手势的“动作类型”选为“智能粘贴（自动适配终端）”：
+终端中自动发送 `Ctrl+Shift+V`，其他软件中发送 `Ctrl+V`。
+
 ```sh
 wgestures --pause       # 临时暂停
 wgestures --resume      # 恢复

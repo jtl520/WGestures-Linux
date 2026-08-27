@@ -23,8 +23,8 @@ operating system's security lifecycle.
 - Four- or eight-direction recognition with jitter and duplicate filtering.
 - Transparent, input-pass-through path rendering with 60 Hz frame coalescing.
 - Per-application profiles using sandbox, desktop, GTK application and WM class IDs.
-- Shortcut, smart copy, EWMH/GNOME window, shell command, launch, pause and no-op actions.
-- Smart Copy sends Ctrl+Shift+C to terminal windows and Ctrl+C to other applications.
+- Shortcut, smart copy/paste, EWMH/GNOME window, shell command, launch, pause and no-op actions.
+- Smart Copy/Paste use Ctrl+Shift+C/V in terminal windows and Ctrl+C/V elsewhere.
 - Libadwaita preferences on GNOME 46 and a GTK3 preferences application on X11.
 - Atomic configuration at
   `$XDG_CONFIG_HOME/wgestures/gestures-v1.json`, with last-valid backup recovery.

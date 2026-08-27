@@ -141,3 +141,7 @@ export function isTerminalIdentity(identity = {}) {
 export function copyAccelerator(identity = {}) {
     return isTerminalIdentity(identity) ? '<Control><Shift>c' : '<Control>c';
 }
+
+export function pasteAccelerator(identity = {}) {
+    return isTerminalIdentity(identity) ? '<Control><Shift>v' : '<Control>v';
+}

@@ -4,6 +4,7 @@ export const SCHEMA_VERSION = 1;
 export const ACTION_TYPES = Object.freeze([
     'ShortcutAction',
     'CopyAction',
+    'PasteAction',
     'WindowAction',
     'CommandAction',
     'LaunchAction',

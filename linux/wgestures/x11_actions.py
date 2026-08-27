@@ -7,7 +7,7 @@ from Xlib import X, XK, Xatom, Xutil
 from Xlib.ext import xtest
 from Xlib.protocol import event as xevent
 
-from .shortcut import copy_accelerator, normalize_accelerator
+from .shortcut import copy_accelerator, normalize_accelerator, paste_accelerator
 
 XK.load_keysym_group("xf86")
 
@@ -56,6 +56,8 @@ class X11ActionExecutor(object):
             self._shortcut(action.get("accelerator"))
         elif action_type == "CopyAction":
             self._shortcut(copy_accelerator(context.get("identity")))
+        elif action_type == "PasteAction":
+            self._shortcut(paste_accelerator(context.get("identity")))
         elif action_type == "WindowAction":
             self._window(action.get("operation"), context.get("window"))
         elif action_type == "CommandAction":

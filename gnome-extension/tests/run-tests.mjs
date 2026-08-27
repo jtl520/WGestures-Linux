@@ -6,6 +6,7 @@ import {importLegacyConfig} from '../core/importer.js';
 import {GestureSession, ReplayGuard} from '../core/input-state.js';
 import {
     copyAccelerator, displayAccelerator, isTerminalIdentity, normalizeAccelerator,
+    pasteAccelerator,
 } from '../core/shortcut.js';
 
 const tests = [];
@@ -71,7 +72,7 @@ test('shortcuts accept friendly and legacy formats', () => {
     assert.throws(() => normalizeAccelerator('Ctrl+'));
 });
 
-test('smart copy uses the terminal-specific shortcut', () => {
+test('smart clipboard actions use terminal-specific shortcuts', () => {
     for (const identity of [
         {desktopId: 'org.gnome.Terminal.desktop'},
         {wmClass: 'xfce4-terminal'},
@@ -80,9 +81,11 @@ test('smart copy uses the terminal-specific shortcut', () => {
     ]) {
         assert.equal(isTerminalIdentity(identity), true);
         assert.equal(copyAccelerator(identity), '<Control><Shift>c');
+        assert.equal(pasteAccelerator(identity), '<Control><Shift>v');
     }
     assert.equal(isTerminalIdentity({desktopId: 'firefox.desktop'}), false);
     assert.equal(copyAccelerator({wmClass: 'libreoffice-writer'}), '<Control>c');
+    assert.equal(pasteAccelerator({wmClass: 'libreoffice-writer'}), '<Control>v');
 });
 
 test('application identity uses documented precedence and inherits global gestures', () => {

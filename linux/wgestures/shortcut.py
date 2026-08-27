@@ -121,3 +121,8 @@ def is_terminal_identity(identity):
 def copy_accelerator(identity):
     """Return the desktop copy shortcut appropriate for the target window."""
     return "<Control><Shift>c" if is_terminal_identity(identity) else "<Control>c"
+
+
+def paste_accelerator(identity):
+    """Return the desktop paste shortcut appropriate for the target window."""
+    return "<Control><Shift>v" if is_terminal_identity(identity) else "<Control>v"

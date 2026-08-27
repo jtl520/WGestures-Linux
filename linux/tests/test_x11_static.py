@@ -101,6 +101,7 @@ class X11StaticTests(unittest.TestCase):
         context = {"window": "target", "identity": {"wmClass": "xfce4-terminal"}}
         executor.execute({"type": "ShortcutAction", "accelerator": "<Alt>Left"}, context)
         executor.execute({"type": "CopyAction"}, context)
+        executor.execute({"type": "PasteAction"}, context)
         executor.execute({"type": "WindowAction", "operation": "close"}, context)
         executor.execute({"type": "CommandAction", "command": "true"}, context)
         executor.execute({"type": "LaunchAction", "target": "org.example.App.desktop"}, context)
@@ -109,6 +110,7 @@ class X11StaticTests(unittest.TestCase):
         self.assertEqual(calls, [
             ("shortcut", "<Alt>Left"),
             ("shortcut", "<Control><Shift>c"),
+            ("shortcut", "<Control><Shift>v"),
             ("window", "close", "target"),
             ("command", "true"),
             ("launch", "org.example.App.desktop"),

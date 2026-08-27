@@ -1,0 +1,11 @@
+.wgestures-indicator-paused {
+  color: #f5a623;
+}
+
+.wgestures-status-label {
+  background-color: rgba(25, 25, 25, 0.88);
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  padding: 7px 11px;
+}

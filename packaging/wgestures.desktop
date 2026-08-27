@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=WGestures
+Comment=Configure global mouse gestures
+Exec=wgestures --settings
+Icon=input-mouse
+Terminal=false
+Categories=Settings;Utility;
+Keywords=mouse;gesture;鼠标;手势;

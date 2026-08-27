@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	glib-compile-schemas --strict --dry-run gnome-extension/schemas
+	python3 tools/check-python.py
+	@if command -v node >/dev/null 2>&1 && [ "$$(node -p 'parseInt(process.versions.node)' 2>/dev/null || echo 0)" -ge 18 ]; then \
+		node --check gnome-extension/extension.js; \
+		node --check gnome-extension/prefs.js; \
+	fi
+
+override_dh_auto_test:
+	python3 -m unittest discover -s linux/tests -v
+	@if command -v node >/dev/null 2>&1 && [ "$$(node -p 'parseInt(process.versions.node)' 2>/dev/null || echo 0)" -ge 18 ]; then \
+		node gnome-extension/tests/run-tests.mjs; \
+	fi
+
+override_dh_auto_install:
+	dh_auto_install
+
+override_dh_installgsettings:
+	dh_installgsettings

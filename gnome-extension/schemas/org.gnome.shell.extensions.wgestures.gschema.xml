@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.wgestures" path="/org/gnome/shell/extensions/wgestures/">
+    <key name="enabled" type="b">
+      <default>true</default>
+      <summary>Enable mouse gesture handling</summary>
+    </key>
+    <key name="paused" type="b">
+      <default>false</default>
+      <summary>Temporarily pause mouse gesture handling</summary>
+    </key>
+    <key name="trigger-buttons" type="as">
+      <default>['right']</default>
+      <summary>Mouse buttons that may start a gesture</summary>
+    </key>
+    <key name="direction-mode" type="i">
+      <range min="4" max="8"/>
+      <default>8</default>
+      <summary>Number of gesture directions</summary>
+    </key>
+    <key name="start-threshold" type="i">
+      <range min="2" max="100"/>
+      <default>8</default>
+      <summary>Distance before a movement becomes a gesture</summary>
+    </key>
+    <key name="segment-threshold" type="i">
+      <range min="2" max="200"/>
+      <default>12</default>
+      <summary>Minimum distance used to add a direction</summary>
+    </key>
+    <key name="path-color" type="s">
+      <default>'#27ae60'</default>
+      <summary>Gesture path color</summary>
+    </key>
+    <key name="invalid-path-color" type="s">
+      <default>'#e74c3c'</default>
+      <summary>Invalid gesture path color</summary>
+    </key>
+    <key name="path-width" type="d">
+      <range min="1.0" max="24.0"/>
+      <default>4.0</default>
+      <summary>Gesture path width</summary>
+    </key>
+    <key name="fade-duration" type="i">
+      <range min="0" max="3000"/>
+      <default>300</default>
+      <summary>Path fade duration in milliseconds</summary>
+    </key>
+    <key name="show-command-name" type="b">
+      <default>true</default>
+      <summary>Show the matched command name near the pointer</summary>
+    </key>
+    <key name="config-revision" type="u">
+      <default>0</default>
+      <summary>Revision used to notify the Shell process about configuration changes</summary>
+    </key>
+  </schema>
+</schemalist>

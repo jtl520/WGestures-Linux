@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+libdir=${WGESTURES_LIBDIR:-/usr/lib/wgestures}
+
+if [ ! -r "$libdir/main.py" ]; then
+    printf '%s\n' "WGestures runtime is missing: $libdir/main.py" >&2
+    exit 4
+fi
+
+exec /usr/bin/python3 "$libdir/main.py" "$@"

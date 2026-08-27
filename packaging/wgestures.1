@@ -1,0 +1,44 @@
+.TH WGESTURES 1 "August 2026" "WGestures 2.1" "User Commands"
+.SH NAME
+wgestures \- control and configure global mouse gestures
+.SH SYNOPSIS
+.B wgestures
+[\fB\-\-settings\fR | \fB\-\-enable\fR | \fB\-\-disable\fR |
+ \fB\-\-pause\fR | \fB\-\-resume\fR | \fB\-\-status\fR |
+ \fB\-\-diagnose\fR [\fB\-\-json\fR]]
+.SH DESCRIPTION
+WGestures uses a GNOME Shell 46 extension in GNOME Wayland sessions and a
+Python/GTK3 daemon in X11 sessions. Configuration is stored below
+\fI$XDG_CONFIG_HOME/wgestures\fR.
+.SH OPTIONS
+.TP
+.B \-\-settings
+Open the desktop-appropriate preferences application.
+.TP
+.BR \-\-enable ", " \-\-disable
+Enable or disable gesture capture for the current user.
+.TP
+.BR \-\-pause ", " \-\-resume
+Temporarily pause or resume gesture capture.
+.TP
+.B \-\-status
+Print the selected backend and current capture state.
+.TP
+.B \-\-diagnose
+Inspect the distribution, graphical session, dependencies, configuration,
+XTEST availability and runtime grab status.
+.TP
+.B \-\-json
+Emit machine-readable diagnostic output.
+.SH FILES
+.TP
+.I $XDG_CONFIG_HOME/wgestures/gestures-v1.json
+Gesture and action configuration.
+.TP
+.I /etc/xdg/autostart/wgestures-autostart.desktop
+X11 session startup entry.
+.SH SECURITY
+Command actions execute through \fI/bin/sh -lc\fR with the current user's
+permissions. Only configure commands from trusted sources. Legacy .wg2 files
+are parsed with an allow-list and their $type metadata is never instantiated.
+

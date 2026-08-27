@@ -1,0 +1,14 @@
+gnome-extension/metadata.json usr/share/gnome-shell/extensions/wgestures@yingdev.com/
+gnome-extension/extension.js usr/share/gnome-shell/extensions/wgestures@yingdev.com/
+gnome-extension/prefs.js usr/share/gnome-shell/extensions/wgestures@yingdev.com/
+gnome-extension/stylesheet.css usr/share/gnome-shell/extensions/wgestures@yingdev.com/
+gnome-extension/core/*.js usr/share/gnome-shell/extensions/wgestures@yingdev.com/core/
+gnome-extension/shell/*.js usr/share/gnome-shell/extensions/wgestures@yingdev.com/shell/
+gnome-extension/defaults/*.json usr/share/gnome-shell/extensions/wgestures@yingdev.com/defaults/
+gnome-extension/schemas/*.gschema.xml usr/share/glib-2.0/schemas/
+packaging/wgestures usr/bin/
+packaging/wgestures.desktop usr/share/applications/
+packaging/wgestures-autostart.desktop etc/xdg/autostart/
+linux/main.py usr/lib/wgestures/
+linux/wgestures/*.py usr/lib/wgestures/wgestures/
+README.ubuntu.md usr/share/doc/wgestures/

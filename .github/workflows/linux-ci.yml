@@ -1,0 +1,41 @@
+name: Linux build and tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-24-04:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential debhelper libglib2.0-bin lintian nodejs npm \
+            python3 python3-cairo python3-gi python3-xlib gir1.2-gtk-3.0 zip
+
+      - name: Run checks and tests
+        run: |
+          make -f Makefile.ubuntu check
+          make -f Makefile.ubuntu test
+
+      - name: Build Debian package
+        run: dpkg-buildpackage -b -us -uc
+
+      - name: Run Lintian
+        run: lintian ../wgestures_2.1.0ubuntu1_all.deb
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: wgestures-deb
+          path: ../wgestures_2.1.0ubuntu1_all.deb
+          if-no-files-found: error

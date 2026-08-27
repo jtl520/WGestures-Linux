@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=WGestures Session Backend
+Comment=Start the appropriate mouse gesture backend for this desktop session
+Exec=wgestures --daemon
+Icon=input-mouse
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+OnlyShowIn=GNOME;XFCE;KDE;MATE;Cinnamon;LXDE;LXQt;
+

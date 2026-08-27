@@ -1,0 +1,31 @@
+{
+  "directionCases": [
+    {"dx": 10, "dy": 1, "mode": 4, "expected": "right"},
+    {"dx": 0, "dy": -10, "mode": 4, "expected": "up"},
+    {"dx": -10, "dy": 0, "mode": 4, "expected": "left"},
+    {"dx": 0, "dy": 10, "mode": 4, "expected": "down"},
+    {"dx": 10, "dy": -10, "mode": 8, "expected": "up-right"},
+    {"dx": -10, "dy": 10, "mode": 8, "expected": "down-left"}
+  ],
+  "recognizerCases": [
+    {
+      "options": {"directionMode": 8, "startThreshold": 5, "segmentThreshold": 5},
+      "points": [[0, 0], [2, 1], [10, 0], [20, 0], [20, 10]],
+      "effective": true,
+      "directions": ["right", "down"]
+    },
+    {
+      "options": {"directionMode": 4, "startThreshold": 8, "segmentThreshold": 12},
+      "points": [[100, 100], [103, 104], [105, 105]],
+      "effective": false,
+      "directions": []
+    },
+    {
+      "options": {"directionMode": 8, "startThreshold": 4, "segmentThreshold": 8},
+      "points": [[0, 0], [10, -10], [20, -20], [10, -30]],
+      "effective": true,
+      "directions": ["up-right", "up-left"]
+    }
+  ]
+}
+

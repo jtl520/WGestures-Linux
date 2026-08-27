@@ -1,0 +1,38 @@
+UUID := wgestures@yingdev.com
+BUILD_DIR := build/$(UUID)
+
+.PHONY: check test test-python test-js extension-zip install-user deb clean
+
+check:
+	python3 tools/check-python.py
+	node --check gnome-extension/extension.js
+	node --check gnome-extension/prefs.js
+	glib-compile-schemas --strict --dry-run gnome-extension/schemas
+
+test: test-python test-js
+
+test-python:
+	python3 -m unittest discover -s linux/tests -v
+
+test-js:
+	node gnome-extension/tests/run-tests.mjs
+
+extension-zip: check test
+	rm -rf build
+	mkdir -p $(BUILD_DIR)
+	cp LICENSE gnome-extension/metadata.json gnome-extension/extension.js gnome-extension/prefs.js gnome-extension/stylesheet.css $(BUILD_DIR)/
+	cp -r gnome-extension/core gnome-extension/shell gnome-extension/defaults gnome-extension/schemas $(BUILD_DIR)/
+	glib-compile-schemas $(BUILD_DIR)/schemas
+	cd $(BUILD_DIR) && zip -9r ../$(UUID).zip .
+
+install-user: extension-zip
+	gnome-extensions install --force build/$(UUID).zip
+	@echo "Log out and back in once, then run: gnome-extensions enable '$(UUID)'"
+
+deb: check test
+	chmod +x debian/rules packaging/wgestures
+	dpkg-buildpackage -b -us -uc
+
+clean:
+	rm -rf build
+	dh_clean

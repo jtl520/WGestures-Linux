@@ -1,0 +1,14 @@
+wgestures (2.1.0ubuntu1) noble; urgency=medium
+
+  * Add a Python 3.6 compatible X11 backend for Ubuntu 18.04 and Kali Xfce.
+  * Add GTK3 preferences, session auto-selection and portable diagnostics.
+  * Keep GNOME Shell 46 Wayland integration in the universal Debian package.
+
+ -- WGestures Contributors <Ying@YingDev.com>  Thu, 27 Aug 2026 18:00:00 +0800
+
+wgestures (2.0.0ubuntu1) noble; urgency=medium
+
+  * Reimplement WGestures as a GNOME Shell 46 Wayland extension.
+  * Add Libadwaita preferences, legacy configuration import and tests.
+
+ -- WGestures Contributors <Ying@YingDev.com>  Thu, 27 Aug 2026 12:00:00 +0800

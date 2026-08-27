@@ -55,6 +55,10 @@ wgestures --diagnose
 
 ## 4. Ubuntu 24.04 GNOME 46 / Wayland 首次启用
 
+> **重要：** 以下 `wgestures` 命令必须在已登录图形桌面的普通用户终端中运行，
+> 不要加 `sudo`。以 root 运行会读写 root 的配置，也无法控制当前用户的
+> GNOME Shell 扩展。
+
 系统级 GNOME 扩展第一次安装后，GNOME Shell 可能要重新登录才能发现它：
 
 1. 注销当前桌面用户；
@@ -63,11 +67,13 @@ wgestures --diagnose
 
 ```sh
 wgestures --enable
+wgestures --resume
 wgestures --status
 wgestures --diagnose
 ```
 
-诊断中的后端应为 `gnome46-wayland`。打开设置：
+状态应包含 `enabled=true`、`paused=false`，诊断中的后端应为
+`gnome46-wayland`。打开设置：
 
 ```sh
 wgestures --settings
@@ -77,6 +83,11 @@ wgestures --settings
 
 如果 `wgestures --enable` 提示 Shell 尚未发现扩展，请确认已经注销并重新登录，
 而不是只关闭终端或锁屏。
+
+GNOME Wayland 使用顶部面板指示器，不显示传统 X11 托盘图标。扩展启用状态由
+GNOME 保存，以后登录时自动加载；关闭设置窗口不会停止手势。升级会保留现有
+用户配置，也不会自动加入新版本的默认手势。需要恢复全部默认手势时，建议先在
+“导入与恢复”页导出当前配置。
 
 ## 5. Ubuntu 18.04 / Kali Xfce / 其他 X11 桌面首次启用
 

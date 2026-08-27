@@ -37,11 +37,8 @@ export function createDefaultConfig() {
     return {
         schemaVersion: SCHEMA_VERSION,
         actions: [
-            action('shortcut-back', '后退', 'ShortcutAction', {accelerator: '<Alt>Left'}),
-            action('shortcut-forward', '前进', 'ShortcutAction', {accelerator: '<Alt>Right'}),
-            action('shortcut-close', '关闭标签页', 'ShortcutAction', {accelerator: '<Control>w'}),
-            action('window-maximize', '最大化/恢复', 'WindowAction', {operation: 'toggle-maximized'}),
-            action('window-minimize', '最小化', 'WindowAction', {operation: 'minimize'}),
+            action('smart-copy', '复制', 'CopyAction'),
+            action('smart-paste', '粘贴', 'PasteAction'),
         ],
         globalProfile: {
             id: 'global',
@@ -50,11 +47,8 @@ export function createDefaultConfig() {
             inheritGlobal: false,
             matchers: [],
             gestures: [
-                gesture('gesture-left', '后退', 'right', ['left'], 'shortcut-back'),
-                gesture('gesture-right', '前进', 'right', ['right'], 'shortcut-forward'),
-                gesture('gesture-down-right', '关闭标签页', 'right', ['down', 'right'], 'shortcut-close'),
-                gesture('gesture-up', '最大化/恢复', 'right', ['up'], 'window-maximize'),
-                gesture('gesture-down', '最小化', 'right', ['down'], 'window-minimize'),
+                gesture('gesture-copy', '复制', 'right', ['up'], 'smart-copy'),
+                gesture('gesture-paste', '粘贴', 'right', ['down'], 'smart-paste'),
             ],
         },
         profiles: [],

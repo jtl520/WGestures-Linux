@@ -35,21 +35,15 @@ def create_default_config():
     return {
         "schemaVersion": SCHEMA_VERSION,
         "actions": [
-            _action("shortcut-back", "后退", "ShortcutAction", accelerator="<Alt>Left"),
-            _action("shortcut-forward", "前进", "ShortcutAction", accelerator="<Alt>Right"),
-            _action("shortcut-close", "关闭标签页", "ShortcutAction", accelerator="<Control>w"),
-            _action("window-maximize", "最大化/恢复", "WindowAction", operation="toggle-maximized"),
-            _action("window-minimize", "最小化", "WindowAction", operation="minimize"),
+            _action("smart-copy", "复制", "CopyAction"),
+            _action("smart-paste", "粘贴", "PasteAction"),
         ],
         "globalProfile": {
             "id": "global", "name": "全局", "enabled": True,
             "inheritGlobal": False, "matchers": [],
             "gestures": [
-                _gesture("gesture-left", "后退", "right", ["left"], "shortcut-back"),
-                _gesture("gesture-right", "前进", "right", ["right"], "shortcut-forward"),
-                _gesture("gesture-down-right", "关闭标签页", "right", ["down", "right"], "shortcut-close"),
-                _gesture("gesture-up", "最大化/恢复", "right", ["up"], "window-maximize"),
-                _gesture("gesture-down", "最小化", "right", ["down"], "window-minimize"),
+                _gesture("gesture-copy", "复制", "right", ["up"], "smart-copy"),
+                _gesture("gesture-paste", "粘贴", "right", ["down"], "smart-paste"),
             ],
         },
         "profiles": [],

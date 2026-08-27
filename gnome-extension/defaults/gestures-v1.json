@@ -1,20 +1,14 @@
 {
   "schemaVersion": 1,
   "actions": [
-    {"id":"shortcut-back","name":"后退","type":"ShortcutAction","enabled":true,"accelerator":"<Alt>Left"},
-    {"id":"shortcut-forward","name":"前进","type":"ShortcutAction","enabled":true,"accelerator":"<Alt>Right"},
-    {"id":"shortcut-close","name":"关闭标签页","type":"ShortcutAction","enabled":true,"accelerator":"<Control>w"},
-    {"id":"window-maximize","name":"最大化/恢复","type":"WindowAction","enabled":true,"operation":"toggle-maximized"},
-    {"id":"window-minimize","name":"最小化","type":"WindowAction","enabled":true,"operation":"minimize"}
+    {"id":"smart-copy","name":"复制","type":"CopyAction","enabled":true},
+    {"id":"smart-paste","name":"粘贴","type":"PasteAction","enabled":true}
   ],
   "globalProfile": {
     "id":"global","name":"全局","enabled":true,"inheritGlobal":false,"matchers":[],
     "gestures": [
-      {"id":"gesture-left","name":"后退","enabled":true,"button":"right","directions":["left"],"actionId":"shortcut-back"},
-      {"id":"gesture-right","name":"前进","enabled":true,"button":"right","directions":["right"],"actionId":"shortcut-forward"},
-      {"id":"gesture-down-right","name":"关闭标签页","enabled":true,"button":"right","directions":["down","right"],"actionId":"shortcut-close"},
-      {"id":"gesture-up","name":"最大化/恢复","enabled":true,"button":"right","directions":["up"],"actionId":"window-maximize"},
-      {"id":"gesture-down","name":"最小化","enabled":true,"button":"right","directions":["down"],"actionId":"window-minimize"}
+      {"id":"gesture-copy","name":"复制","enabled":true,"button":"right","directions":["up"],"actionId":"smart-copy"},
+      {"id":"gesture-paste","name":"粘贴","enabled":true,"button":"right","directions":["down"],"actionId":"smart-paste"}
     ]
   },
   "profiles": []

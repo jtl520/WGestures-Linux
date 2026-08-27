@@ -71,6 +71,18 @@ class ConformanceTests(unittest.TestCase):
 
 
 class ConfigurationTests(unittest.TestCase):
+    def test_defaults_only_bind_smart_copy_and_paste(self):
+        config = create_default_config()
+        self.assertEqual([item["type"] for item in config["actions"]],
+                         ["CopyAction", "PasteAction"])
+        self.assertEqual([
+            (item["button"], item["directions"], item["actionId"])
+            for item in config["globalProfile"]["gestures"]
+        ], [
+            ("right", ["up"], "smart-copy"),
+            ("right", ["down"], "smart-paste"),
+        ])
+
     def test_shortcuts_accept_friendly_and_legacy_formats(self):
         for value in ("Ctrl+C", "Control+C", "Ctrl C", "control c",
                       "<Control>c"):
@@ -118,8 +130,8 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(find_matching_profile(
             config, {"desktopId": "FIREFOX.DESKTOP"})["id"], "firefox")
         self.assertEqual(resolve_gesture(
-            config, {"desktopId": "firefox.desktop"}, "right", ["left"]
-        )["action"]["id"], "shortcut-back")
+            config, {"desktopId": "firefox.desktop"}, "right", ["up"]
+        )["action"]["id"], "smart-copy")
         config["actions"].append({"id": "bad", "name": "Bad",
                                   "type": "UnknownAction"})
         config["globalProfile"]["gestures"].append(dict(
@@ -134,11 +146,11 @@ class ConfigurationTests(unittest.TestCase):
         upward = resolve_gesture(
             config, {}, "right", ["up-right", "up"],
             {"origin": (0, 0), "end": (60, -100)})
-        self.assertEqual(upward["action"]["id"], "window-maximize")
+        self.assertEqual(upward["action"]["id"], "smart-copy")
         downward = resolve_gesture(
             config, {}, "right", ["down-left", "down"],
             {"origin": (0, 0), "end": (-50, 100)})
-        self.assertEqual(downward["action"]["id"], "window-minimize")
+        self.assertEqual(downward["action"]["id"], "smart-paste")
         diagonal = resolve_gesture(
             config, {}, "right", ["up-right"],
             {"origin": (0, 0), "end": (100, -100)})

@@ -110,6 +110,12 @@ with open(os.path.join(applications, desktop_id), "w") as stream:
 
 config = create_default_config()
 config["actions"].extend([
+    {"id": "test-forward", "name": "Forward", "type": "ShortcutAction",
+     "accelerator": "<Alt>Right", "enabled": True},
+    {"id": "test-maximize", "name": "Maximize", "type": "WindowAction",
+     "operation": "toggle-maximized", "enabled": True},
+    {"id": "test-minimize", "name": "Minimize", "type": "WindowAction",
+     "operation": "minimize", "enabled": True},
     {"id": "test-noop", "name": "Noop", "type": "NoopAction", "enabled": True},
     {"id": "test-fullscreen", "name": "Fullscreen", "type": "WindowAction",
      "operation": "toggle-fullscreen", "enabled": True},
@@ -125,15 +131,15 @@ config["actions"].extend([
     {"id": "test-pause", "name": "Pause", "type": "PauseAction", "enabled": True},
 ])
 specs = [
-    ("right", ["right"], "shortcut-forward"),
+    ("right", ["right"], "test-forward"),
     ("left", ["left"], "test-noop"),
-    ("up", ["up"], "window-maximize"),
+    ("up", ["up"], "test-maximize"),
     ("up-right", ["up-right"], "test-fullscreen"),
     ("down-right", ["down-right"], "test-above"),
     ("down-left", ["down-left"], "test-command"),
     ("up-left", ["up-left"], "test-launch"),
     ("pause", ["right", "down"], "test-pause"),
-    ("minimize", ["left", "down"], "window-minimize"),
+    ("minimize", ["left", "down"], "test-minimize"),
     ("close", ["right", "up"], "test-close"),
 ]
 config["globalProfile"]["gestures"] = [{

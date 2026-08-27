@@ -6,6 +6,7 @@ wgestures (2.1.2ubuntu1) noble; urgency=medium
   * Add Smart Copy, using Ctrl+Shift+C in terminals and Ctrl+C elsewhere.
   * Add Smart Paste, using Ctrl+Shift+V in terminals and Ctrl+V elsewhere.
   * Add a 35-degree fallback tolerance for imprecise single-direction gestures.
+  * Simplify fresh-install defaults to right-up Smart Copy and right-down Smart Paste.
 
  -- WGestures Contributors <Ying@YingDev.com>  Thu, 27 Aug 2026 23:30:00 +0800
 

@@ -68,6 +68,19 @@ test('gesture keys reject invalid input', () => {
     assert.throws(() => gestureKey('left-button', ['left']));
 });
 
+test('defaults only bind smart copy and paste', () => {
+    const config = createDefaultConfig();
+    assert.deepEqual(config.actions.map(item => item.type), ['CopyAction', 'PasteAction']);
+    assert.deepEqual(config.globalProfile.gestures.map(item => ({
+        button: item.button,
+        directions: item.directions,
+        actionId: item.actionId,
+    })), [
+        {button: 'right', directions: ['up'], actionId: 'smart-copy'},
+        {button: 'right', directions: ['down'], actionId: 'smart-paste'},
+    ]);
+});
+
 test('shortcuts accept friendly and legacy formats', () => {
     for (const value of ['Ctrl+C', 'Control+C', 'Ctrl C', 'control c', '<Control>c']) {
         assert.equal(normalizeAccelerator(value), '<Control>c');
@@ -102,8 +115,10 @@ test('application identity uses documented precedence and inherits global gestur
     });
     const profile = findMatchingProfile(config, {desktopId: 'FIREFOX_FIREFOX.DESKTOP'});
     assert.equal(profile.id, 'firefox');
-    const resolved = resolveGesture(config, {desktopId: 'firefox_firefox.desktop'}, 'right', ['left']);
-    assert.equal(resolved.action.id, 'shortcut-back');
+    const inheritedCopy = resolveGesture(
+        config, {desktopId: 'firefox_firefox.desktop'}, 'right', ['up']
+    );
+    assert.equal(inheritedCopy.action.id, 'smart-copy');
 });
 
 test('disabled application profile blocks global inheritance', () => {
@@ -129,11 +144,11 @@ test('single-direction gestures allow moderate drawing error', () => {
     const upward = resolveGesture(config, {}, 'right', ['up-right', 'up'], {
         origin: {x: 0, y: 0}, end: {x: 60, y: -100},
     });
-    assert.equal(upward.action.id, 'window-maximize');
+    assert.equal(upward.action.id, 'smart-copy');
     const downward = resolveGesture(config, {}, 'right', ['down-left', 'down'], {
         origin: {x: 0, y: 0}, end: {x: -50, y: 100},
     });
-    assert.equal(downward.action.id, 'window-minimize');
+    assert.equal(downward.action.id, 'smart-paste');
     assert.equal(resolveGesture(config, {}, 'right', ['up-right'], {
         origin: {x: 0, y: 0}, end: {x: 100, y: -100},
     }), null);

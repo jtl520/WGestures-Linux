@@ -1,0 +1,67 @@
+name: Publish Linux release
+
+run-name: Publish ${{ inputs.tag }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing Git tag to publish
+        required: true
+        default: v2.1.0
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential debhelper libglib2.0-bin lintian nodejs npm \
+            python3 python3-cairo python3-gi python3-xlib gir1.2-gtk-3.0 zip
+
+      - name: Run checks and tests
+        run: |
+          make -f Makefile.ubuntu check
+          make -f Makefile.ubuntu test
+
+      - name: Build and inspect Debian package
+        run: |
+          dpkg-buildpackage -b -us -uc
+          package="$(find .. -maxdepth 1 -name 'wgestures_*_all.deb' -print -quit)"
+          test -n "$package"
+          lintian "$package"
+          sha256sum "$package"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          package="$(find .. -maxdepth 1 -name 'wgestures_*_all.deb' -print -quit)"
+          sha256="$(sha256sum "$package" | cut -d ' ' -f 1)"
+          notes="$(printf '%s\n\n%s\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n\n%s' \
+            'Ubuntu/Kali/Debian 双后端首个公开版本。' \
+            '- Ubuntu 24.04 GNOME 46 Wayland' \
+            '- Ubuntu 18.04 GNOME/Xorg' \
+            '- Kali 2026.2 Xfce/X11' \
+            '- 其他 Debian 系 X11 桌面尽力兼容' \
+            '安装：`sudo apt install ./wgestures_2.1.0ubuntu1_all.deb`' \
+            '首次运行：`wgestures --diagnose`，然后执行 `wgestures --enable`。' \
+            "SHA-256: \`$sha256\`" \
+            'Kali Xfce/X11 完整验收通过；Ubuntu 24.04 Wayland 和 Ubuntu 18.04 Xorg 仍建议按仓库说明完成目标机器实机确认。')"
+          gh release create "$RELEASE_TAG" "$package" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --latest \
+            --title "WGestures Linux $RELEASE_TAG" \
+            --notes "$notes"

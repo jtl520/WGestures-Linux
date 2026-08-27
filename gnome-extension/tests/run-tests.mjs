@@ -116,6 +116,8 @@ test('successful action labels are enabled with a short default fade', () => {
     );
     assert.match(schema, /<key name="show-command-name"[\s\S]*?<default>true<\/default>/);
     assert.match(schema, /<key name="fade-duration"[\s\S]*?<default>300<\/default>/);
+    assert.match(schema, /<key name="autostart-enabled"[\s\S]*?<default>true<\/default>/);
+    assert.match(schema, /<key name="minimize-to-tray"[\s\S]*?<default>true<\/default>/);
 });
 
 test('application identity uses documented precedence and inherits global gestures', () => {

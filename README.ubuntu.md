@@ -28,6 +28,7 @@ operating system's security lifecycle.
 - Single-direction gestures allow about 35 degrees of drawing error after exact matching.
 - Fresh installs only bind right-button up to Smart Copy and down to Smart Paste.
 - X11 sessions autostart a tray indicator; GNOME 46 uses its native panel indicator.
+- Preferences expose per-user autostart and minimize/close-to-tray switches.
 - Successful actions show a short label near the pointer and fade in 300 ms by default.
 - Libadwaita preferences on GNOME 46 and a GTK3 preferences application on X11.
 - Atomic configuration at

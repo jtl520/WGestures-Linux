@@ -6,12 +6,15 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 LINUX_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPOSITORY_ROOT = os.path.dirname(LINUX_ROOT)
 sys.path.insert(0, LINUX_ROOT)
 
+from wgestures.autostart import (session_autostart_enabled,
+                                 set_session_autostart)
 from wgestures.config import (create_default_config, find_matching_profile,
                               normalize_config, resolve_gesture)
 from wgestures.diagnostics import select_backend
@@ -115,6 +118,8 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(action_display_name({"type": "PasteAction"}), "粘贴")
         self.assertTrue(DEFAULTS["show-command-name"])
         self.assertEqual(DEFAULTS["fade-duration"], 300)
+        self.assertTrue(DEFAULTS["autostart-enabled"])
+        self.assertTrue(DEFAULTS["minimize-to-tray"])
 
     def test_packaged_default_matches_python_default(self):
         path = os.path.join(REPOSITORY_ROOT, "gnome-extension", "defaults",
@@ -243,6 +248,23 @@ class ImporterTests(unittest.TestCase):
 
 
 class EnvironmentTests(unittest.TestCase):
+    def test_user_can_enable_and_disable_session_autostart(self):
+        directory = tempfile.mkdtemp(prefix="wgestures-autostart-test-")
+        try:
+            with mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": directory}):
+                self.assertTrue(session_autostart_enabled())
+                disabled_path = set_session_autostart(False)
+                self.assertFalse(session_autostart_enabled())
+                with open(disabled_path, "r", encoding="utf-8") as stream:
+                    self.assertIn("Hidden=true", stream.read())
+                enabled_path = set_session_autostart(True)
+                self.assertEqual(enabled_path, disabled_path)
+                self.assertTrue(session_autostart_enabled())
+                with open(enabled_path, "r", encoding="utf-8") as stream:
+                    self.assertIn("Hidden=false", stream.read())
+        finally:
+            shutil.rmtree(directory)
+
     def test_packaged_session_autostart_is_desktop_independent(self):
         path = os.path.join(REPOSITORY_ROOT, "packaging",
                             "wgestures-autostart.desktop")

@@ -70,13 +70,11 @@ def _daemon():
 
 def _settings(diagnostics):
     if diagnostics["backend"] == "gnome46-wayland":
-        if _run_quiet(["gnome-extensions", "enable", UUID]):
-            try:
-                return subprocess.call(["gnome-extensions", "prefs", UUID])
-            except OSError:
-                pass
-        print("GNOME Shell 尚未发现扩展，先打开兼容设置界面；请注销并重新登录后再启用扩展。",
-              file=sys.stderr)
+        try:
+            return subprocess.call(["gnome-extensions", "prefs", UUID])
+        except OSError:
+            print("GNOME Shell 尚未发现扩展，先打开兼容设置界面；请注销并重新登录后再启用扩展。",
+                  file=sys.stderr)
     try:
         settings = Settings()
         if not settings.available:

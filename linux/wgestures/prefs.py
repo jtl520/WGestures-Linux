@@ -6,8 +6,9 @@ import uuid
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, Gio, Gtk
+from gi.repository import Gdk, Gio, GLib, Gtk
 
+from .autostart import session_autostart_enabled, set_session_autostart
 from .config import ACTION_TYPES, WINDOW_OPERATIONS, create_default_config
 from .gesture import BUTTONS, DIRECTIONS, GestureRecognizer, gesture_key
 from .importer import import_legacy_config
@@ -231,10 +232,13 @@ class PreferencesWindow(Gtk.ApplicationWindow):
             self, application=application, title="WGestures 设置")
         self.set_default_size(760, 680)
         self.settings = Settings()
+        self._updating_autostart = False
         self.store = ConfigStore()
         loaded = self.store.load()
         self.config = loaded["config"]
         self.profile_index = 0
+        self.connect("delete-event", self._delete_event)
+        self.connect("window-state-event", self._window_state_event)
         self._build()
         for warning in loaded["warnings"]:
             _message(self, warning, Gtk.MessageType.WARNING)
@@ -258,25 +262,33 @@ class PreferencesWindow(Gtk.ApplicationWindow):
         paused.connect("notify::active", lambda widget, _prop:
                        self.settings.set("paused", widget.get_active()))
         _row(grid, 1, "临时暂停", paused)
+        autostart = Gtk.Switch(active=session_autostart_enabled(
+            self.settings.get("autostart-enabled")))
+        autostart.connect("notify::active", self._autostart_changed)
+        _row(grid, 2, "登录时自动启动", autostart)
+        minimize = Gtk.Switch(active=bool(self.settings.get("minimize-to-tray")))
+        minimize.connect("notify::active", lambda widget, _prop:
+                         self.settings.set("minimize-to-tray", widget.get_active()))
+        _row(grid, 3, "最小化/关闭到托盘", minimize)
         button_box = Gtk.Box(spacing=12)
         for name in BUTTONS:
             check = Gtk.CheckButton(label=BUTTON_LABELS[name])
             check.set_active(name in self.settings.get("trigger-buttons"))
             check.connect("toggled", self._buttons_changed, name, button_box)
             button_box.pack_start(check, False, False, 0)
-        _row(grid, 2, "触发按钮", button_box)
+        _row(grid, 4, "触发按钮", button_box)
         mode = _combo([("4", "四方向"), ("8", "八方向")],
                       0 if self.settings.get("direction-mode") == 4 else 1)
         mode.connect("changed", lambda widget:
                      self.settings.set("direction-mode", int(widget.get_active_id())))
-        _row(grid, 3, "方向模式", mode)
+        _row(grid, 5, "方向模式", mode)
         controls = (
             ("start-threshold", "起始移动阈值", 2, 100, 1),
             ("segment-threshold", "方向采样距离", 2, 200, 1),
             ("path-width", "轨迹宽度", 1, 24, 0.5),
             ("fade-duration", "淡出时间（毫秒）", 0, 3000, 50),
         )
-        for row_index, (key, title, lower, upper, step) in enumerate(controls, 4):
+        for row_index, (key, title, lower, upper, step) in enumerate(controls, 6):
             spin = Gtk.SpinButton.new_with_range(lower, upper, step)
             spin.set_value(float(self.settings.get(key)))
             spin.connect("value-changed", self._spin_changed, key,
@@ -284,15 +296,50 @@ class PreferencesWindow(Gtk.ApplicationWindow):
             _row(grid, row_index, title, spin)
         for row_index, (key, title) in enumerate((
                 ("path-color", "轨迹颜色"),
-                ("invalid-path-color", "无效轨迹颜色")), 8):
+                ("invalid-path-color", "无效轨迹颜色")), 10):
             entry = Gtk.Entry(text=str(self.settings.get(key)))
             entry.connect("changed", self._color_changed, key)
             _row(grid, row_index, title, entry)
         show_name = Gtk.Switch(active=bool(self.settings.get("show-command-name")))
         show_name.connect("notify::active", lambda widget, _prop:
                           self.settings.set("show-command-name", widget.get_active()))
-        _row(grid, 10, "显示命令名称", show_name)
-        return grid
+        _row(grid, 12, "显示命令名称", show_name)
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.add(grid)
+        return scroll
+
+    def _autostart_changed(self, widget, _property):
+        if self._updating_autostart:
+            return
+        enabled = widget.get_active()
+        try:
+            set_session_autostart(enabled)
+            self.settings.set("autostart-enabled", enabled)
+        except OSError as write_error:
+            self._updating_autostart = True
+            widget.set_active(not enabled)
+            self._updating_autostart = False
+            _message(self, "无法更新自启动设置：{0}".format(write_error),
+                     Gtk.MessageType.ERROR)
+
+    def _delete_event(self, _window, _event):
+        if self.settings.get("minimize-to-tray"):
+            self.hide()
+            return True
+        return False
+
+    def _window_state_event(self, _window, event):
+        if (self.settings.get("minimize-to-tray") and
+                event.changed_mask & Gdk.WindowState.ICONIFIED and
+                event.new_window_state & Gdk.WindowState.ICONIFIED):
+            GLib.idle_add(self._hide_after_minimize)
+        return False
+
+    def _hide_after_minimize(self):
+        self.deiconify()
+        self.hide()
+        return GLib.SOURCE_REMOVE
 
     def _buttons_changed(self, widget, name, box):
         current = []
@@ -732,7 +779,8 @@ class PreferencesApplication(Gtk.Application):
             flags=Gio.ApplicationFlags.FLAGS_NONE)
 
     def do_activate(self):
-        window = self.get_active_window()
+        windows = self.get_windows()
+        window = windows[0] if windows else None
         if window is None:
             window = PreferencesWindow(self)
         window.present()

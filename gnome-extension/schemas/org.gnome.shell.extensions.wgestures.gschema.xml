@@ -9,6 +9,14 @@
       <default>false</default>
       <summary>Temporarily pause mouse gesture handling</summary>
     </key>
+    <key name="autostart-enabled" type="b">
+      <default>true</default>
+      <summary>Start WGestures automatically with the graphical login session</summary>
+    </key>
+    <key name="minimize-to-tray" type="b">
+      <default>true</default>
+      <summary>Hide the X11 preferences window in the tray when minimized or closed</summary>
+    </key>
     <key name="trigger-buttons" type="as">
       <default>['right']</default>
       <summary>Mouse buttons that may start a gesture</summary>

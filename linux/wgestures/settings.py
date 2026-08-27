@@ -5,6 +5,8 @@ SCHEMA_ID = "org.gnome.shell.extensions.wgestures"
 DEFAULTS = {
     "enabled": True,
     "paused": False,
+    "autostart-enabled": True,
+    "minimize-to-tray": True,
     "trigger-buttons": ["right"],
     "direction-mode": 8,
     "start-threshold": 8,
@@ -52,7 +54,8 @@ class Settings(object):
             return False
         from gi.repository import Gio, GLib
         signatures = {
-            "enabled": "b", "paused": "b", "trigger-buttons": "as",
+            "enabled": "b", "paused": "b", "autostart-enabled": "b",
+            "minimize-to-tray": "b", "trigger-buttons": "as",
             "direction-mode": "i", "start-threshold": "i",
             "segment-threshold": "i", "path-color": "s",
             "invalid-path-color": "s", "path-width": "d",

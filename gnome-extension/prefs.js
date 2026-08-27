@@ -35,6 +35,52 @@ const MATCHER_TYPES = Object.freeze([
     ['gtkApplicationId', 'GTK Application ID'],
     ['wmClass', 'WM Class'],
 ]);
+const EXTENSION_UUID = 'wgestures@yingdev.com';
+const AUTOSTART_FILENAME = 'wgestures-autostart.desktop';
+
+function autostartFile() {
+    return Gio.File.new_for_path(GLib.build_filenamev([
+        GLib.get_user_config_dir(), 'autostart', AUTOSTART_FILENAME,
+    ]));
+}
+
+function sessionAutostartEnabled(fallback = true) {
+    try {
+        const [ok, contents] = autostartFile().load_contents(null);
+        if (!ok)
+            return fallback;
+        const text = new TextDecoder('utf-8').decode(contents);
+        if (/^Hidden\s*=\s*true\s*$/im.test(text) ||
+            /^X-GNOME-Autostart-enabled\s*=\s*false\s*$/im.test(text))
+            return false;
+        return true;
+    } catch (_error) {
+        return fallback;
+    }
+}
+
+function setSessionAutostart(enabled) {
+    const directory = GLib.build_filenamev([GLib.get_user_config_dir(), 'autostart']);
+    GLib.mkdir_with_parents(directory, 0o700);
+    const value = enabled ? 'true' : 'false';
+    const contents = [
+        '[Desktop Entry]',
+        'Type=Application',
+        'Name=WGestures Session Backend',
+        'Exec=wgestures --daemon',
+        'TryExec=wgestures',
+        'Icon=input-mouse',
+        'Terminal=false',
+        'NoDisplay=true',
+        `Hidden=${enabled ? 'false' : 'true'}`,
+        `X-GNOME-Autostart-enabled=${value}`,
+        '',
+    ].join('\n');
+    autostartFile().replace_contents(
+        new TextEncoder().encode(contents), null, false,
+        Gio.FileCreateFlags.REPLACE_DESTINATION, null
+    );
+}
 
 function stringDropDown(strings, selected = 0) {
     return new Gtk.DropDown({model: Gtk.StringList.new(strings), selected});
@@ -314,6 +360,34 @@ export default class WGesturesPreferences extends ExtensionPreferences {
         const enabled = new Adw.SwitchRow({title: _('启用鼠标手势')});
         this._settings.bind('enabled', enabled, 'active', Gio.SettingsBindFlags.DEFAULT);
         behavior.add(enabled);
+
+        const autostart = new Adw.SwitchRow({
+            title: _('登录时自动启动'),
+            subtitle: _('控制当前用户的桌面会话自启动'),
+            active: sessionAutostartEnabled(this._settings.get_boolean('autostart-enabled')),
+        });
+        autostart.connect('notify::active', () => {
+            try {
+                setSessionAutostart(autostart.active);
+                this._settings.set_boolean('autostart-enabled', autostart.active);
+                Gio.Subprocess.new(
+                    ['gnome-extensions', autostart.active ? 'enable' : 'disable', EXTENSION_UUID],
+                    Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE
+                );
+            } catch (error) {
+                this._toast(`${_('无法更新自启动设置')}：${error.message}`);
+            }
+        });
+        behavior.add(autostart);
+
+        const minimizeToTray = new Adw.SwitchRow({
+            title: _('最小化/关闭到托盘'),
+            subtitle: _('用于 Ubuntu 18.04、Kali 和其他 X11 设置窗口'),
+        });
+        this._settings.bind(
+            'minimize-to-tray', minimizeToTray, 'active', Gio.SettingsBindFlags.DEFAULT
+        );
+        behavior.add(minimizeToTray);
 
         const buttonsGroup = new Adw.PreferencesGroup({title: _('触发按钮')});
         page.add(buttonsGroup);

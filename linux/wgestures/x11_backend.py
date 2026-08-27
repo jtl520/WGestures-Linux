@@ -18,7 +18,9 @@ from Xlib.ext import xtest
 from .config import resolve_gesture
 from .gesture import GestureRecognizer, GestureSession
 from .settings import Settings
+from .shortcut import action_display_name
 from .storage import ConfigStore, runtime_directory, runtime_status_path
+from .tray import X11TrayIcon
 from .x11_actions import X11ActionExecutor
 from .x11_overlay import GestureOverlay
 
@@ -54,6 +56,11 @@ class X11Backend(object):
         self.overlay = GestureOverlay(
             self.settings, self._cancel_for_monitor_change,
             self._record_frame_latency)
+        try:
+            self.tray = X11TrayIcon(self.settings, Gtk.main_quit)
+        except Exception as tray_error:
+            LOG.warning("无法创建系统托盘图标，后台手势仍可使用：%s", tray_error)
+            self.tray = None
         self._grabbed = []
         self._keyboard_grabbed = False
         self._io_watch = None
@@ -357,7 +364,7 @@ class X11Backend(object):
             self.overlay.complete(False, "无匹配手势")
             return
         LOG.debug("matched action=%s", matched["action"].get("id"))
-        label = matched["gesture"].get("name") or matched["action"].get("name")
+        label = action_display_name(matched["action"], matched["gesture"])
         try:
             self.executor.execute(matched["action"], context)
             if LOG.isEnabledFor(logging.DEBUG):
@@ -521,6 +528,8 @@ class X11Backend(object):
                 self._config_monitor.cancel()
             for connection, subscription in self._dbus_subscriptions:
                 connection.signal_unsubscribe(subscription)
+            if self.tray:
+                self.tray.destroy()
             self.overlay.destroy()
             self._write_metrics()
             self._remove_status()

@@ -19,10 +19,11 @@ from wgestures.gesture import (GestureRecognizer, GestureSession,
                                direction_error_degrees, direction_from_delta,
                                gesture_key)
 from wgestures.importer import import_legacy_config
+from wgestures.settings import DEFAULTS
 from wgestures.storage import ConfigStore
-from wgestures.shortcut import (copy_accelerator, display_accelerator,
-                                is_terminal_identity, normalize_accelerator,
-                                paste_accelerator)
+from wgestures.shortcut import (action_display_name, copy_accelerator,
+                                display_accelerator, is_terminal_identity,
+                                normalize_accelerator, paste_accelerator)
 
 
 class ConformanceTests(unittest.TestCase):
@@ -110,6 +111,10 @@ class ConfigurationTests(unittest.TestCase):
                          "<Control>c")
         self.assertEqual(paste_accelerator({"wmClass": "libreoffice-writer"}),
                          "<Control>v")
+        self.assertEqual(action_display_name({"type": "CopyAction"}), "复制")
+        self.assertEqual(action_display_name({"type": "PasteAction"}), "粘贴")
+        self.assertTrue(DEFAULTS["show-command-name"])
+        self.assertEqual(DEFAULTS["fade-duration"], 300)
 
     def test_packaged_default_matches_python_default(self):
         path = os.path.join(REPOSITORY_ROOT, "gnome-extension", "defaults",
@@ -238,6 +243,16 @@ class ImporterTests(unittest.TestCase):
 
 
 class EnvironmentTests(unittest.TestCase):
+    def test_packaged_session_autostart_is_desktop_independent(self):
+        path = os.path.join(REPOSITORY_ROOT, "packaging",
+                            "wgestures-autostart.desktop")
+        with open(path, "r", encoding="utf-8") as stream:
+            desktop = stream.read()
+        self.assertIn("Exec=wgestures --daemon", desktop)
+        self.assertIn("TryExec=wgestures", desktop)
+        self.assertIn("X-GNOME-Autostart-enabled=true", desktop)
+        self.assertNotIn("OnlyShowIn=", desktop)
+
     def test_backend_selection_is_explicit(self):
         self.assertEqual(select_backend("x11", "XFCE", None)[0], "x11")
         self.assertEqual(select_backend("wayland", "ubuntu:GNOME", 46)[0],

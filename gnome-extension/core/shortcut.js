@@ -145,3 +145,11 @@ export function copyAccelerator(identity = {}) {
 export function pasteAccelerator(identity = {}) {
     return isTerminalIdentity(identity) ? '<Control><Shift>v' : '<Control>v';
 }
+
+export function actionDisplayName(action = {}, gesture = {}) {
+    if (action?.type === 'CopyAction')
+        return '复制';
+    if (action?.type === 'PasteAction')
+        return '粘贴';
+    return String(action?.name || gesture?.name || '');
+}

@@ -126,3 +126,14 @@ def copy_accelerator(identity):
 def paste_accelerator(identity):
     """Return the desktop paste shortcut appropriate for the target window."""
     return "<Control><Shift>v" if is_terminal_identity(identity) else "<Control>v"
+
+
+def action_display_name(action, gesture=None):
+    """Return the short name shown after an action succeeds."""
+    action = action if isinstance(action, dict) else {}
+    gesture = gesture if isinstance(gesture, dict) else {}
+    if action.get("type") == "CopyAction":
+        return "复制"
+    if action.get("type") == "PasteAction":
+        return "粘贴"
+    return str(action.get("name") or gesture.get("name") or "")

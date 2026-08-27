@@ -97,7 +97,9 @@ wgestures --diagnose
 
 安装包同时提供 `/etc/xdg/autostart/wgestures-autostart.desktop`。以后每次
 该用户登录图形桌面时，WGestures 会在后台自动运行；它不是 root 服务，也不会
-在无人登录时抓取输入。打开设置：
+在无人登录时抓取输入。X11 后端会显示托盘图标，优先使用 AppIndicator，
+不可用时回退到 GTK 托盘；菜单可启用、暂停、打开设置或退出后台。关闭或最小化
+设置窗口不会停止手势后台。打开设置：
 
 ```sh
 wgestures --settings
@@ -129,6 +131,10 @@ Ptyxis、Konsole 等终端发送 `Ctrl+Shift+C`，在浏览器、编辑器、办
 未精确匹配时，再根据起点到终点的整体方向，对单方向手势提供约 ±35° 的
 容错。触发鼠标按钮仍必须一致，斜向手势和多段手势仍优先精确匹配。
 
+动作执行成功后会在鼠标轨迹末端短暂显示动作名称；智能复制固定显示“复制”，
+智能粘贴固定显示“粘贴”，默认在 300 毫秒内迅速淡出。可在“常规 → 轨迹”中
+关闭“显示命令名称”或调整淡出时间。
+
 ```sh
 wgestures --pause       # 临时暂停
 wgestures --resume      # 恢复
@@ -155,6 +161,9 @@ wgestures --diagnose --json
 sudo apt update
 sudo apt install python3 python3-xlib python3-gi python3-cairo \
   gir1.2-gtk-3.0 dconf-gsettings-backend
+# 可选但推荐：为桌面安装原生 AppIndicator 托盘支持（二选一）
+sudo apt install gir1.2-appindicator3-0.1 || \
+  sudo apt install gir1.2-ayatanaappindicator3-0.1
 sudo apt install ./wgestures_2.1.2ubuntu1_all.deb
 ```
 

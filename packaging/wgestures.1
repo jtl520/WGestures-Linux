@@ -10,6 +10,9 @@ wgestures \- control and configure global mouse gestures
 WGestures uses a GNOME Shell 46 extension in GNOME Wayland sessions and a
 Python/GTK3 daemon in X11 sessions. Configuration is stored below
 \fI$XDG_CONFIG_HOME/wgestures\fR.
+The X11 daemon starts from the desktop autostart entry and exposes a tray menu.
+GNOME Shell uses its native top-panel indicator. Successful gestures briefly
+show their action name near the pointer.
 .SH OPTIONS
 .TP
 .B \-\-settings
@@ -41,4 +44,3 @@ X11 session startup entry.
 Command actions execute through \fI/bin/sh -lc\fR with the current user's
 permissions. Only configure commands from trusted sources. Legacy .wg2 files
 are parsed with an allow-list and their $type metadata is never instantiated.
-

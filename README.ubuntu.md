@@ -27,6 +27,8 @@ operating system's security lifecycle.
 - Smart Copy/Paste use Ctrl+Shift+C/V in terminal windows and Ctrl+C/V elsewhere.
 - Single-direction gestures allow about 35 degrees of drawing error after exact matching.
 - Fresh installs only bind right-button up to Smart Copy and down to Smart Paste.
+- X11 sessions autostart a tray indicator; GNOME 46 uses its native panel indicator.
+- Successful actions show a short label near the pointer and fade in 300 ms by default.
 - Libadwaita preferences on GNOME 46 and a GTK3 preferences application on X11.
 - Atomic configuration at
   `$XDG_CONFIG_HOME/wgestures/gestures-v1.json`, with last-valid backup recovery.

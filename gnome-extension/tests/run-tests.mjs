@@ -7,8 +7,8 @@ import {createDefaultConfig, findMatchingProfile, normalizeConfig, resolveGestur
 import {importLegacyConfig} from '../core/importer.js';
 import {GestureSession, ReplayGuard} from '../core/input-state.js';
 import {
-    copyAccelerator, displayAccelerator, isTerminalIdentity, normalizeAccelerator,
-    pasteAccelerator,
+    actionDisplayName, copyAccelerator, displayAccelerator, isTerminalIdentity,
+    normalizeAccelerator, pasteAccelerator,
 } from '../core/shortcut.js';
 
 const tests = [];
@@ -105,6 +105,17 @@ test('smart clipboard actions use terminal-specific shortcuts', () => {
     assert.equal(isTerminalIdentity({desktopId: 'firefox.desktop'}), false);
     assert.equal(copyAccelerator({wmClass: 'libreoffice-writer'}), '<Control>c');
     assert.equal(pasteAccelerator({wmClass: 'libreoffice-writer'}), '<Control>v');
+    assert.equal(actionDisplayName({type: 'CopyAction'}), '复制');
+    assert.equal(actionDisplayName({type: 'PasteAction'}), '粘贴');
+});
+
+test('successful action labels are enabled with a short default fade', () => {
+    const schema = readFileSync(
+        new URL('../schemas/org.gnome.shell.extensions.wgestures.gschema.xml', import.meta.url),
+        'utf8'
+    );
+    assert.match(schema, /<key name="show-command-name"[\s\S]*?<default>true<\/default>/);
+    assert.match(schema, /<key name="fade-duration"[\s\S]*?<default>300<\/default>/);
 });
 
 test('application identity uses documented precedence and inherits global gestures', () => {

@@ -11,6 +11,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {GestureRecognizer} from './core/gesture.js';
 import {GestureSession, ReplayGuard} from './core/input-state.js';
 import {resolveGesture} from './core/config.js';
+import {actionDisplayName} from './core/shortcut.js';
 import {ActionExecutor} from './shell/actions.js';
 import {GestureOverlay} from './shell/overlay.js';
 import {ConfigStore} from './shell/storage.js';
@@ -227,7 +228,7 @@ export default class WGesturesExtension extends Extension {
                 window: active.window,
                 identity: active.identity,
             });
-            this._overlay.finish(matched.gesture.name, false);
+            this._overlay.finish(actionDisplayName(matched.action, matched.gesture), false);
         } catch (error) {
             logError(error, `WGestures action failed: ${matched.action.name}`);
             this._overlay.finish(_('动作失败'), true);

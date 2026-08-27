@@ -18,6 +18,12 @@ DIRECTION_ANGLES = {
     "down-left": 135.0, "left": 180.0, "up-left": -135.0,
     "up": -90.0, "up-right": -45.0,
 }
+DIAGONAL_COMPONENTS = {
+    "up-right": frozenset(("up", "right")),
+    "down-right": frozenset(("down", "right")),
+    "down-left": frozenset(("down", "left")),
+    "up-left": frozenset(("up", "left")),
+}
 
 
 def direction_from_delta(dx, dy, direction_mode=8):
@@ -39,6 +45,28 @@ def direction_error_degrees(direction, dx, dy):
     actual = math.degrees(math.atan2(dy, dx))
     difference = (actual - DIRECTION_ANGLES[direction] + 180.0) % 360.0 - 180.0
     return abs(difference)
+
+
+def simplify_corner_transitions(directions):
+    """Drop brief diagonal samples between two cardinal corner segments."""
+    result = list(directions or [])
+    changed = True
+    while changed and len(result) >= 3:
+        changed = False
+        simplified = [result[0]]
+        for index in range(1, len(result) - 1):
+            previous = simplified[-1]
+            current = result[index]
+            following = result[index + 1]
+            components = DIAGONAL_COMPONENTS.get(current)
+            if (components and previous != following and
+                    frozenset((previous, following)) == components):
+                changed = True
+                continue
+            simplified.append(current)
+        simplified.append(result[-1])
+        result = simplified
+    return result
 
 
 def gesture_key(button, directions):

@@ -2,13 +2,15 @@
   "schemaVersion": 1,
   "actions": [
     {"id":"smart-copy","name":"复制","type":"CopyAction","enabled":true},
-    {"id":"smart-paste","name":"粘贴","type":"PasteAction","enabled":true}
+    {"id":"smart-paste","name":"粘贴","type":"PasteAction","enabled":true},
+    {"id":"window-toggle-above","name":"窗口置顶/取消置顶","type":"WindowAction","enabled":true,"operation":"toggle-above"}
   ],
   "globalProfile": {
     "id":"global","name":"全局","enabled":true,"inheritGlobal":false,"matchers":[],
     "gestures": [
       {"id":"gesture-copy","name":"复制","enabled":true,"button":"right","directions":["up"],"actionId":"smart-copy"},
-      {"id":"gesture-paste","name":"粘贴","enabled":true,"button":"right","directions":["down"],"actionId":"smart-paste"}
+      {"id":"gesture-paste","name":"粘贴","enabled":true,"button":"right","directions":["down"],"actionId":"smart-paste"},
+      {"id":"gesture-toggle-above","name":"窗口置顶/取消置顶","enabled":true,"button":"right","directions":["up","right","up"],"actionId":"window-toggle-above"}
     ]
   },
   "profiles": []

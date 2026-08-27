@@ -147,9 +147,5 @@ export function pasteAccelerator(identity = {}) {
 }
 
 export function actionDisplayName(action = {}, gesture = {}) {
-    if (action?.type === 'CopyAction')
-        return '复制';
-    if (action?.type === 'PasteAction')
-        return '粘贴';
-    return String(action?.name || gesture?.name || '');
+    return String(gesture?.name || action?.name || '');
 }

@@ -32,6 +32,12 @@ const DIRECTION_ANGLES = Object.freeze({
     up: -90,
     'up-right': -45,
 });
+const DIAGONAL_COMPONENTS = Object.freeze({
+    'up-right': new Set(['up', 'right']),
+    'down-right': new Set(['down', 'right']),
+    'down-left': new Set(['down', 'left']),
+    'up-left': new Set(['up', 'left']),
+});
 
 function distance(a, b) {
     return Math.hypot(b.x - a.x, b.y - a.y);
@@ -54,6 +60,30 @@ export function directionErrorDegrees(direction, dx, dy) {
     const actual = Math.atan2(dy, dx) * 180 / Math.PI;
     const difference = (actual - DIRECTION_ANGLES[direction] + 540) % 360 - 180;
     return Math.abs(difference);
+}
+
+export function simplifyCornerTransitions(directions) {
+    let result = [...(directions || [])];
+    let changed = true;
+    while (changed && result.length >= 3) {
+        changed = false;
+        const simplified = [result[0]];
+        for (let index = 1; index < result.length - 1; index++) {
+            const previous = simplified.at(-1);
+            const current = result[index];
+            const following = result[index + 1];
+            const components = DIAGONAL_COMPONENTS[current];
+            if (components && previous !== following && components.has(previous) &&
+                components.has(following)) {
+                changed = true;
+                continue;
+            }
+            simplified.push(current);
+        }
+        simplified.push(result.at(-1));
+        result = simplified;
+    }
+    return result;
 }
 
 export function gestureKey(button, directions) {

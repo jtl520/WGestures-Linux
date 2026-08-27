@@ -132,8 +132,4 @@ def action_display_name(action, gesture=None):
     """Return the short name shown after an action succeeds."""
     action = action if isinstance(action, dict) else {}
     gesture = gesture if isinstance(gesture, dict) else {}
-    if action.get("type") == "CopyAction":
-        return "复制"
-    if action.get("type") == "PasteAction":
-        return "粘贴"
-    return str(action.get("name") or gesture.get("name") or "")
+    return str(gesture.get("name") or action.get("name") or "")

@@ -13,6 +13,20 @@
     {"direction": "up", "dx": 100, "dy": -100, "maximumError": 35, "matches": false},
     {"direction": "down", "dx": 100, "dy": 0, "maximumError": 35, "matches": false}
   ],
+  "cornerSimplificationCases": [
+    {
+      "actual": ["up", "up-right", "right", "up-right", "up"],
+      "expected": ["up", "right", "up"]
+    },
+    {
+      "actual": ["up", "up-right", "right"],
+      "expected": ["up", "right"]
+    },
+    {
+      "actual": ["up-right", "right", "down-right"],
+      "expected": ["up-right", "right", "down-right"]
+    }
+  ],
   "recognizerCases": [
     {
       "options": {"directionMode": 8, "startThreshold": 5, "segmentThreshold": 5},

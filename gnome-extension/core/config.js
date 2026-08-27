@@ -1,4 +1,6 @@
-import {BUTTONS, DIRECTIONS, directionErrorDegrees, gestureKey} from './gesture.js';
+import {
+    BUTTONS, DIRECTIONS, directionErrorDegrees, gestureKey, simplifyCornerTransitions,
+} from './gesture.js';
 
 export const SCHEMA_VERSION = 1;
 export const ACTION_TYPES = Object.freeze([
@@ -39,6 +41,9 @@ export function createDefaultConfig() {
         actions: [
             action('smart-copy', '复制', 'CopyAction'),
             action('smart-paste', '粘贴', 'PasteAction'),
+            action('window-toggle-above', '窗口置顶/取消置顶', 'WindowAction', {
+                operation: 'toggle-above',
+            }),
         ],
         globalProfile: {
             id: 'global',
@@ -49,6 +54,8 @@ export function createDefaultConfig() {
             gestures: [
                 gesture('gesture-copy', '复制', 'right', ['up'], 'smart-copy'),
                 gesture('gesture-paste', '粘贴', 'right', ['down'], 'smart-paste'),
+                gesture('gesture-toggle-above', '窗口置顶/取消置顶', 'right',
+                    ['up', 'right', 'up'], 'window-toggle-above'),
             ],
         },
         profiles: [],
@@ -237,6 +244,21 @@ export function resolveGesture(config, identity, button, directions, movement = 
         const matchedAction = actions.get(matched.actionId);
         if (matchedAction?.enabled)
             return {gesture: matched, action: matchedAction, profile: candidate};
+    }
+
+    const simplifiedDirections = simplifyCornerTransitions(directions);
+    if (gestureKey(button, simplifiedDirections) !== key) {
+        const simplifiedKey = gestureKey(button, simplifiedDirections);
+        for (const candidate of candidates) {
+            if (!candidate.enabled)
+                continue;
+            const matched = candidate.gestures.find(item =>
+                item.enabled && gestureKey(item.button, item.directions) === simplifiedKey
+            );
+            const matchedAction = matched ? actions.get(matched.actionId) : null;
+            if (matchedAction?.enabled)
+                return {gesture: matched, action: matchedAction, profile: candidate};
+        }
     }
 
     const origin = movement?.origin;

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
     GestureRecognizer, directionErrorDegrees, directionFromDelta, gestureKey,
+    simplifyCornerTransitions,
 } from '../core/gesture.js';
 import {createDefaultConfig, findMatchingProfile, normalizeConfig, resolveGesture} from '../core/config.js';
 import {importLegacyConfig} from '../core/importer.js';
@@ -29,6 +30,8 @@ test('JavaScript recognizer matches cross-backend conformance fixtures', () => {
         const error = directionErrorDegrees(item.direction, item.dx, item.dy);
         assert.equal(error <= item.maximumError, item.matches);
     }
+    for (const item of sharedFixtures.cornerSimplificationCases)
+        assert.deepEqual(simplifyCornerTransitions(item.actual), item.expected);
     for (const item of sharedFixtures.recognizerCases) {
         const recognizer = new GestureRecognizer(item.options);
         recognizer.begin(...item.points[0]);
@@ -68,9 +71,11 @@ test('gesture keys reject invalid input', () => {
     assert.throws(() => gestureKey('left-button', ['left']));
 });
 
-test('defaults only bind smart copy and paste', () => {
+test('defaults bind copy paste and window above', () => {
     const config = createDefaultConfig();
-    assert.deepEqual(config.actions.map(item => item.type), ['CopyAction', 'PasteAction']);
+    assert.deepEqual(config.actions.map(item => item.type), [
+        'CopyAction', 'PasteAction', 'WindowAction',
+    ]);
     assert.deepEqual(config.globalProfile.gestures.map(item => ({
         button: item.button,
         directions: item.directions,
@@ -78,6 +83,10 @@ test('defaults only bind smart copy and paste', () => {
     })), [
         {button: 'right', directions: ['up'], actionId: 'smart-copy'},
         {button: 'right', directions: ['down'], actionId: 'smart-paste'},
+        {
+            button: 'right', directions: ['up', 'right', 'up'],
+            actionId: 'window-toggle-above',
+        },
     ]);
 });
 
@@ -105,8 +114,10 @@ test('smart clipboard actions use terminal-specific shortcuts', () => {
     assert.equal(isTerminalIdentity({desktopId: 'firefox.desktop'}), false);
     assert.equal(copyAccelerator({wmClass: 'libreoffice-writer'}), '<Control>c');
     assert.equal(pasteAccelerator({wmClass: 'libreoffice-writer'}), '<Control>v');
-    assert.equal(actionDisplayName({type: 'CopyAction'}), '复制');
-    assert.equal(actionDisplayName({type: 'PasteAction'}), '粘贴');
+    assert.equal(actionDisplayName(
+        {name: '动作名称', type: 'CopyAction'}, {name: '我的复制手势'}
+    ), '我的复制手势');
+    assert.equal(actionDisplayName({name: '粘贴', type: 'PasteAction'}), '粘贴');
 });
 
 test('successful action labels are enabled with a short default fade', () => {
@@ -168,6 +179,17 @@ test('single-direction gestures allow moderate drawing error', () => {
     assert.equal(resolveGesture(config, {}, 'middle', ['up-right', 'up'], {
         origin: {x: 0, y: 0}, end: {x: 60, y: -100},
     }), null);
+});
+
+test('rounded corners match the window above gesture', () => {
+    const config = createDefaultConfig();
+    const exact = resolveGesture(config, {}, 'right', ['up', 'right', 'up']);
+    assert.equal(exact.action.operation, 'toggle-above');
+    const rounded = resolveGesture(config, {}, 'right', [
+        'up', 'up-right', 'right', 'up-right', 'up',
+    ]);
+    assert.equal(rounded.action.id, 'window-toggle-above');
+    assert.equal(rounded.gesture.name, '窗口置顶/取消置顶');
 });
 
 test('packaged default configuration is valid and matches the generated defaults', () => {

@@ -20,7 +20,7 @@ from wgestures.config import (create_default_config, find_matching_profile,
 from wgestures.diagnostics import select_backend
 from wgestures.gesture import (GestureRecognizer, GestureSession,
                                direction_error_degrees, direction_from_delta,
-                               gesture_key)
+                               gesture_key, simplify_corner_transitions)
 from wgestures.importer import import_legacy_config
 from wgestures.settings import DEFAULTS
 from wgestures.storage import ConfigStore
@@ -46,6 +46,9 @@ class ConformanceTests(unittest.TestCase):
             error = direction_error_degrees(
                 case["direction"], case["dx"], case["dy"])
             self.assertEqual(error <= case["maximumError"], case["matches"])
+        for case in self.fixtures["cornerSimplificationCases"]:
+            self.assertEqual(simplify_corner_transitions(case["actual"]),
+                             case["expected"])
 
     def test_recognizer_matches_shared_fixtures(self):
         for case in self.fixtures["recognizerCases"]:
@@ -75,16 +78,17 @@ class ConformanceTests(unittest.TestCase):
 
 
 class ConfigurationTests(unittest.TestCase):
-    def test_defaults_only_bind_smart_copy_and_paste(self):
+    def test_defaults_bind_copy_paste_and_window_above(self):
         config = create_default_config()
         self.assertEqual([item["type"] for item in config["actions"]],
-                         ["CopyAction", "PasteAction"])
+                         ["CopyAction", "PasteAction", "WindowAction"])
         self.assertEqual([
             (item["button"], item["directions"], item["actionId"])
             for item in config["globalProfile"]["gestures"]
         ], [
             ("right", ["up"], "smart-copy"),
             ("right", ["down"], "smart-paste"),
+            ("right", ["up", "right", "up"], "window-toggle-above"),
         ])
 
     def test_shortcuts_accept_friendly_and_legacy_formats(self):
@@ -114,8 +118,11 @@ class ConfigurationTests(unittest.TestCase):
                          "<Control>c")
         self.assertEqual(paste_accelerator({"wmClass": "libreoffice-writer"}),
                          "<Control>v")
-        self.assertEqual(action_display_name({"type": "CopyAction"}), "复制")
-        self.assertEqual(action_display_name({"type": "PasteAction"}), "粘贴")
+        self.assertEqual(action_display_name(
+            {"name": "动作名称", "type": "CopyAction"},
+            {"name": "我的复制手势"}), "我的复制手势")
+        self.assertEqual(action_display_name(
+            {"name": "粘贴", "type": "PasteAction"}), "粘贴")
         self.assertTrue(DEFAULTS["show-command-name"])
         self.assertEqual(DEFAULTS["fade-duration"], 300)
         self.assertTrue(DEFAULTS["autostart-enabled"])
@@ -169,6 +176,17 @@ class ConfigurationTests(unittest.TestCase):
             config, {}, "middle", ["up-right", "up"],
             {"origin": (0, 0), "end": (60, -100)})
         self.assertIsNone(wrong_button)
+
+    def test_rounded_corners_match_window_above_gesture(self):
+        config = create_default_config()
+        exact = resolve_gesture(
+            config, {}, "right", ["up", "right", "up"])
+        self.assertEqual(exact["action"]["operation"], "toggle-above")
+        rounded = resolve_gesture(config, {}, "right", [
+            "up", "up-right", "right", "up-right", "up",
+        ])
+        self.assertEqual(rounded["action"]["id"], "window-toggle-above")
+        self.assertEqual(rounded["gesture"]["name"], "窗口置顶/取消置顶")
 
     def test_invalid_schema_fails_closed(self):
         with self.assertRaises(ValueError):

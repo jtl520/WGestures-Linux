@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import copy
 
 from .gesture import (BUTTONS, DIRECTIONS, direction_error_degrees,
-                      gesture_key)
+                      gesture_key, simplify_corner_transitions)
 
 
 SCHEMA_VERSION = 1
@@ -37,6 +37,8 @@ def create_default_config():
         "actions": [
             _action("smart-copy", "复制", "CopyAction"),
             _action("smart-paste", "粘贴", "PasteAction"),
+            _action("window-toggle-above", "窗口置顶/取消置顶",
+                    "WindowAction", operation="toggle-above"),
         ],
         "globalProfile": {
             "id": "global", "name": "全局", "enabled": True,
@@ -44,6 +46,8 @@ def create_default_config():
             "gestures": [
                 _gesture("gesture-copy", "复制", "right", ["up"], "smart-copy"),
                 _gesture("gesture-paste", "粘贴", "right", ["down"], "smart-paste"),
+                _gesture("gesture-toggle-above", "窗口置顶/取消置顶", "right",
+                         ["up", "right", "up"], "window-toggle-above"),
             ],
         },
         "profiles": [],
@@ -209,6 +213,20 @@ def resolve_gesture(config, identity, button, directions, movement=None):
                 action = actions.get(gesture["actionId"])
                 if action and action.get("enabled", True):
                     return {"gesture": gesture, "action": action, "profile": candidate}
+
+    simplified_directions = simplify_corner_transitions(directions)
+    if simplified_directions != list(directions):
+        simplified_key = gesture_key(button, simplified_directions)
+        for candidate in candidates:
+            if not candidate.get("enabled", True):
+                continue
+            for gesture in candidate.get("gestures", []):
+                if gesture.get("enabled", True) and gesture_key(
+                        gesture["button"], gesture["directions"]) == simplified_key:
+                    action = actions.get(gesture["actionId"])
+                    if action and action.get("enabled", True):
+                        return {"gesture": gesture, "action": action,
+                                "profile": candidate}
 
     movement = movement if isinstance(movement, dict) else {}
     origin = movement.get("origin")

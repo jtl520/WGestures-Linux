@@ -2,6 +2,8 @@ name: Linux build and tests
 
 on:
   push:
+    branches:
+      - "**"
   pull_request:
   workflow_dispatch:
 
@@ -29,14 +31,17 @@ jobs:
           make -f Makefile.ubuntu test
 
       - name: Build Debian package
-        run: dpkg-buildpackage -b -us -uc
+        run: |
+          dpkg-buildpackage -b -us -uc
+          mkdir -p build/packages
+          cp ../wgestures_*_all.deb build/packages/
 
       - name: Run Lintian
-        run: lintian ../wgestures_*_all.deb
+        run: lintian build/packages/wgestures_*_all.deb
 
       - name: Upload Debian package
         uses: actions/upload-artifact@v4
         with:
           name: wgestures-deb
-          path: ../wgestures_*_all.deb
+          path: build/packages/wgestures_*_all.deb
           if-no-files-found: error

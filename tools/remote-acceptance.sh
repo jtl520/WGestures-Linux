@@ -12,6 +12,13 @@ driver=$3
 output_dir=$4
 work_dir=${TMPDIR:-/tmp}/wgestures-acceptance-$$
 
+# apt treats a bare relative path containing slashes as a package name.  Keep
+# command-line paths usable from the repository root as documented.
+case "$package" in
+    /*|./*|../*) ;;
+    *) package=./$package ;;
+esac
+
 mkdir -p "$work_dir" "$output_dir"
 
 backend_pid=
@@ -59,15 +66,16 @@ else
 fi
 
 # SSH does not inherit the active graphical session environment. Read only the
-# selected variables from the current user's desktop session process.
-session_pid=$(pgrep -u "$(id -u)" -n xfce4-session 2>/dev/null || \
-              pgrep -u "$(id -u)" -n gnome-session-binary 2>/dev/null || true)
-if [ -z "$session_pid" ] || [ ! -r "/proc/$session_pid/environ" ]; then
-    echo "No active X11 desktop session belongs to SSH user $(id -un)." >&2
-    echo "Log into the target desktop as this user, then retry." >&2
-    exit 13
-fi
-if [ -r "/proc/$session_pid/environ" ]; then
+# selected variables from the current user's desktop session process. Tests in
+# an isolated Xvfb session can explicitly retain their prepared environment.
+if [ "${WGESTURES_USE_CURRENT_DISPLAY:-0}" != 1 ]; then
+    session_pid=$(pgrep -u "$(id -u)" -n xfce4-session 2>/dev/null || \
+                  pgrep -u "$(id -u)" -n -f '(^|/)gnome-session-binary([[:space:]]|$)' 2>/dev/null || true)
+    if [ -z "$session_pid" ] || [ ! -r "/proc/$session_pid/environ" ]; then
+        echo "No active X11 desktop session belongs to SSH user $(id -un)." >&2
+        echo "Log into the target desktop as this user, then retry." >&2
+        exit 13
+    fi
     session_environment="$work_dir/session-environment"
     tr '\000' '\n' <"/proc/$session_pid/environ" >"$session_environment"
     DISPLAY=$(sed -n 's/^DISPLAY=//p' "$session_environment" | head -n 1)

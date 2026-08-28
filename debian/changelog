@@ -1,3 +1,41 @@
+wgestures (2.1.2ubuntu6) noble; urgency=high
+
+  * Replay non-gesture right clicks after the physical ButtonRelease callback
+    returns, using an independent XTEST connection and a real press duration.
+  * Explicitly release active and passive pointer grabs before replay so native
+    context menus work in desktop icons, file managers and Chromium applications.
+
+ -- WGestures Contributors <Ying@YingDev.com>  Fri, 28 Aug 2026 10:22:00 +0800
+
+wgestures (2.1.2ubuntu5) noble; urgency=medium
+
+  * Keep GTK switches at their native theme size and center the general
+    settings form instead of stretching controls across the value column.
+
+ -- WGestures Contributors <Ying@YingDev.com>  Fri, 28 Aug 2026 09:50:00 +0800
+
+wgestures (2.1.2ubuntu4) noble; urgency=medium
+
+  * Deiconify hidden settings windows before remapping them, preventing the
+    minimize-to-tray handler from immediately hiding them again on GNOME/X11.
+
+ -- WGestures Contributors <Ying@YingDev.com>  Fri, 28 Aug 2026 09:40:00 +0800
+
+wgestures (2.1.2ubuntu3) noble; urgency=medium
+
+  * Remap and deiconify a settings window hidden by close-to-tray when the
+    tray menu activates the existing preferences application.
+
+ -- WGestures Contributors <Ying@YingDev.com>  Fri, 28 Aug 2026 09:32:00 +0800
+
+wgestures (2.1.2ubuntu2) noble; urgency=medium
+
+  * Add the missing python3-gi-cairo dependency for GTK3 drawing callbacks.
+  * Refuse to capture X11 input when the PyGObject Cairo bridge is unavailable.
+  * Diagnose the Cairo bridge separately from the standalone pycairo module.
+
+ -- WGestures Contributors <Ying@YingDev.com>  Fri, 28 Aug 2026 09:00:00 +0800
+
 wgestures (2.1.2ubuntu1) noble; urgency=medium
 
   * Display shortcuts in familiar Ctrl+C notation in both settings interfaces.

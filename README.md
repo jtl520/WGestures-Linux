@@ -38,12 +38,12 @@ echo "$XDG_CURRENT_DESKTOP / $XDG_SESSION_TYPE"
 ### 2. 下载并安装
 
 从 [GitHub Releases](https://github.com/jtl520/WGestures-Linux/releases/latest)
-下载 `wgestures_2.1.2ubuntu1_all.deb`，保存到“下载”目录，然后运行：
+下载 `wgestures_2.1.2ubuntu6_all.deb`，保存到“下载”目录，然后运行：
 
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.2ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.2ubuntu6_all.deb
 ```
 
 必须使用 `apt install ./文件名.deb`，文件名前的 `./` 不能省略。APT 会自动安装
@@ -100,7 +100,7 @@ wgestures --settings
 从仓库的 **Releases** 页面下载：
 
 ```text
-wgestures_2.1.2ubuntu1_all.deb
+wgestures_2.1.2ubuntu6_all.deb
 ```
 
 联网安装时依赖会由 APT 自动解决：
@@ -108,7 +108,7 @@ wgestures_2.1.2ubuntu1_all.deb
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.2ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.2ubuntu6_all.deb
 wgestures --diagnose
 ```
 
@@ -156,7 +156,8 @@ Ubuntu 24.04：
 
 ```sh
 sudo apt install build-essential debhelper libglib2.0-bin nodejs npm \
-  python3 python3-gi python3-cairo python3-xlib gir1.2-gtk-3.0 zip lintian
+  python3 python3-gi python3-cairo python3-gi-cairo python3-xlib \
+  gir1.2-gtk-3.0 zip lintian
 make -f Makefile.ubuntu check
 make -f Makefile.ubuntu test
 make -f Makefile.ubuntu deb

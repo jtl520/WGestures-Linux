@@ -11,6 +11,35 @@ from .settings import Settings
 from .storage import ConfigStore, runtime_status_path
 
 
+DEPENDENCY_LABELS = {
+    "giCairo": "python3-gi-cairo",
+}
+
+
+def _gi_cairo_available():
+    try:
+        import gi
+        gi.require_foreign("cairo")
+        return True
+    except (ImportError, ValueError):
+        return False
+
+
+def dependency_status():
+    dependencies = {}
+    for name, module_name in (
+            ("gi", "gi"), ("pythonXlib", "Xlib"), ("cairo", "cairo")):
+        try:
+            __import__(module_name)
+            dependencies[name] = True
+        except ImportError:
+            dependencies[name] = False
+    dependencies["giCairo"] = (
+        dependencies["gi"] and dependencies["cairo"] and
+        _gi_cairo_available())
+    return dependencies
+
+
 def _os_release():
     values = {}
     try:
@@ -63,14 +92,7 @@ def collect_diagnostics(probe_x11=True):
     backend, unsupported_reason = select_backend(session_type, desktop, shell_major)
     settings = Settings()
     loaded = ConfigStore().load()
-    dependencies = {}
-    for name, module_name in (
-            ("gi", "gi"), ("pythonXlib", "Xlib"), ("cairo", "cairo")):
-        try:
-            __import__(module_name)
-            dependencies[name] = True
-        except ImportError:
-            dependencies[name] = False
+    dependencies = dependency_status()
     x11 = {
         "display": os.environ.get("DISPLAY", ""),
         "connected": False,
@@ -136,7 +158,8 @@ def format_diagnostics(data):
             "已连接" if data["x11"]["connected"] else "未连接",
             "可用" if data["x11"]["xtest"] else "不可用"))
         lines.append("按钮抓取: {0}".format(data["x11"]["triggerGrabStatus"]))
-    missing = [key for key, value in data["dependencies"].items() if not value]
+    missing = [DEPENDENCY_LABELS.get(key, key)
+               for key, value in data["dependencies"].items() if not value]
     if missing:
         lines.append("缺少依赖: {0}".format(", ".join(missing)))
     for warning in data["configuration"]["warnings"]:

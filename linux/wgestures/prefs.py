@@ -4,6 +4,7 @@ import copy
 import uuid
 
 import gi
+gi.require_foreign("cairo")
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk
@@ -46,8 +47,16 @@ def _combo(values, active=0):
 def _row(grid, row, title, widget):
     label = Gtk.Label(label=title)
     label.set_xalign(0)
+    label.set_valign(Gtk.Align.CENTER)
+    widget.set_valign(Gtk.Align.CENTER)
     grid.attach(label, 0, row, 1, 1)
     grid.attach(widget, 1, row, 1, 1)
+
+
+def _compact_control(widget):
+    """Keep controls such as switches at their theme-provided natural size."""
+    widget.set_halign(Gtk.Align.START)
+    return widget
 
 
 def _message(parent, text, message_type=Gtk.MessageType.INFO):
@@ -254,19 +263,24 @@ class PreferencesWindow(Gtk.ApplicationWindow):
 
     def _general_page(self):
         grid = Gtk.Grid(column_spacing=18, row_spacing=12, margin=24)
-        enabled = Gtk.Switch(active=bool(self.settings.get("enabled")))
+        grid.set_halign(Gtk.Align.CENTER)
+        grid.set_valign(Gtk.Align.START)
+        enabled = _compact_control(
+            Gtk.Switch(active=bool(self.settings.get("enabled"))))
         enabled.connect("notify::active", lambda widget, _prop:
                         self.settings.set("enabled", widget.get_active()))
         _row(grid, 0, "启用鼠标手势", enabled)
-        paused = Gtk.Switch(active=bool(self.settings.get("paused")))
+        paused = _compact_control(
+            Gtk.Switch(active=bool(self.settings.get("paused"))))
         paused.connect("notify::active", lambda widget, _prop:
                        self.settings.set("paused", widget.get_active()))
         _row(grid, 1, "临时暂停", paused)
-        autostart = Gtk.Switch(active=session_autostart_enabled(
-            self.settings.get("autostart-enabled")))
+        autostart = _compact_control(Gtk.Switch(active=session_autostart_enabled(
+            self.settings.get("autostart-enabled"))))
         autostart.connect("notify::active", self._autostart_changed)
         _row(grid, 2, "登录时自动启动", autostart)
-        minimize = Gtk.Switch(active=bool(self.settings.get("minimize-to-tray")))
+        minimize = _compact_control(
+            Gtk.Switch(active=bool(self.settings.get("minimize-to-tray"))))
         minimize.connect("notify::active", lambda widget, _prop:
                          self.settings.set("minimize-to-tray", widget.get_active()))
         _row(grid, 3, "最小化/关闭到托盘", minimize)
@@ -300,7 +314,8 @@ class PreferencesWindow(Gtk.ApplicationWindow):
             entry = Gtk.Entry(text=str(self.settings.get(key)))
             entry.connect("changed", self._color_changed, key)
             _row(grid, row_index, title, entry)
-        show_name = Gtk.Switch(active=bool(self.settings.get("show-command-name")))
+        show_name = _compact_control(
+            Gtk.Switch(active=bool(self.settings.get("show-command-name"))))
         show_name.connect("notify::active", lambda widget, _prop:
                           self.settings.set("show-command-name", widget.get_active()))
         _row(grid, 12, "显示命令名称", show_name)
@@ -783,7 +798,14 @@ class PreferencesApplication(Gtk.Application):
         window = windows[0] if windows else None
         if window is None:
             window = PreferencesWindow(self)
-        window.present()
+        present_preferences_window(window)
+
+
+def present_preferences_window(window):
+    """Remap a settings window previously hidden by close-to-tray."""
+    window.deiconify()
+    window.show_all()
+    window.present()
 
 
 def run_preferences():

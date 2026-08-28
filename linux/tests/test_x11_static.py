@@ -5,14 +5,19 @@ import sys
 import unittest
 from unittest import mock
 
+import gi
+gi.require_version("Gtk", "3.0")
+
 
 LINUX_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, LINUX_ROOT)
 
 try:
+    from gi.repository import Gtk
     from Xlib import X, XK
     from wgestures.x11_actions import X11ActionExecutor, parse_accelerator
     from wgestures.x11_backend import X11Backend
+    from wgestures.prefs import _compact_control, present_preferences_window
     X11_IMPORT_ERROR = None
 except (ImportError, ValueError) as error:
     X11_IMPORT_ERROR = error
@@ -21,6 +26,41 @@ except (ImportError, ValueError) as error:
 @unittest.skipIf(X11_IMPORT_ERROR is not None,
                  "X11/PyGObject dependencies unavailable: {0}".format(X11_IMPORT_ERROR))
 class X11StaticTests(unittest.TestCase):
+    def test_compact_controls_keep_their_theme_natural_width(self):
+        alignments = []
+
+        class FakeControl(object):
+            def set_halign(self, alignment):
+                alignments.append(alignment)
+
+        control = FakeControl()
+        self.assertIs(_compact_control(control), control)
+        self.assertEqual(alignments, [Gtk.Align.START])
+
+    def test_hidden_preferences_window_is_remapped_on_activation(self):
+        calls = []
+
+        class FakeWindow(object):
+            def show_all(self):
+                calls.append("show")
+
+            def deiconify(self):
+                calls.append("deiconify")
+
+            def present(self):
+                calls.append("present")
+
+        present_preferences_window(FakeWindow())
+        self.assertEqual(calls, ["deiconify", "show", "present"])
+
+    def test_missing_gi_cairo_bridge_fails_before_opening_x11(self):
+        with mock.patch("wgestures.x11_backend.gi.require_foreign",
+                        side_effect=ImportError("missing bridge")), \
+                mock.patch("wgestures.x11_backend.display.Display") as open_display:
+            with self.assertRaisesRegex(RuntimeError, "python3-gi-cairo"):
+                X11Backend()
+        open_display.assert_not_called()
+
     def test_accelerator_parser_includes_xf86_audio_keysyms(self):
         self.assertEqual(parse_accelerator("<Control><Shift>t"),
                          (["Control_L", "Shift_L"], "t"))
@@ -36,20 +76,44 @@ class X11StaticTests(unittest.TestCase):
         calls = []
 
         class FakeDisplay(object):
+            def ungrab_pointer(self, timestamp):
+                calls.append(("pointer", timestamp))
+
             def sync(self):
-                calls.append("sync")
+                calls.append("capture-sync")
+
+        class FakeInjectDisplay(object):
+            def sync(self):
+                calls.append("inject-sync")
 
         backend.display = FakeDisplay()
+        backend.inject_display = FakeInjectDisplay()
+        backend._cleaned = False
+        backend._replay_source = None
         backend._ungrab_all = lambda: calls.append("ungrab")
         backend._grab_configured = lambda: calls.append("regrab")
+        scheduled = []
         with mock.patch("wgestures.x11_backend.xtest.fake_input",
-                        side_effect=lambda _display, event_type, button:
-                        calls.append((event_type, button))):
+                        side_effect=lambda _display, event_type, button, **kwargs:
+                        calls.append(("inject", event_type, button,
+                                      kwargs.get("time")))), \
+                mock.patch("wgestures.x11_backend.GLib.timeout_add",
+                           side_effect=lambda delay, callback, button:
+                           scheduled.append((delay, callback, button)) or 77):
             backend._replay_click(3)
+            self.assertEqual(calls, [
+                ("pointer", X.CurrentTime), "ungrab",
+            ])
+            self.assertEqual(backend._replay_source, 77)
+            self.assertEqual(scheduled[0][0], 12)
+            scheduled[0][1](scheduled[0][2])
         self.assertEqual(calls, [
-            "ungrab", (X.ButtonPress, 3), (X.ButtonRelease, 3),
-            "sync", "regrab",
+            ("pointer", X.CurrentTime), "ungrab",
+            ("inject", X.ButtonPress, 3, None),
+            ("inject", X.ButtonRelease, 3, 24),
+            "inject-sync", "regrab",
         ])
+        self.assertIsNone(backend._replay_source)
 
     def test_cancel_releases_active_pointer_and_keyboard(self):
         backend = X11Backend.__new__(X11Backend)

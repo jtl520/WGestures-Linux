@@ -28,10 +28,18 @@ from .x11_overlay import GestureOverlay
 LOG = logging.getLogger("wgestures.x11")
 BUTTON_NUMBERS = {"right": 3, "middle": 2, "x1": 8, "x2": 9}
 BUTTON_NAMES = dict((number, name) for name, number in BUTTON_NUMBERS.items())
+REPLAY_SETTLE_MS = 12
+REPLAY_HOLD_MS = 24
 
 
 class X11Backend(object):
     def __init__(self):
+        try:
+            gi.require_foreign("cairo")
+        except (ImportError, ValueError) as bridge_error:
+            raise RuntimeError(
+                "缺少 python3-gi-cairo，已停止 X11 输入捕获以避免右键失效：{0}"
+                .format(bridge_error))
         input_debug = os.environ.get("WGESTURES_DEBUG_INPUT") == "1"
         logging.basicConfig(level=logging.DEBUG if input_debug else logging.INFO,
                             format="%(name)s: %(levelname)s: %(message)s")
@@ -40,9 +48,16 @@ class X11Backend(object):
         if not extension or not getattr(extension, "present", False):
             self.display.close()
             raise RuntimeError("当前 X11 服务器未提供 XTEST 扩展")
+        try:
+            self.inject_display = display.Display(self.display.get_display_name())
+        except error.DisplayConnectionError as inject_error:
+            self.display.close()
+            raise RuntimeError("无法创建独立的 X11 点击回放连接：{0}".format(
+                inject_error))
         self.root = self.display.screen().root
         self.settings = Settings()
         if not self.settings.available:
+            self.inject_display.close()
             self.display.close()
             raise RuntimeError("GSettings 不可用：{0}".format(self.settings.error))
         self.store = ConfigStore()
@@ -65,6 +80,7 @@ class X11Backend(object):
         self._keyboard_grabbed = False
         self._io_watch = None
         self._drain_source = None
+        self._replay_source = None
         self._config_monitor = None
         self._dbus_subscriptions = []
         self._cleaned = False
@@ -375,15 +391,32 @@ class X11Backend(object):
             self.overlay.complete(False, "动作失败")
 
     def _replay_click(self, button):
-        # Requests are processed by the X server in order: remove passive grabs,
-        # inject press/release, then restore grabs. The synthetic press therefore
-        # cannot reactivate this daemon's own passive grab.
+        # A passive button grab becomes an active pointer grab for the current
+        # physical click. Release it and remove the passive rules now, but inject
+        # the replacement from the next GLib iteration. Injecting synchronously
+        # inside the physical ButtonRelease callback can be discarded by X11.
+        try:
+            self.display.ungrab_pointer(X.CurrentTime)
+        except error.XError:
+            pass
         self._ungrab_all()
-        LOG.debug("replaying click button=%s", button)
-        xtest.fake_input(self.display, X.ButtonPress, button)
-        xtest.fake_input(self.display, X.ButtonRelease, button)
-        self.display.sync()
+        LOG.debug("scheduling replay click button=%s", button)
+        if self._replay_source:
+            GLib.source_remove(self._replay_source)
+        self._replay_source = GLib.timeout_add(
+            REPLAY_SETTLE_MS, self._inject_replayed_click, button)
+
+    def _inject_replayed_click(self, button):
+        self._replay_source = None
+        if self._cleaned:
+            return GLib.SOURCE_REMOVE
+        LOG.debug("injecting replay click button=%s", button)
+        xtest.fake_input(self.inject_display, X.ButtonPress, button)
+        xtest.fake_input(
+            self.inject_display, X.ButtonRelease, button, time=REPLAY_HOLD_MS)
+        self.inject_display.sync()
         self._grab_configured()
+        return GLib.SOURCE_REMOVE
 
     def cancel(self, message=None):
         had_active = self.session.cancel()
@@ -524,6 +557,9 @@ class X11Backend(object):
                 GLib.source_remove(self._io_watch)
             if self._drain_source:
                 GLib.source_remove(self._drain_source)
+            if self._replay_source:
+                GLib.source_remove(self._replay_source)
+                self._replay_source = None
             if self._config_monitor:
                 self._config_monitor.cancel()
             for connection, subscription in self._dbus_subscriptions:
@@ -534,7 +570,10 @@ class X11Backend(object):
             self._write_metrics()
             self._remove_status()
         finally:
-            self.display.close()
+            try:
+                self.inject_display.close()
+            finally:
+                self.display.close()
 
     def _write_status(self, status, message=None):
         directory = runtime_directory()

@@ -17,7 +17,7 @@ from wgestures.autostart import (session_autostart_enabled,
                                  set_session_autostart)
 from wgestures.config import (create_default_config, find_matching_profile,
                               normalize_config, resolve_gesture)
-from wgestures.diagnostics import select_backend
+from wgestures.diagnostics import dependency_status, select_backend
 from wgestures.gesture import (GestureRecognizer, GestureSession,
                                direction_error_degrees, direction_from_delta,
                                gesture_key, simplify_corner_transitions)
@@ -266,6 +266,24 @@ class ImporterTests(unittest.TestCase):
 
 
 class EnvironmentTests(unittest.TestCase):
+    def test_diagnostics_probe_the_gi_cairo_bridge(self):
+        with mock.patch("wgestures.diagnostics._gi_cairo_available",
+                        return_value=False):
+            self.assertFalse(dependency_status()["giCairo"])
+        with mock.patch("wgestures.diagnostics._gi_cairo_available",
+                        return_value=True):
+            self.assertTrue(dependency_status()["giCairo"])
+
+    def test_gi_cairo_bridge_is_a_hard_package_dependency(self):
+        path = os.path.join(REPOSITORY_ROOT, "debian", "control")
+        with open(path, "r", encoding="utf-8") as stream:
+            paragraphs = stream.read().split("\n\n")
+        source = paragraphs[0]
+        package = next(item for item in paragraphs[1:]
+                       if item.startswith("Package: wgestures\n"))
+        self.assertIn("python3-gi-cairo", source)
+        self.assertIn("python3-gi-cairo", package)
+
     def test_user_can_enable_and_disable_session_autostart(self):
         directory = tempfile.mkdtemp(prefix="wgestures-autostart-test-")
         try:

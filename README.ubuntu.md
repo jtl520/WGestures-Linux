@@ -67,17 +67,18 @@ On Ubuntu 24.04:
 
 ```sh
 sudo apt install build-essential debhelper libglib2.0-bin nodejs npm \
-  python3 python3-gi python3-cairo python3-xlib gir1.2-gtk-3.0 zip lintian
+  python3 python3-gi python3-cairo python3-gi-cairo python3-xlib \
+  gir1.2-gtk-3.0 zip lintian
 make -f Makefile.ubuntu check
 make -f Makefile.ubuntu test
 make -f Makefile.ubuntu deb
-lintian ../wgestures_2.1.2ubuntu1_all.deb
+lintian ../wgestures_2.1.2ubuntu6_all.deb
 ```
 
 Install the same `Architecture: all` package on all supported targets:
 
 ```sh
-sudo apt install ../wgestures_2.1.2ubuntu1_all.deb
+sudo apt install ../wgestures_2.1.2ubuntu6_all.deb
 wgestures --diagnose
 ```
 
@@ -113,7 +114,7 @@ account, run the matrix against the built package:
 
 ```powershell
 .\tools\test-matrix.ps1 `
-  -PackagePath ..\wgestures_2.1.2ubuntu1_all.deb `
+  -PackagePath ..\wgestures_2.1.2ubuntu6_all.deb `
   -Ubuntu18User <vm-user> `
   -Ubuntu24Host <physical-host-ip> `
   -Ubuntu24User <physical-host-user>

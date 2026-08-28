@@ -199,14 +199,18 @@ sudo apt install ./wgestures_2.1.2ubuntu6_all.deb
 sudo apt install ./wgestures_新版本_all.deb
 ```
 
-卸载程序：
+卸载前先由当前桌面普通用户停用手势，再模拟并移除系统软件包：
 
 ```sh
-sudo apt remove wgestures
+wgestures --disable
+sudo apt purge --simulate wgestures
+sudo apt purge wgestures
 ```
 
-卸载后 `~/.config/wgestures` 仍会保留。如果确定不再需要，可由当前普通用户自行
-备份后删除；安装脚本不会替用户删除它。
+卸载后 `~/.config/wgestures` 仍会保留。如果确定不再需要，应由当前普通用户确认
+实际路径后自行清理；APT 不会替用户删除主目录数据。X11 后台退出、用户级自启动、
+dconf 状态、旧手动安装扩展及卸载后验证步骤见
+[中文卸载说明](README.uninstall.zh-CN.md)。
 
 ## 9. 常见问题
 

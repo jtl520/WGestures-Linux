@@ -124,8 +124,9 @@ wgestures --diagnose
 - “常规”页可由用户开关登录自启动和最小化/关闭到托盘。
 - 成功提示优先显示手势名称，默认 300 毫秒淡出。
 
-详细步骤见[中文安装说明](README.install.zh-CN.md)。完整功能、构建方式和
-测试门槛见 [Linux 开发说明](README.ubuntu.md)。
+详细步骤见[中文安装说明](README.install.zh-CN.md)，移除程序和清理用户配置见
+[中文卸载说明](README.uninstall.zh-CN.md)。完整功能、构建方式和测试门槛见
+[Linux 开发说明](README.ubuntu.md)。
 
 ## 常用命令
 

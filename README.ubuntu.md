@@ -45,7 +45,8 @@ import instead of being enabled.
 ## Commands
 
 中文用户可先阅读 [安装说明](README.install.zh-CN.md)，其中包含依赖、首次启用、
-开机自启、升级、卸载和常见故障处理。
+开机自启、升级和常见故障处理；完整移除步骤见
+[卸载说明](README.uninstall.zh-CN.md)。
 
 ```sh
 wgestures --settings

@@ -243,12 +243,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="QuickStartGuide\QuickStartGuideForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="QuickStartGuide\QuickStartGuideForm.Designer.cs">
-      <DependentUpon>QuickStartGuideForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="Warn360.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -280,9 +274,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Gui\Windows\ImportForm.resx">
       <DependentUpon>ImportForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="QuickStartGuide\QuickStartGuideForm.resx">
-      <DependentUpon>QuickStartGuideForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Gui\Windows\UpdateInfoForm.resx">
       <DependentUpon>UpdateInfoForm.cs</DependentUpon>
@@ -406,9 +397,6 @@
     <None Include="Resources\trayIcon_bw.ico" />
     <None Include="Resources\forbidden.png" />
     <None Include="Resources\alipay.png" />
-    <Content Include="QuickStartGuide\slides\5.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="UpdateLog.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -429,48 +417,6 @@
     <None Include="externalResource\slides\3.png" />
     <None Include="externalResource\slides\4.png" />
     <None Include="externalResource\slides\5.png" />
-    <Content Include="QuickStartGuide\img\next-default.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\img\pagination.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\img\pagination_.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\img\prev-default.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\index.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\js\jquery-1.11.1.min.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\js\jquery.slides.min.js">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\slides\0.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\slides\1.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\img\next.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\img\prev.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\slides\2.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\slides\3.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="QuickStartGuide\slides\4.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <EmbeddedResource Include="Resources\128.png" />
     <EmbeddedResource Include="Resources\icon_bw.ico" />
     <EmbeddedResource Include="Resources\checking.gif" />

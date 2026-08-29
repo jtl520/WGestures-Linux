@@ -1,3 +1,15 @@
+wgestures (2.1.5ubuntu1) noble; urgency=high
+
+  * Serialize Windows gesture overlay updates to prevent a fade-out race from
+    crashing copy and paste in Codex, Chromium and WebView2 applications.
+  * Remove the Windows first-run tutorial, tray shortcut and packaged guide;
+    upgrades also delete stale tutorial files.
+  * Restore terminal-aware smart copy and paste in both Ubuntu backends while
+    retaining exactly four default gestures, and migrate affected 2.1.4
+    default configurations without overwriting customized shortcuts.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 17:11:41 +0800
+
 wgestures (2.1.4ubuntu1) noble; urgency=high
 
   * Launch CrossGestures from the installer completion page with the elevated

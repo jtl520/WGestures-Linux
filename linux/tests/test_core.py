@@ -79,10 +79,10 @@ class ConformanceTests(unittest.TestCase):
 
 
 class ConfigurationTests(unittest.TestCase):
-    def test_defaults_are_the_same_four_gestures_as_windows(self):
+    def test_defaults_keep_four_gestures_and_smart_linux_clipboard(self):
         config = create_default_config()
         self.assertEqual([item["type"] for item in config["actions"]],
-                         ["ShortcutAction", "ShortcutAction", "ShortcutAction",
+                         ["CopyAction", "PasteAction", "ShortcutAction",
                           "WindowAction"])
         self.assertEqual([
             (item["button"], item["directions"], item["actionId"])
@@ -93,8 +93,23 @@ class ConfigurationTests(unittest.TestCase):
             ("right", ["down", "right", "down"], "press-enter"),
             ("right", ["up", "right", "up"], "window-toggle-above"),
         ])
-        self.assertEqual([item.get("accelerator") for item in config["actions"][:3]],
-                         ["<Control>c", "<Control>v", "Return"])
+        self.assertEqual(config["actions"][2].get("accelerator"), "Return")
+
+    def test_regressed_shortcut_defaults_migrate_back_to_smart_clipboard(self):
+        config = create_default_config()
+        config["actions"][0].update(
+            type="ShortcutAction", accelerator="Ctrl+C")
+        config["actions"][1].update(
+            type="ShortcutAction", accelerator="<Control>v")
+        normalized = normalize_config(config)["config"]
+        self.assertEqual([item["type"] for item in normalized["actions"][:2]],
+                         ["CopyAction", "PasteAction"])
+        self.assertNotIn("accelerator", normalized["actions"][0])
+        self.assertNotIn("accelerator", normalized["actions"][1])
+
+        config["actions"][0]["accelerator"] = "<Control><Shift>c"
+        customized = normalize_config(config)["config"]
+        self.assertEqual(customized["actions"][0]["type"], "ShortcutAction")
 
     def test_shortcuts_accept_friendly_and_legacy_formats(self):
         for value in ("Ctrl+C", "Control+C", "Ctrl C", "control c",

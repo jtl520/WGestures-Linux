@@ -1,6 +1,7 @@
 import {
     BUTTONS, DIRECTIONS, directionErrorDegrees, gestureKey, simplifyCornerTransitions,
 } from './gesture.js';
+import {normalizeAccelerator} from './shortcut.js';
 
 export const SCHEMA_VERSION = 1;
 export const ACTION_TYPES = Object.freeze([
@@ -39,12 +40,8 @@ export function createDefaultConfig() {
     return {
         schemaVersion: SCHEMA_VERSION,
         actions: [
-            action('smart-copy', '复制', 'ShortcutAction', {
-                accelerator: '<Control>c',
-            }),
-            action('smart-paste', '粘贴', 'ShortcutAction', {
-                accelerator: '<Control>v',
-            }),
+            action('smart-copy', '复制', 'CopyAction'),
+            action('smart-paste', '粘贴', 'PasteAction'),
             action('press-enter', 'Enter', 'ShortcutAction', {
                 accelerator: 'Return',
             }),
@@ -83,14 +80,29 @@ function normalizeAction(raw, seenIds, warnings) {
         return null;
     }
 
+    let actionType = raw.type;
+    if (actionType === 'ShortcutAction') {
+        const accelerator = String(raw.accelerator || '').trim();
+        let normalizedAccelerator = accelerator;
+        try {
+            normalizedAccelerator = normalizeAccelerator(accelerator);
+        } catch (_error) {
+            // Preserve invalid custom shortcuts so the existing warning path handles them.
+        }
+        if (id === 'smart-copy' && normalizedAccelerator === '<Control>c')
+            actionType = 'CopyAction';
+        else if (id === 'smart-paste' && normalizedAccelerator === '<Control>v')
+            actionType = 'PasteAction';
+    }
+
     const normalized = {
         id,
         name: String(raw.name || id),
-        type: raw.type,
+        type: actionType,
         enabled: raw.enabled !== false,
     };
 
-    switch (raw.type) {
+    switch (actionType) {
     case 'ShortcutAction':
         normalized.accelerator = String(raw.accelerator || '').trim();
         if (!normalized.accelerator)

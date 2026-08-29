@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing Git tag to publish
         required: true
-        default: v2.1.4
+        default: v2.1.5
 
 permissions:
   contents: write
@@ -142,22 +142,18 @@ jobs:
           windows_package="$(find build/windows -name 'CrossGestures-*-Windows-Setup.exe' -print -quit)"
           windows_name="$(basename "$windows_package")"
           windows_sha256="$(sha256sum "$windows_package" | cut -d ' ' -f 1)"
-          notes="$(printf '%s\n\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s' \
-            'CrossGestures v2.1.4 Linux 与 Windows 双平台修复版。' \
-            '- Windows x64 使用原生 64 位 Program Files 和注册表视图，同时保留 AnyCPU/x86 兼容' \
-            '- Windows 默认仅右上角触发 Win+Tab，其余触发角与摩擦边均为无操作' \
-            '- Windows 安装完成页继承安装器提升权限启动程序，修复 CreateProcess 740' \
-            '- Windows 与 Linux 首次安装/恢复默认值均只提供四个手势：复制、粘贴、Enter、窗口置顶' \
-            '- Windows 跨平台导出只包含当前手势列表，不再夹带其他应用配置' \
-            '- Windows 锁定手势开始时的目标窗口并按节奏发送按键，修复 Codex、Chromium/WebView2 的复制粘贴' \
-            '- Windows Terminal 与传统 Console Host 分别使用正确的复制粘贴快捷键' \
+          notes="$(printf '%s\n\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s' \
+            'CrossGestures v2.1.5 Linux 与 Windows 双平台稳定性修复版。' \
+            '- 修复 Windows 手势提示淡出与复制粘贴并发时的空引用崩溃，重点覆盖 Codex、Chromium 和 WebView2' \
+            '- Windows 移除首次启动教程和托盘快速入门，升级时同时清理旧教程文件' \
+            '- Ubuntu 保持四项默认手势，并恢复按终端区分 Ctrl+Shift+C/V 的智能复制粘贴；受影响旧配置会自动迁移' \
             "Linux 安装：\`sudo apt install ./$package_name\`" \
             'Linux 首次运行：`wgestures --diagnose`，然后执行 `wgestures --enable`；卸载：`wgestures --disable && sudo apt purge wgestures`。' \
             "Windows 安装：运行 \`$windows_name\` 并同意一次 UAC（需要 .NET Framework 4.8）；卸载：运行 \`%ProgramFiles%\\CrossGestures\\unins000.exe\`。" \
             'Windows 安装到 Program Files，并使用最高权限登录任务覆盖 Codex 和管理员终端；升级会保留用户手势配置。' \
             "Linux SHA-256: \`$sha256\`" \
             "Windows SHA-256: \`$windows_sha256\`" \
-            '验证：Linux Python/JavaScript 测试与打包检查通过；Windows Release 构建、安装包检查以及 Codex 和 Windows Terminal CMD 的复制/粘贴实测通过。')"
+            '验证：Linux Python/JavaScript 测试与打包检查通过；Windows Release 构建、安装包检查及手势提示并发压力测试通过。')"
           gh release create "$RELEASE_TAG" "$package" "$windows_package" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \

@@ -72,10 +72,10 @@ test('gesture keys reject invalid input', () => {
     assert.throws(() => gestureKey('left-button', ['left']));
 });
 
-test('defaults are the same four gestures as Windows', () => {
+test('defaults keep four gestures and smart Linux clipboard actions', () => {
     const config = createDefaultConfig();
     assert.deepEqual(config.actions.map(item => item.type), [
-        'ShortcutAction', 'ShortcutAction', 'ShortcutAction', 'WindowAction',
+        'CopyAction', 'PasteAction', 'ShortcutAction', 'WindowAction',
     ]);
     assert.deepEqual(config.globalProfile.gestures.map(item => ({
         button: item.button,
@@ -93,9 +93,25 @@ test('defaults are the same four gestures as Windows', () => {
             actionId: 'window-toggle-above',
         },
     ]);
-    assert.deepEqual(config.actions.slice(0, 3).map(item => item.accelerator), [
-        '<Control>c', '<Control>v', 'Return',
+    assert.equal(config.actions[2].accelerator, 'Return');
+});
+
+test('regressed shortcut defaults migrate back to smart clipboard actions', () => {
+    const config = createDefaultConfig();
+    config.actions[0] = {...config.actions[0], type: 'ShortcutAction', accelerator: 'Ctrl+C'};
+    config.actions[1] = {
+        ...config.actions[1], type: 'ShortcutAction', accelerator: '<Control>v',
+    };
+    const migrated = normalizeConfig(config).config;
+    assert.deepEqual(migrated.actions.slice(0, 2).map(item => item.type), [
+        'CopyAction', 'PasteAction',
     ]);
+    assert.equal('accelerator' in migrated.actions[0], false);
+    assert.equal('accelerator' in migrated.actions[1], false);
+
+    config.actions[0].accelerator = '<Control><Shift>c';
+    const customized = normalizeConfig(config).config;
+    assert.equal(customized.actions[0].type, 'ShortcutAction');
 });
 
 test('shortcuts accept friendly and legacy formats', () => {

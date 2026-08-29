@@ -91,7 +91,7 @@ namespace WGestures.View.Impl.Windows
         private GraphicsPath _gPathDirty = new GraphicsPath();
         Pen _pathPen;
         bool _pathVisible;
-        
+
         readonly GestureParser _gestureParser;
 
         Rectangle _screenBounds = Native.GetScreenBounds();
@@ -117,6 +117,7 @@ namespace WGestures.View.Impl.Windows
         short _pointCount;
 
         Timer _fadeOuTimer = new Timer(55);
+        readonly object _viewSync = new object();
         const byte FadeOutDelta = 60;
         byte _canvasOpacity;
         #endregion
@@ -152,16 +153,24 @@ namespace WGestures.View.Impl.Windows
 
         private void SystemEvents_UserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
         {
-            _systemColor = Native.GetWindowColorization();
+            lock (_viewSync)
+            {
+                if (!IsDisposed) _systemColor = Native.GetWindowColorization();
+            }
         }
 
         private void SystemDisplaySettingsChanged(object sender, EventArgs e)
         {
-            _screenBounds = Native.GetScreenBounds();
-            _canvasBuf = new DiBitmap(_screenBounds.Size);
-            _dpiFactor = Native.GetScreenDpi() / 96.0f;
+            lock (_viewSync)
+            {
+                if (IsDisposed) return;
 
-            
+                _screenBounds = Native.GetScreenBounds();
+                var previousCanvas = _canvasBuf;
+                _canvasBuf = new DiBitmap(_screenBounds.Size);
+                previousCanvas?.Dispose();
+                _dpiFactor = Native.GetScreenDpi() / 96.0f;
+            }
         }
 
         private void InitDefaultProperties()
@@ -200,30 +209,35 @@ namespace WGestures.View.Impl.Windows
         #region event handlers
         private void HandlePathStart(PathEventArgs args)
         {
-            if (!ShowPath && !ShowCommandName) return;
-            
-            Debug.WriteLine("WhenPathStart");
+            lock (_viewSync)
+            {
+                if (IsDisposed || (!ShowPath && !ShowCommandName)) return;
 
-            _screenBounds = Screen.ScreenBoundsFromPoint(args.Location).Value;//Screen.FromPoint(args.Location);
-           
-            _prevPoint = args.Location;//ToUpLeftCoord(args.Location);
-            _pointCount = 1;
+                Debug.WriteLine("WhenPathStart");
 
-            //_tempMainPen = args.Button == GestureTriggerButton.Right ? _mainPen : _middleBtnPen;
-            if ((args.Button & GestureTriggerButton.Right) != 0) _tempMainPen = _mainPen;
-            else if ((args.Button & GestureTriggerButton.X) != 0) _tempMainPen = _xBtnPen;
-            else _tempMainPen = _middleBtnPen;
-            
-            _isCurrentRecognized = false;
-            _recognizeStateChanged = false;
+                _screenBounds = Screen.ScreenBoundsFromPoint(args.Location).Value;//Screen.FromPoint(args.Location);
 
-            BeginView();
+                _prevPoint = args.Location;//ToUpLeftCoord(args.Location);
+                _pointCount = 1;
+
+                //_tempMainPen = args.Button == GestureTriggerButton.Right ? _mainPen : _middleBtnPen;
+                if ((args.Button & GestureTriggerButton.Right) != 0) _tempMainPen = _mainPen;
+                else if ((args.Button & GestureTriggerButton.X) != 0) _tempMainPen = _xBtnPen;
+                else _tempMainPen = _middleBtnPen;
+
+                _isCurrentRecognized = false;
+                _recognizeStateChanged = false;
+
+                BeginView();
+            }
         }
 
         private void HandlePathGrow(PathEventArgs args)
         {
-            if (!ShowPath && !ShowCommandName) return;
-            if (_pointCount > _pathMaxPointCount) return;
+            lock (_viewSync)
+            {
+                if (IsDisposed || (!ShowPath && !ShowCommandName)) return;
+                if (_pointCount > _pathMaxPointCount) return;
 
             _pointCount++;
 
@@ -262,12 +276,15 @@ namespace WGestures.View.Impl.Windows
 
             _recognizeStateChanged = false;
 
-            _prevPoint = curPos;//args.Location;//ToUpLeftCoord(args.Location);
+                _prevPoint = curPos;//args.Location;//ToUpLeftCoord(args.Location);
+            }
         }
 
         private void HandleIntentRecognized(GestureIntent intent)
         {
-            if (!ShowPath && !ShowCommandName) return;
+            lock (_viewSync)
+            {
+                if (IsDisposed || (!ShowPath && !ShowCommandName)) return;
 
             Debug.WriteLine("IntentRecognized");
 
@@ -277,7 +294,7 @@ namespace WGestures.View.Impl.Windows
                 var newLabelText = intent.Name + (modifierText == String.Empty ? String.Empty : (" " + modifierText));
                 ShowLabel(Color.White, newLabelText, Color.FromArgb(120, 0, 0, 0));
             }
-            
+
             if (!_isCurrentRecognized && ShowPath)
             {
                 _isCurrentRecognized = true;
@@ -289,14 +306,17 @@ namespace WGestures.View.Impl.Windows
             DrawAndUpdate();
 
             if (ShowCommandName) _labelChanged = false;
-            _recognizeStateChanged = false;
+                _recognizeStateChanged = false;
 
+            }
         }
 
         //todo: 合并为IntentRecogChanged?
         private void HandleIntentInvalid(Gesture gesture)
         {
-            if (!ShowPath && !ShowCommandName) return;
+            lock (_viewSync)
+            {
+                if (IsDisposed || (!ShowPath && !ShowCommandName)) return;
 
             Debug.WriteLine("IntentInvalid");
             //pre
@@ -321,28 +341,41 @@ namespace WGestures.View.Impl.Windows
             if (ShowCommandName)
             {
                 _labelRect = default(Rectangle);
-                _labelChanged = false;
+                    _labelChanged = false;
+                }
             }
         }
 
         private void HandlePathTimeout(PathEventArgs args)
         {
-            if (!ShowPath && !ShowCommandName) return;
+            lock (_viewSync)
+            {
+                if (IsDisposed || (!ShowPath && !ShowCommandName)) return;
 
-            Debug.WriteLine("PathTimeout");
+                Debug.WriteLine("PathTimeout");
 
-            //if (ShowPath) ResetPathDirtyRect();
-            EndView();
+                //if (ShowPath) ResetPathDirtyRect();
+                EndView();
+            }
         }
 
         private void HandleIntentReadyToExecute(GestureIntent intent)
         {
-            if (!ShowPath && !ShowCommandName) return;
+            lock (_viewSync)
+            {
+                if (IsDisposed || (!ShowPath && !ShowCommandName)) return;
 
             Debug.WriteLine("WhenIntentReadyToExecute");
             if (ShowCommandName)
             {
-                ShowLabel(Color.White, _labelText, _systemColor);////Color.FromArgb(120, 0, 80, 0));
+                var labelText = _labelText;
+                if (String.IsNullOrEmpty(labelText))
+                {
+                    var modifierText = intent.Gesture.Modifier.ToMnemonic();
+                    labelText = intent.Name +
+                        (modifierText == String.Empty ? String.Empty : (" " + modifierText));
+                }
+                ShowLabel(Color.White, labelText, _systemColor);////Color.FromArgb(120, 0, 80, 0));
             }
 
             //draw
@@ -352,8 +385,9 @@ namespace WGestures.View.Impl.Windows
             if (ShowPath) _pathVisible = false;
             if (ShowCommandName) _labelChanged = false;
 
-            if (ViewFadeOut) FadeOut();
-            else EndView();
+                if (ViewFadeOut) FadeOut();
+                else EndView();
+            }
         }
 
         private void HandleIntentReadyToExecuteOnModifier(GestureModifier modifier)
@@ -362,35 +396,45 @@ namespace WGestures.View.Impl.Windows
 
         private void HandleIntentOrPathCanceled()
         {
-            if (!ShowPath && !ShowCommandName) return;
+            lock (_viewSync)
+            {
+                if (IsDisposed || (!ShowPath && !ShowCommandName)) return;
 
-            Debug.WriteLine("IntentOrPathCancled");
-            EndView();
+                Debug.WriteLine("IntentOrPathCancled");
+                EndView();
+            }
         }
 
         private void HandleGestureRecorded(Gesture g)
         {
-            if (!ShowPath && !ShowCommandName) return;
+            lock (_viewSync)
+            {
+                if (IsDisposed || (!ShowPath && !ShowCommandName)) return;
 
-            Debug.WriteLine("WhenGestureCaptured");
-            EndView();
+                Debug.WriteLine("WhenGestureCaptured");
+                EndView();
+            }
         }
 
         private void HandleCommandReportStatus(string status, GestureIntent intent)
         {
-            if (ShowCommandName)
+            lock (_viewSync)
             {
-                var modifierText = intent.Gesture.Modifier.ToMnemonic();
-                var newLabelText = (modifierText == String.Empty ? String.Empty : (modifierText + " ")) + intent.Name + status;
-                if (newLabelText.Equals(_labelText)) return;
+                if (IsDisposed) return;
+                if (ShowCommandName)
+                {
+                    var modifierText = intent.Gesture.Modifier.ToMnemonic();
+                    var newLabelText = (modifierText == String.Empty ? String.Empty : (modifierText + " ")) + intent.Name + status;
+                    if (newLabelText.Equals(_labelText)) return;
 
-                _labelText = newLabelText;
+                    _labelText = newLabelText;
 
-                ShowLabel(Color.White, newLabelText, Color.FromArgb(120, 0, 0, 0));
-                
-                DrawAndUpdate();
+                    ShowLabel(Color.White, newLabelText, Color.FromArgb(120, 0, 0, 0));
 
-                if (ShowCommandName) _labelChanged = false;
+                    DrawAndUpdate();
+
+                    if (ShowCommandName) _labelChanged = false;
+                }
             }
         }
         #endregion
@@ -411,7 +455,7 @@ namespace WGestures.View.Impl.Windows
             _canvasWindow.Visible = true;
 
             if (ShowPath)
-            {            
+            {
                 _pathVisible = true;
                 _pathPen = _alternativePen;
             }
@@ -478,7 +522,7 @@ namespace WGestures.View.Impl.Windows
             {
                 var labelDirtyRect = _labelRect.Width > _lastLabelRect.Width ? _labelRect : _lastLabelRect;
                 labelDirtyRect.Height = _labelRect.Height > _lastLabelRect.Height ? _labelRect.Height : _lastLabelRect.Height;
-                
+
                 g.SetClip(labelDirtyRect, CombineMode.Union);
                 labelAffected = _labelVisible;
             }
@@ -496,7 +540,7 @@ namespace WGestures.View.Impl.Windows
                     Debug.WriteLine("LabelDirty="+labelDirty);
                 }
             }
-                     
+
             g.Clear(Color.Transparent);
 
             #region 1) 绘制路径
@@ -515,7 +559,7 @@ namespace WGestures.View.Impl.Windows
                 using (var pen = new Pen(Color.White, 1.5f * _dpiFactor))
                 //using (var shadow = new Pen(Color.FromArgb(40, 0, 0, 0), 3f * _dpiFactor))
                 {
-                    
+
                     /*DrawRoundedRectangle(g, RectangleF.Inflate(_labelRect,
                         -1f * _dpiFactor, -1f * _dpiFactor),
                         (int)(12 * _dpiFactor), shadow, Color.Transparent);*/
@@ -534,7 +578,7 @@ namespace WGestures.View.Impl.Windows
 
             _canvasBuf.EndDraw();
         }
-        
+
         private void EndView()
         {
             Debug.WriteLine("EndView");
@@ -553,7 +597,7 @@ namespace WGestures.View.Impl.Windows
                 pathDirty.Offset(-_screenBounds.X, -_screenBounds.Y); //挪回来变为基于窗口的坐标
 
                 _canvasWindow.SetDiBitmap(_canvasBuf, pathDirty);
-                    
+
                 _gPath.Reset();
                 _gPathDirty.Reset();
             }
@@ -566,10 +610,10 @@ namespace WGestures.View.Impl.Windows
                 _canvasBuf.EndDraw();
                 _canvasWindow.SetDiBitmap(_canvasBuf, Rectangle.Ceiling(_labelRect));
                 _labelPath.Reset();
-                    
+
                 HideLabel();
                 _labelChanged = false;
-            }                   
+            }
 
             _canvasWindow.Visible = false;
             _labelRect = default(Rectangle);//todo: dirtyRect也是多余
@@ -583,25 +627,24 @@ namespace WGestures.View.Impl.Windows
 
         private void StopFadeout()
         {
-            //终止fadeout
-            if (_fadeOuTimer.Enabled)
+            lock (_viewSync)
             {
-                lock (_fadeOuTimer)
+                if (IsDisposed || _fadeOuTimer == null) return;
+
+                //终止fadeout
+                if (_fadeOuTimer.Enabled)
                 {
-                    if (_fadeOuTimer.Enabled)
-                    {
-                        _fadeOuTimer.Enabled = false;
-                        EndView();
-                    }
+                    _fadeOuTimer.Enabled = false;
+                    EndView();
                 }
             }
         }
 
         private void OnFadeOutTimerElapsed(object o, ElapsedEventArgs e)
         {
-            lock (_fadeOuTimer)
+            lock (_viewSync)
             {
-                if (!_fadeOuTimer.Enabled) return;
+                if (IsDisposed || _fadeOuTimer == null || !_fadeOuTimer.Enabled) return;
 
                 Debug.Write("*");
 
@@ -610,7 +653,7 @@ namespace WGestures.View.Impl.Windows
                 _canvasOpacity -= FadeOutDelta;
 
                 if (before < _canvasOpacity)
-                {                    
+                {
                     EndView();
                     _fadeOuTimer.Enabled = false;
                 }
@@ -622,7 +665,7 @@ namespace WGestures.View.Impl.Windows
             }
         }
         #endregion
-        
+
         private void HideLabel()
         {
             _labelText = null;
@@ -632,6 +675,12 @@ namespace WGestures.View.Impl.Windows
 
         private void ShowLabel(Color color, string text, Color bgColor)
         {
+            if (String.IsNullOrEmpty(text))
+            {
+                HideLabel();
+                return;
+            }
+
             _labelVisible = true;
             _labelColor = color;
             _labelText = text;
@@ -642,13 +691,13 @@ namespace WGestures.View.Impl.Windows
 
             _labelPath.Reset();
             var msgPos = new PointF(_screenBounds.Width / 2, (_screenBounds.Height / 2) + _screenBounds.Width / 8);
-            
-            _labelPath.AddString(_labelText, _labelFont.FontFamily, 0, _labelFont.Size * _dpiFactor, msgPos, StringFormat.GenericDefault);
+
+            _labelPath.AddString(text, _labelFont.FontFamily, 0, _labelFont.Size * _dpiFactor, msgPos, StringFormat.GenericDefault);
             _labelRect = _labelPath.GetBounds();
             msgPos.X -= _labelRect.Width / 2;
 
             _labelPath.Reset();
-            _labelPath.AddString(_labelText, _labelFont.FontFamily, 0, _labelFont.Size * _dpiFactor, msgPos, StringFormat.GenericDefault);
+            _labelPath.AddString(text, _labelFont.FontFamily, 0, _labelFont.Size * _dpiFactor, msgPos, StringFormat.GenericDefault);
 
             _labelRect = RectangleF.Inflate(_labelPath.GetBounds(), 25 * _dpiFactor, 15 * _dpiFactor);
         }
@@ -682,7 +731,7 @@ namespace WGestures.View.Impl.Windows
         private void DrawRoundedRectangle(Graphics gfx, RectangleF Bounds, int CornerRadius, Pen DrawPen, Color FillColor)
         {
             int strokeOffset = Convert.ToInt32(Math.Ceiling(DrawPen.Width));
-            
+
             var rect = Rectangle.Truncate(Bounds);
 
             rect.Inflate(-strokeOffset, -strokeOffset);
@@ -694,7 +743,7 @@ namespace WGestures.View.Impl.Windows
                 gfx.FillRectangle(brush, rect);
                 gfx.DrawRectangle(DrawPen, rect);
             }
-                
+
 
             /*using (var gfxPath = new GraphicsPath())
             {
@@ -712,10 +761,12 @@ namespace WGestures.View.Impl.Windows
 
         public void Dispose()
         {
+            lock (_viewSync)
+            {
+                if (IsDisposed) return;
+                IsDisposed = true;
 
-            if (IsDisposed) return;
-
-            #region unregistor events
+                #region unregistor events
             _gestureParser.IntentRecognized -= HandleIntentRecognized;
             _gestureParser.IntentInvalid -= HandleIntentInvalid;
             _gestureParser.IntentOrPathCanceled -= HandleIntentOrPathCanceled;
@@ -738,9 +789,9 @@ namespace WGestures.View.Impl.Windows
             _alternativePen.Dispose();
 
             //_shadowPen.Dispose();
-            
+
             //_shadowPen = null;
-           
+
 
             _dirtyMarkerPen.Dispose();
             #endregion
@@ -779,17 +830,18 @@ namespace WGestures.View.Impl.Windows
 
             if (_fadeOuTimer != null)
             {
+                _fadeOuTimer.Enabled = false;
                 _fadeOuTimer.Elapsed -= OnFadeOutTimerElapsed;
                 _fadeOuTimer.Dispose();
                 _fadeOuTimer = null;
             }
 
             SystemEvents.DisplaySettingsChanged -= SystemDisplaySettingsChanged;
+            SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
 
 
             Debug.WriteLine("Dispose");
-            IsDisposed = true;
-
+            }
         }
 
 

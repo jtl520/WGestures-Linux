@@ -45,11 +45,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加快捷方式："; Flags: unchecked
 
 [Files]
-Source: "{#BuildDir}\*"; DestDir: "{app}"; Excludes: "WGestures.exe,WGestures.exe.config,*.pdb,*.xml"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#BuildDir}\*"; DestDir: "{app}"; Excludes: "WGestures.exe,WGestures.exe.config,QuickStartGuide\*,*.pdb,*.xml"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [InstallDelete]
 Type: files; Name: "{app}\WGestures.exe"
 Type: files; Name: "{app}\WGestures.exe.config"
+Type: filesandordirs; Name: "{app}\QuickStartGuide"
 
 [UninstallDelete]
 Type: files; Name: "{userstartup}\com.jtl520.CrossGestures.lnk"

@@ -244,7 +244,6 @@ namespace WGestures.App
                 
                 config.Save();
             
-                ShowQuickStartGuide(isFirstRun: true);
                 Warning360Safe();
             }
         }
@@ -613,33 +612,6 @@ namespace WGestures.App
             }
         }
 
-        static void ShowQuickStartGuide(bool isFirstRun=false)
-        {
-            var t = new Thread(() =>
-            {
-                bool createdNew;
-                var mut = new Mutex(true, Constants.Identifier + "QuickStartGuideWindow", out createdNew);
-                if (!createdNew) return;
-                
-                using (var frm = new QuickStartGuideForm())
-                {
-                    Application.Run(frm);
-                    mut.Close();
-                }
-
-                if(isFirstRun)
-                {
-                    //Open again to show settings
-                    //Process.Start(Application.ExecutablePath);
-                }
-
-                GC.Collect();
-            }) { IsBackground = true };
-
-            t.SetApartmentState(ApartmentState.STA);
-            t.Start();
-        }
-
         static string GetPauseResumeHotkeyString()
         {
             var hk = hotkeyMgr.GetRegisteredHotKeyById(ConfigKeys.PauseResumeHotKey);
@@ -665,16 +637,13 @@ namespace WGestures.App
             var menuItem_settings = new MenuItem() { Text = "设置" };
             menuItem_settings.Click += menuItem_settings_Click;
 
-            var menuItem_showQuickStart = new MenuItem() { Text = "快速入门" };
-            menuItem_showQuickStart.Click += (sender, args) => ShowQuickStartGuide();
-
             /*var menuItem_toggleTray = new MenuItem() { Text = "隐藏 (Shift + 左键 + 中键)" };
             menuItem_toggleTray.Click += (sender, args) =>
             {
                ToggleTrayIconVisibility();
             };*/
 
-            contextMenu1.MenuItems.AddRange(new[] { /*menuItem_toggleTray, */menuItem_pause, new MenuItem("-"), menuItem_settings,  menuItem_showQuickStart,new MenuItem("-"), menuItem_exit });
+            contextMenu1.MenuItems.AddRange(new[] { /*menuItem_toggleTray, */menuItem_pause, new MenuItem("-"), menuItem_settings, new MenuItem("-"), menuItem_exit });
             notifyIcon.Icon = Resources.trayIcon;
             //notifyIcon.Text = Application.ProductName;
             notifyIcon.ContextMenu = contextMenu1;

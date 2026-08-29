@@ -54,6 +54,12 @@ try {
             'packages\Microsoft.NETFramework.ReferenceAssemblies.net48.1.0.3\build\.NETFramework\v4.8'
     }
 
+    $staleQuickStartGuide = Join-Path $repoRoot `
+        "WGestures.App\bin\$Configuration\QuickStartGuide"
+    if (Test-Path -LiteralPath $staleQuickStartGuide) {
+        Remove-Item -LiteralPath $staleQuickStartGuide -Recurse -Force
+    }
+
     & $MSBuildPath WGestures.sln /t:Rebuild /m /v:minimal `
         "/p:Configuration=$Configuration" '/p:Platform=Any CPU' `
         "/p:FrameworkPathOverride=$frameworkPath"

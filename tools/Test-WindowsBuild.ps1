@@ -37,6 +37,8 @@ $settingsText = Get-Content -LiteralPath `
     (Join-Path $repoRoot 'WGestures.App\Gui\Windows\SettingsForm.cs') -Raw
 $settingsDesignerText = Get-Content -LiteralPath `
     (Join-Path $repoRoot 'WGestures.App\Gui\Windows\SettingsForm.Designer.cs') -Raw
+$canvasViewText = Get-Content -LiteralPath `
+    (Join-Path $repoRoot 'WGestures.View\Impl\Windows\CanvasWindowGestureView.cs') -Raw
 $defaultGestures = Get-Content -LiteralPath $defaultGesturesPath -Raw | ConvertFrom-Json
 
 if ($manifestText -match 'uiAccess="true"' -or
@@ -63,6 +65,12 @@ if ($commonProjectText -notmatch 'GlobalKeyboardHook\.Win32\.cs' -or
 }
 if ($programText -match 'defaults/gestures\.wg"') {
     throw 'Corrupt gesture recovery still references the removed gestures.wg default.'
+}
+if ($programText -match 'ShowQuickStartGuide|快速入门' -or
+    $appProjectText -match 'QuickStartGuide\\' -or
+    $installerScriptText -notmatch 'Excludes:.*QuickStartGuide\\\*' -or
+    $installerScriptText -notmatch 'filesandordirs; Name: "\{app\}\\QuickStartGuide"') {
+    throw 'The Windows startup tutorial must not be launched, exposed, or packaged.'
 }
 if ($constantsText -notmatch 'Identifier = "com\.jtl520\.CrossGestures"' -or
     $constantsText -notmatch 'IpcPipeName = "CrossGestures_IPC_API"' -or
@@ -125,6 +133,13 @@ if ($parserText -notmatch 'FindTolerantSingleDirectionIntent' -or
 if ($programText -match 'maxStackSize:\s*1' -or $trackerText -match 'maxStackSize:\s*1') {
     throw 'Long-lived Windows threads must use the runtime default stack size.'
 }
+if ($canvasViewText -notmatch 'readonly object _viewSync = new object\(\)' -or
+    $canvasViewText -notmatch 'lock \(_viewSync\)' -or
+    $canvasViewText -notmatch 'String\.IsNullOrEmpty\(text\)' -or
+    $canvasViewText -notmatch '_labelPath\.AddString\(text,' -or
+    $canvasViewText -match '_labelPath\.AddString\(_labelText,') {
+    throw 'Windows gesture rendering must serialize fade-out and reject empty label text.'
+}
 if ($portableText -notmatch 'crossgestures-portable' -or
     $settingsText -notmatch '\.cgestures' -or
     $settingsText -notmatch 'github\.com/yingDev/WGestures') {
@@ -138,6 +153,9 @@ if ($settingsText -match 'File\.ReadAllText.*UpdateLog' -or
 
 if (-not $SourceOnly) {
     $outputDir = Join-Path $repoRoot 'WGestures.App\bin\Release'
+    if (Test-Path -LiteralPath (Join-Path $outputDir 'QuickStartGuide')) {
+        throw 'The Windows build output still contains the startup tutorial.'
+    }
     $requiredFiles = @(
         'CrossGestures.exe',
         'CrossGestures.exe.config',
@@ -162,7 +180,7 @@ if (-not $SourceOnly) {
 
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo(
         (Join-Path $outputDir 'CrossGestures.exe')).FileVersion
-    if ($version -ne '2.1.4.0') {
+    if ($version -ne '2.1.5.0') {
         throw "Unexpected CrossGestures.exe version: $version"
     }
 

@@ -4,6 +4,7 @@ import copy
 
 from .gesture import (BUTTONS, DIRECTIONS, direction_error_degrees,
                       gesture_key, simplify_corner_transitions)
+from .shortcut import normalize_accelerator
 
 
 SCHEMA_VERSION = 1
@@ -35,10 +36,8 @@ def create_default_config():
     return {
         "schemaVersion": SCHEMA_VERSION,
         "actions": [
-            _action("smart-copy", "复制", "ShortcutAction",
-                    accelerator="<Control>c"),
-            _action("smart-paste", "粘贴", "ShortcutAction",
-                    accelerator="<Control>v"),
+            _action("smart-copy", "复制", "CopyAction"),
+            _action("smart-paste", "粘贴", "PasteAction"),
             _action("press-enter", "Enter", "ShortcutAction",
                     accelerator="Return"),
             _action("window-toggle-above", "窗口置顶",
@@ -68,22 +67,33 @@ def _normalize_action(raw, seen_ids, warnings):
     if not action_id or action_id in seen_ids:
         warnings.append("已忽略无 ID 或重复的动作：{0}".format(action_id or "(空)"))
         return None
+    action_type = raw["type"]
+    if action_type == "ShortcutAction":
+        accelerator = str(raw.get("accelerator") or "").strip()
+        try:
+            normalized_accelerator = normalize_accelerator(accelerator)
+        except ValueError:
+            normalized_accelerator = accelerator
+        if action_id == "smart-copy" and normalized_accelerator == "<Control>c":
+            action_type = "CopyAction"
+        elif action_id == "smart-paste" and normalized_accelerator == "<Control>v":
+            action_type = "PasteAction"
     value = {
         "id": action_id,
         "name": str(raw.get("name") or action_id),
-        "type": raw["type"],
+        "type": action_type,
         "enabled": raw.get("enabled") is not False,
     }
-    if raw["type"] == "ShortcutAction":
+    if action_type == "ShortcutAction":
         value["accelerator"] = str(raw.get("accelerator") or "").strip()
         if not value["accelerator"]:
             warnings.append("快捷键动作 {0} 没有快捷键".format(action_id))
-    elif raw["type"] == "WindowAction":
+    elif action_type == "WindowAction":
         operation = raw.get("operation")
         value["operation"] = operation if operation in WINDOW_OPERATIONS else "toggle-maximized"
-    elif raw["type"] == "CommandAction":
+    elif action_type == "CommandAction":
         value["command"] = str(raw.get("command") or "")
-    elif raw["type"] == "LaunchAction":
+    elif action_type == "LaunchAction":
         value["target"] = str(raw.get("target") or "")
     seen_ids.add(action_id)
     return value

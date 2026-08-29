@@ -17,6 +17,7 @@ try:
     from Xlib import X, XK
     from wgestures.x11_actions import X11ActionExecutor, parse_accelerator
     from wgestures.x11_backend import X11Backend
+    from wgestures.x11_overlay import GestureOverlay
     from wgestures.prefs import _compact_control, present_preferences_window
     X11_IMPORT_ERROR = None
 except (ImportError, ValueError) as error:
@@ -26,6 +27,57 @@ except (ImportError, ValueError) as error:
 @unittest.skipIf(X11_IMPORT_ERROR is not None,
                  "X11/PyGObject dependencies unavailable: {0}".format(X11_IMPORT_ERROR))
 class X11StaticTests(unittest.TestCase):
+    def test_overlay_renders_unicode_labels_with_pango_font_fallback(self):
+        calls = []
+
+        class FakeSettings(object):
+            @staticmethod
+            def get(key):
+                return {
+                    "path-color": "#27ae60", "path-width": 4,
+                    "show-command-name": True,
+                }[key]
+
+        class FakeColor(object):
+            red, green, blue, alpha = 0.15, 0.68, 0.38, 1.0
+
+        class FakeRect(object):
+            x, y, width, height = 0, 0, 42, 22
+
+        class FakeLayout(object):
+            def set_font_description(self, _font):
+                calls.append("font")
+
+            def set_text(self, text, length):
+                calls.append(("text", text, length))
+
+            @staticmethod
+            def get_pixel_extents():
+                return FakeRect(), FakeRect()
+
+        class FakeContext(object):
+            def __getattr__(self, name):
+                return lambda *args: calls.append((name, args))
+
+        overlay = GestureOverlay.__new__(GestureOverlay)
+        overlay.settings = FakeSettings()
+        overlay.points = [(10, 10), (40, 40)]
+        overlay.valid = True
+        overlay.label = "智能复制"
+        overlay.opacity = 1.0
+        overlay.origin_x = 0
+        overlay.origin_y = 0
+        layout = FakeLayout()
+        context = FakeContext()
+        with mock.patch.object(GestureOverlay, "_parse_color",
+                               return_value=FakeColor()), \
+                mock.patch("wgestures.x11_overlay.PangoCairo.create_layout",
+                           return_value=layout), \
+                mock.patch("wgestures.x11_overlay.PangoCairo.show_layout") as show:
+            overlay._draw(None, context)
+        self.assertIn(("text", "智能复制", -1), calls)
+        show.assert_called_once_with(context, layout)
+
     def test_compact_controls_keep_their_theme_natural_width(self):
         alignments = []
 

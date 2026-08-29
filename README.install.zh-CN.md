@@ -245,6 +245,30 @@ sudo apt install --reinstall python3-xlib python3-gi python3-cairo \
 
 然后重新运行 `wgestures --diagnose`。
 
+### Kali/Xfce 的成功提示无法显示中文，或名称输入框不能输入中文
+
+X11 成功提示使用 Pango 进行 UTF-8 排版，并需要系统中存在中文字体。安装包会依赖
+文泉驿或 Noto CJK 字体；手动修复可运行：
+
+```sh
+sudo apt install gir1.2-pango-1.0 fonts-wqy-zenhei
+```
+
+名称输入框是标准 GTK3 输入框，CrossGestures 不限制中文字符。如果可以粘贴中文、
+但无法用键盘打出中文，需要安装并在 Kali 会话中启用输入法，二选一即可：
+
+```sh
+# IBus
+sudo apt install ibus ibus-gtk3 ibus-libpinyin
+ibus-setup
+
+# 或 Fcitx5
+sudo apt install fcitx5 fcitx5-frontend-gtk3 fcitx5-chinese-addons
+fcitx5-configtool
+```
+
+完成输入法配置后注销并重新登录，再启动 `wgestures --settings`。
+
 ### 校验安装包
 
 在 Linux 上计算 SHA-256，并与发布方在包外提供的校验值比较：

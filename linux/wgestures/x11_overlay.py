@@ -7,7 +7,9 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
-from gi.repository import Gdk, GLib, Gtk
+gi.require_version("Pango", "1.0")
+gi.require_version("PangoCairo", "1.0")
+from gi.repository import Gdk, GLib, Gtk, Pango, PangoCairo
 
 
 class GestureOverlay(object):
@@ -182,20 +184,26 @@ class GestureOverlay(object):
         context.stroke()
         if self.label and self.settings.get("show-command-name"):
             x, y = self.points[-1]
-            context.select_font_face("Sans", cairo.FONT_SLANT_NORMAL,
-                                     cairo.FONT_WEIGHT_BOLD)
-            context.set_font_size(18)
-            extents = context.text_extents(self.label)
+            layout = PangoCairo.create_layout(context)
+            font = Pango.FontDescription()
+            font.set_family("Sans")
+            font.set_weight(Pango.Weight.BOLD)
+            font.set_absolute_size(18 * Pango.SCALE)
+            layout.set_font_description(font)
+            layout.set_text(self.label, -1)
+            _ink_rect, logical_rect = layout.get_pixel_extents()
+            text_width = max(1, logical_rect.width)
+            text_height = max(1, logical_rect.height)
             padding = 8
             box_x = x - self.origin_x + 16
-            box_y = y - self.origin_y - extents.height - padding * 2
+            box_y = y - self.origin_y - text_height - padding * 2
             context.set_source_rgba(0.05, 0.05, 0.05, 0.82 * self.opacity)
             context.rectangle(box_x, box_y,
-                              extents.width + padding * 2,
-                              extents.height + padding * 2)
+                              text_width + padding * 2,
+                              text_height + padding * 2)
             context.fill()
             context.set_source_rgba(1, 1, 1, self.opacity)
-            context.move_to(box_x + padding,
-                            box_y + padding + extents.height)
-            context.show_text(self.label)
+            context.move_to(box_x + padding - logical_rect.x,
+                            box_y + padding - logical_rect.y)
+            PangoCairo.show_layout(context, layout)
         return False

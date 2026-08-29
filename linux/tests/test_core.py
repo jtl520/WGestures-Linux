@@ -318,7 +318,7 @@ class EnvironmentTests(unittest.TestCase):
                         return_value=True):
             self.assertTrue(dependency_status()["giCairo"])
 
-    def test_gi_cairo_bridge_is_a_hard_package_dependency(self):
+    def test_text_rendering_dependencies_are_packaged(self):
         path = os.path.join(REPOSITORY_ROOT, "debian", "control")
         with open(path, "r", encoding="utf-8") as stream:
             paragraphs = stream.read().split("\n\n")
@@ -327,6 +327,9 @@ class EnvironmentTests(unittest.TestCase):
                        if item.startswith("Package: wgestures\n"))
         self.assertIn("python3-gi-cairo", source)
         self.assertIn("python3-gi-cairo", package)
+        self.assertIn("gir1.2-pango-1.0", source)
+        self.assertIn("gir1.2-pango-1.0", package)
+        self.assertRegex(package, r"fonts-wqy-zenhei\s*\|\s*fonts-noto-cjk")
 
     def test_user_can_enable_and_disable_session_autostart(self):
         directory = tempfile.mkdtemp(prefix="wgestures-autostart-test-")

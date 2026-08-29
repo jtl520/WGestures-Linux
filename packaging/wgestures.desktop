@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=WGestures
+Name=CrossGestures
 Comment=Configure global mouse gestures
 Exec=wgestures --settings
 Icon=input-mouse

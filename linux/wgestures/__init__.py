@@ -1,3 +1,3 @@
-"""Portable Linux runtime for WGestures."""
+"""Portable Linux runtime for CrossGestures."""
 
 __version__ = "2.1.2"

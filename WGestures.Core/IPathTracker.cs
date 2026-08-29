@@ -57,6 +57,7 @@ namespace WGestures.Core
         event PathTrackEventHandler PathGrow;
         event PathTrackEventHandler EffectivePathGrow;
         event PathTrackEventHandler PathEnd;
+        event PathTrackEventHandler PathCanceled;
         event PathTrackEventHandler PathTimeout;
         event PathTrackEventHandler PathModifier;
 

@@ -21,7 +21,7 @@ class X11TrayIcon(object):
         self._syncing = False
         self.menu = Gtk.Menu()
 
-        self.status_item = Gtk.MenuItem.new_with_label("WGestures")
+        self.status_item = Gtk.MenuItem.new_with_label("CrossGestures")
         self.status_item.set_sensitive(False)
         self.menu.append(self.status_item)
         self.menu.append(Gtk.SeparatorMenuItem())
@@ -70,8 +70,8 @@ class X11TrayIcon(object):
 
     def _create_status_icon(self):
         self.status_icon = Gtk.StatusIcon.new_from_icon_name("input-mouse")
-        self.status_icon.set_title("WGestures")
-        self.status_icon.set_tooltip_text("WGestures 鼠标手势")
+        self.status_icon.set_title("CrossGestures")
+        self.status_icon.set_tooltip_text("CrossGestures 鼠标手势")
         self.status_icon.connect("activate", self._open_settings)
         self.status_icon.connect("popup-menu", self._popup_menu)
         self.status_icon.set_visible(True)

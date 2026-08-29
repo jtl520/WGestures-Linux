@@ -1,4 +1,4 @@
-name: Publish Linux release
+name: Publish Linux and Windows release
 
 run-name: Publish ${{ inputs.tag }}
 
@@ -8,13 +8,95 @@ on:
       tag:
         description: Existing Git tag to publish
         required: true
-        default: v2.1.2ubuntu6
+        default: v2.1.2ubuntu8
 
 permissions:
   contents: write
 
 jobs:
+  windows:
+    runs-on: windows-2022
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Set up NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore and build Windows application
+        shell: pwsh
+        run: |
+          nuget restore WGestures.sln -PackagesDirectory packages `
+            -ConfigFile NuGet.Config -NonInteractive
+          nuget install Microsoft.NETFramework.ReferenceAssemblies.net48 `
+            -Version 1.0.3 -OutputDirectory packages `
+            -ConfigFile NuGet.Config -NonInteractive
+          $framework = Resolve-Path `
+            'packages\Microsoft.NETFramework.ReferenceAssemblies.net48.1.0.3\build\.NETFramework\v4.8'
+          msbuild WGestures.sln /t:Rebuild /m /v:minimal `
+            '/p:Configuration=Release' '/p:Platform=Any CPU' `
+            "/p:FrameworkPathOverride=$framework"
+          ./tools/Test-WindowsBuild.ps1
+
+      - name: Optionally sign Windows application
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if (-not $env:WINDOWS_CERTIFICATE_BASE64) {
+            Write-Host 'No signing certificate configured; publishing an unsigned build.'
+            exit 0
+          }
+          $certificate = Join-Path $env:RUNNER_TEMP 'wgestures-signing.pfx'
+          [IO.File]::WriteAllBytes(
+            $certificate,
+            [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          $signtool = Get-ChildItem `
+            'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          & $signtool.FullName sign /fd SHA256 /td SHA256 `
+            /tr http://timestamp.digicert.com /f $certificate `
+            /p $env:WINDOWS_CERTIFICATE_PASSWORD `
+            'WGestures.App\bin\Release\CrossGestures.exe'
+
+      - name: Build and optionally sign EXE installer
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          nuget install Tools.InnoSetup -Version 6.4.3 `
+            -OutputDirectory build\tools -ConfigFile NuGet.Config -NonInteractive
+          & '.\build\tools\Tools.InnoSetup.6.4.3\tools\ISCC.exe' `
+            '.\packaging\windows\CrossGestures.iss'
+          $installer = Get-ChildItem build\windows\CrossGestures-*-Windows-Setup.exe |
+            Select-Object -First 1
+          ./tools/Test-WindowsBuild.ps1 -InstallerPath $installer.FullName
+          if ($env:WINDOWS_CERTIFICATE_BASE64) {
+            $certificate = Join-Path $env:RUNNER_TEMP 'wgestures-signing.pfx'
+            $signtool = Get-ChildItem `
+              'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' |
+              Sort-Object FullName -Descending | Select-Object -First 1
+            & $signtool.FullName sign /fd SHA256 /td SHA256 `
+              /tr http://timestamp.digicert.com /f $certificate `
+              /p $env:WINDOWS_CERTIFICATE_PASSWORD $installer.FullName
+          }
+
+      - name: Upload Windows release asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: build/windows/CrossGestures-*-Windows-Setup.exe
+          if-no-files-found: error
+
   release:
+    needs: windows
     runs-on: ubuntu-24.04
     steps:
       - name: Check out tagged source
@@ -29,6 +111,12 @@ jobs:
             build-essential debhelper libglib2.0-bin lintian nodejs npm \
             python3 python3-cairo python3-gi python3-gi-cairo python3-xlib \
             gir1.2-gtk-3.0 zip
+
+      - name: Download Windows release asset
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          path: build/windows
 
       - name: Run checks and tests
         run: |
@@ -51,19 +139,25 @@ jobs:
           package="$(find .. -maxdepth 1 -name 'wgestures_*_all.deb' -print -quit)"
           package_name="$(basename "$package")"
           sha256="$(sha256sum "$package" | cut -d ' ' -f 1)"
-          notes="$(printf '%s\n\n%s\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n\n%s' \
-            'Ubuntu 24.04/X11 稳定性与界面修复版本。' \
-            '- 修复启用手势后桌面、文件管理器和 Chromium/Typora 右键菜单失效' \
-            '- 补齐 python3-gi-cairo 依赖，恢复轨迹和动作名称绘制' \
-            '- 修复托盘中再次打开设置窗口无响应' \
-            '- 修复 GTK 开关被横向拉伸及表单对齐问题' \
-            "安装：\`sudo apt install ./$package_name\`" \
-            '首次运行：`wgestures --diagnose`，然后执行 `wgestures --enable`。' \
-            "SHA-256: \`$sha256\`" \
-            'Ubuntu 24.04 X11 真实鼠标回放验证及 Xvfb/Openbox 完整验收通过；Wayland 后端行为未变。')"
-          gh release create "$RELEASE_TAG" "$package" \
+          windows_package="$(find build/windows -name 'CrossGestures-*-Windows-Setup.exe' -print -quit)"
+          windows_name="$(basename "$windows_package")"
+          windows_sha256="$(sha256sum "$windows_package" | cut -d ' ' -f 1)"
+          notes="$(printf '%s\n\n%s\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s' \
+            'CrossGestures Linux 与 Windows 双平台版本。' \
+            '- 恢复并维护 Windows 原生后端，支持 Windows 7 SP1、8.1、10、11，重点验证 Windows 11' \
+            '- 新增免管理员权限的 Windows EXE 安装器、x64 安全钩子、Esc 取消和压力恢复修复' \
+            '- 新增 Windows/Linux 通用 .cgestures 导入导出和兼容性报告，保留 Windows .wgb 完整备份' \
+            '- 项目更名为 CrossGestures，精简 Windows 关于页并保留原项目、原作者和 GPL v2 署名' \
+            "Linux 安装：\`sudo apt install ./$package_name\`" \
+            'Linux 首次运行：`wgestures --diagnose`，然后执行 `wgestures --enable`；卸载：`wgestures --disable && sudo apt purge wgestures`。' \
+            "Windows 安装：运行 \`$windows_name\`（需要 .NET Framework 4.8）；卸载：运行 \`%LOCALAPPDATA%\\Programs\\CrossGestures\\unins000.exe\`。" \
+            'Windows 11/10 为主要 Windows 目标；Windows 7 SP1/8.1 为兼容目标。用户手势配置默认保留。' \
+            "Linux SHA-256: \`$sha256\`" \
+            "Windows SHA-256: \`$windows_sha256\`" \
+            '验证：Kali Xfce/X11 33 个 Python 测试、23 个 JavaScript 测试及完整输入/性能验收通过；Windows 11 真实低级输入、短右键、Esc、压力、单实例和跨平台配置往返通过。')"
+          gh release create "$RELEASE_TAG" "$package" "$windows_package" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --latest \
-            --title "WGestures Linux $RELEASE_TAG" \
+            --title "CrossGestures $RELEASE_TAG" \
             --notes "$notes"

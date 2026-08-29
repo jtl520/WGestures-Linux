@@ -121,7 +121,7 @@
             this.check_importConfig.Name = "check_importConfig";
             this.check_importConfig.Size = new System.Drawing.Size(126, 16);
             this.check_importConfig.TabIndex = 2;
-            this.check_importConfig.Text = "导入WGestures选项";
+            this.check_importConfig.Text = "导入 CrossGestures 选项";
             this.check_importConfig.UseVisualStyleBackColor = true;
             this.check_importConfig.CheckedChanged += new System.EventHandler(this.check_importConfig_CheckedChanged);
             // 
@@ -226,7 +226,7 @@
             // openFile_wgb
             // 
             this.openFile_wgb.DefaultExt = "wgb";
-            this.openFile_wgb.Filter = "WGestures备份文件 (*.wgb)|*.wgb|WGestures 1.2手势文件|*.json";
+            this.openFile_wgb.Filter = "CrossGestures 跨平台配置 (*.cgestures)|*.cgestures|CrossGestures Windows 完整备份 (*.wgb)|*.wgb|WGestures 手势文件 (*.wg2;*.wg;*.json)|*.wg2;*.wg;*.json";
             this.openFile_wgb.Title = "选择要导入的文件";
             // 
             // ImportForm
@@ -243,7 +243,7 @@
             this.MinimizeBox = false;
             this.Name = "ImportForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "导入到WGestures";
+            this.Text = "导入到 CrossGestures";
             this.Load += new System.EventHandler(this.ImportForm_Load);
             this.flowLayoutPanel1.ResumeLayout(false);
             this.flowLayoutPanel1.PerformLayout();

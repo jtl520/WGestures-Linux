@@ -6,7 +6,7 @@ using WGestures.Common.Annotation;
 
 namespace WGestures.Core.Commands.Impl
 {
-    [Named("暂停WGestures"), Serializable]
+    [Named("暂停 CrossGestures"), Serializable]
     public class PauseWGesturesCommand : AbstractCommand,IGestureParserAware
     {
         public override void Execute()

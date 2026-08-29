@@ -158,15 +158,6 @@ namespace WGestures.Core.Impl.Windows
             get { return _enableWinKeyGesturing; }
             set
             {
-                if(value)
-                {
-                     if(!_enableWinKeyGesturing)
-                        _mouseKbdHook.KeyboardHookEvent += KeyboardHookProc;
-                }else
-                {
-                    _mouseKbdHook.KeyboardHookEvent -= KeyboardHookProc;
-                }
-
                 _enableWinKeyGesturing = value;
             }
         }
@@ -213,6 +204,7 @@ namespace WGestures.Core.Impl.Windows
         //note: 由于360等可能导致dwExtraInfo丢失，因此使用这个变量作为备份方案
         private bool _simulatingInput;
         private bool _captured;
+        private bool _gestureCanceled;
         private GestureTriggerButton _gestureBtn;
         private DateTime _mouseDownTime = DateTime.UtcNow;
         
@@ -243,7 +235,9 @@ namespace WGestures.Core.Impl.Windows
             _mouseKbdHook = new MouseKeyboardHook();
             _mouseKbdHook.MouseHookEvent += MouseHookProc;
 
-            //_mouseKbdHook.KeyboardHookEvent += KeyboardHookProc;
+            // Escape must always be observed so an in-progress gesture can be
+            // canceled. Windows-key gesturing itself remains configurable.
+            _mouseKbdHook.KeyboardHookEvent += KeyboardHookProc;
 
             //Touch Only Support Win8+
             if (OSVersion.Major >= 6 && OSVersion.Minor > 1)
@@ -269,6 +263,7 @@ namespace WGestures.Core.Impl.Windows
         public event PathTrackEventHandler PathGrow;
         public event PathTrackEventHandler EffectivePathGrow;
         public event PathTrackEventHandler PathEnd;
+        public event PathTrackEventHandler PathCanceled;
         public event PathTrackEventHandler PathTimeout;
         public event PathTrackEventHandler PathModifier;
         public event Action<ScreenCorner> HotCornerTriggered;
@@ -276,6 +271,8 @@ namespace WGestures.Core.Impl.Windows
         
         public void Start()
         {
+            Trace.WriteLine("CrossGestures tracker run loop starting on managed thread " +
+                            Thread.CurrentThread.ManagedThreadId);
             _mouseKbdHook.Install();
             //Touch Only Support Win8+
             //if (OSVersion.Major >= 6 && OSVersion.Minor > 1) _touchHook.Install();
@@ -286,7 +283,7 @@ namespace WGestures.Core.Impl.Windows
                 MSG msg;
                 lock(_msgQueue)
                 {
-                    if(_msgQueue.Count == 0) Monitor.Wait(_msgQueue);
+                    while (_msgQueue.Count == 0) Monitor.Wait(_msgQueue);
                     msg = _msgQueue.Dequeue();
                     UpdateContextAndEventArgs();
                 }
@@ -305,6 +302,8 @@ namespace WGestures.Core.Impl.Windows
                         OnModifier((GestureModifier)msg.param);break;
                     case WM.GESTBTN_UP:
                         OnMouseUp(msg.param != 0);break;
+                    case WM.GESTBTN_CANCEL:
+                        OnCancel();break;
                     case WM.STAY_TIMEOUT:
                         OnTimeout();break;
                     case WM.PAUSE_RESUME:
@@ -411,6 +410,7 @@ namespace WGestures.Core.Impl.Windows
                         {
                             //notice: 这个方法在钩子线程中运行，因此必须足够快，而且不能失败
                             _captured = OnBeforePathStart();
+                            Trace.WriteLine("CrossGestures path start decision: message=" + m + ", captured=" + _captured);
                             
                         }
                         catch (Exception ex)
@@ -443,6 +443,7 @@ namespace WGestures.Core.Impl.Windows
                             }
                             
                             _modifierEventHappendPrevTime = new DateTime(0);
+                            _gestureCanceled = false;
                             e.Handled = true;
                             Post(WM.GESTBTN_DOWN);
                         }
@@ -476,7 +477,7 @@ namespace WGestures.Core.Impl.Windows
                     if (_captured)
                     {
                         //永远不拦截move消息，所以不设置e.Handled = true
-                        Post(WM.GESTBTN_MOVE);
+                        if (!_gestureCanceled) Post(WM.GESTBTN_MOVE);
                     }
                     else 
                     {
@@ -540,8 +541,16 @@ namespace WGestures.Core.Impl.Windows
                         //是手势键up
                         if (m == gestBtn_as_MouseMsg)
                         {
-                              _captured = false;       
-                               Post(WM.GESTBTN_UP);
+                              Trace.WriteLine("CrossGestures path end: button=" + _gestureBtn + ", position=" + _curPos);
+                              _captured = false;
+                              if (_gestureCanceled)
+                              {
+                                  _gestureCanceled = false;
+                              }
+                              else
+                              {
+                                  Post(WM.GESTBTN_UP);
+                              }
                         }
 
                         e.Handled = true;
@@ -555,11 +564,25 @@ namespace WGestures.Core.Impl.Windows
         
         private void KeyboardHookProc(MouseKeyboardHook.KeyboardHookEventArgs e)
         {
-            if (_isPaused || _simulatingInput || e.lParam.dwExtraInfo == SIMULATED_EVENT_TAG)
+            if (_isPaused || _simulatingInput ||
+                e.lParam.dwExtraInfo.ToUInt64() == (ulong)SIMULATED_EVENT_TAG)
             {
                 Debug.WriteLine("paused or simulating");
                 return;
             }
+            if (_captured && e.key == Keys.Escape)
+            {
+                e.Handled = true;
+                if (e.Type == KeyboardEventType.KeyDown && !_gestureCanceled)
+                {
+                    _gestureCanceled = true;
+                    Trace.WriteLine("CrossGestures gesture canceled by Escape");
+                    Post(WM.GESTBTN_CANCEL);
+                }
+                return;
+            }
+
+            if (!_enableWinKeyGesturing) return;
             //Debug.WriteLine("WTF " + e.key + " " + e.Type);
             
             if(e.key == Keys.LWin)
@@ -1064,6 +1087,18 @@ namespace WGestures.Core.Impl.Windows
             _moveCount = 0;
         }
 
+        private void OnCancel()
+        {
+            if (_stayTimeout) _stayTimer.Stop();
+            _filteredModifiers = GestureModifier.None;
+            IsSuspended = false;
+            _moveCount = 0;
+            _initialMoveValid = false;
+            _isTimeout = false;
+            _isInitialTimeout = false;
+            if (PathCanceled != null) PathCanceled(_currentEventArgs);
+        }
+
         private void OnTimeout()
         {
             Debug.WriteLine("OnTimeout");
@@ -1251,7 +1286,8 @@ namespace WGestures.Core.Impl.Windows
 
             SIMULATE_MOUSE = WM_USER + 10,
             GUI_REQUEST = WM_USER + 11,
-            RUB_EDGE = WM_USER + 12
+            RUB_EDGE = WM_USER + 12,
+            GESTBTN_CANCEL = WM_USER + 13
         }
 
 

@@ -78,6 +78,9 @@ namespace WGestures.App.Gui.Windows
 
                 txt_filePath.Text = _filePath;
                 group_importOptions.Visible = true;
+                if (!string.IsNullOrWhiteSpace(_configAndGestures.ImportSummary))
+                    MessageBox.Show(_configAndGestures.ImportSummary, "跨平台兼容性报告",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -148,7 +151,10 @@ namespace WGestures.App.Gui.Windows
 
                 if (args.Success)
                 {
-                    MessageBox.Show("导入成功！", "导入完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var message = "导入成功！";
+                    if (!string.IsNullOrWhiteSpace(_configAndGestures.ImportSummary))
+                        message += Environment.NewLine + Environment.NewLine + _configAndGestures.ImportSummary;
+                    MessageBox.Show(message, "导入完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     Close();
                 }
                 else

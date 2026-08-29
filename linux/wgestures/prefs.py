@@ -12,7 +12,7 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 from .autostart import session_autostart_enabled, set_session_autostart
 from .config import ACTION_TYPES, WINDOW_OPERATIONS, create_default_config
 from .gesture import BUTTONS, DIRECTIONS, GestureRecognizer, gesture_key
-from .importer import import_legacy_config
+from .portable import export_portable_config, import_config
 from .settings import Settings
 from .shortcut import display_accelerator, normalize_accelerator
 from .storage import ConfigStore
@@ -238,7 +238,7 @@ class GestureDialog(Gtk.Dialog):
 class PreferencesWindow(Gtk.ApplicationWindow):
     def __init__(self, application):
         Gtk.ApplicationWindow.__init__(
-            self, application=application, title="WGestures 设置")
+            self, application=application, title="CrossGestures 设置")
         self.set_default_size(760, 680)
         self.settings = Settings()
         self._updating_autostart = False
@@ -657,12 +657,15 @@ class PreferencesWindow(Gtk.ApplicationWindow):
     def _import_page(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18, margin=24)
         text = Gtk.Label(label=(
-            "旧 .wg2 文件只按白名单解析；不会实例化 $type，也不会自动启用 "
-            "Windows 命令、Lua、Windows 路径或修饰手势。"))
+            ".cgestures 可与 Windows 双向交换通用手势；平台专属命令会安全跳过。"
+            "旧 .wg2 仍按白名单安全解析。"))
         text.set_line_wrap(True)
         text.set_xalign(0)
         box.pack_start(text, False, False, 0)
-        import_button = Gtk.Button(label="选择 .wg2 文件并预览")
+        export_button = Gtk.Button(label="导出跨平台配置 (.cgestures)")
+        export_button.connect("clicked", self._export_portable)
+        box.pack_start(export_button, False, False, 0)
+        import_button = Gtk.Button(label="导入 .cgestures / .wg2 并预览")
         import_button.connect("clicked", self._choose_import)
         box.pack_start(import_button, False, False, 0)
         reset_button = Gtk.Button(label="恢复默认手势")
@@ -670,14 +673,41 @@ class PreferencesWindow(Gtk.ApplicationWindow):
         box.pack_start(reset_button, False, False, 0)
         return box
 
+    def _export_portable(self, _button):
+        chooser = Gtk.FileChooserDialog(
+            title="导出 CrossGestures 跨平台配置", transient_for=self,
+            action=Gtk.FileChooserAction.SAVE)
+        chooser.add_buttons("取消", Gtk.ResponseType.CANCEL,
+                            "保存", Gtk.ResponseType.OK)
+        chooser.set_do_overwrite_confirmation(True)
+        chooser.set_current_name("CrossGestures.cgestures")
+        file_filter = Gtk.FileFilter()
+        file_filter.set_name("CrossGestures 跨平台配置 (*.cgestures)")
+        file_filter.add_pattern("*.cgestures")
+        chooser.add_filter(file_filter)
+        if chooser.run() != Gtk.ResponseType.OK:
+            chooser.destroy()
+            return
+        path = chooser.get_filename()
+        chooser.destroy()
+        if not path.lower().endswith(".cgestures"):
+            path += ".cgestures"
+        try:
+            with open(path, "w", encoding="utf-8", newline="\n") as stream:
+                stream.write(export_portable_config(self.config))
+            _message(self, "跨平台配置已导出：{0}".format(path))
+        except (OSError, ValueError) as export_error:
+            _message(self, "导出失败：{0}".format(export_error), Gtk.MessageType.ERROR)
+
     def _choose_import(self, _button):
         chooser = Gtk.FileChooserDialog(
-            title="选择 WGestures .wg2 配置", transient_for=self,
+            title="选择 CrossGestures 配置", transient_for=self,
             action=Gtk.FileChooserAction.OPEN)
         chooser.add_buttons("取消", Gtk.ResponseType.CANCEL,
                             "打开", Gtk.ResponseType.OK)
         file_filter = Gtk.FileFilter()
-        file_filter.set_name("WGestures (*.wg2)")
+        file_filter.set_name("CrossGestures (*.cgestures; *.wg2)")
+        file_filter.add_pattern("*.cgestures")
         file_filter.add_pattern("*.wg2")
         chooser.add_filter(file_filter)
         if chooser.run() != Gtk.ResponseType.OK:
@@ -687,7 +717,7 @@ class PreferencesWindow(Gtk.ApplicationWindow):
         chooser.destroy()
         try:
             with open(path, "r", encoding="utf-8") as stream:
-                imported = import_legacy_config(stream.read())
+                imported = import_config(stream.read())
             self._import_preview(imported)
         except (OSError, ValueError) as import_error:
             _message(self, "导入失败：{0}".format(import_error), Gtk.MessageType.ERROR)

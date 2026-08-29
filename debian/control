@@ -1,7 +1,7 @@
 Source: wgestures
 Section: utils
 Priority: optional
-Maintainer: WGestures Contributors <Ying@YingDev.com>
+Maintainer: CrossGestures Contributors <Ying@YingDev.com>
 Build-Depends: debhelper (>= 11), libglib2.0-bin, python3 (>= 3.6), python3-xlib, python3-gi, python3-cairo, python3-gi-cairo, gir1.2-gtk-3.0
 Standards-Version: 4.1.4
 Rules-Requires-Root: no
@@ -13,7 +13,7 @@ Depends: ${misc:Depends}, python3 (>= 3.6), python3-xlib, python3-gi, python3-ca
 Recommends: gir1.2-appindicator3-0.1 | gir1.2-ayatanaappindicator3-0.1
 Suggests: gnome-shell (>= 46), gnome-shell-extension-prefs
 Description: global mouse gestures for GNOME Wayland and Debian X11 desktops
- WGestures captures configurable mouse-button gestures, renders the gesture
+ CrossGestures captures configurable mouse-button gestures, renders the gesture
  path and executes shortcuts, window actions, commands, or launch actions.
  It uses a GNOME Shell 46 extension on Wayland and a Python/GTK3 X11 backend
  on Ubuntu 18.04, Kali Xfce and compatible Debian-family desktops.

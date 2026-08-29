@@ -7,6 +7,8 @@
     <ProjectGuid>{A575D72F-3D76-46B0-933C-66C9D9CEC1CB}</ProjectGuid>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>WGestures.App</RootNamespace>
+    <!-- Keep the legacy assembly identity because .wg2 files contain assembly-qualified
+         WGestures types. The post-build step emits the public CrossGestures filename. -->
     <AssemblyName>WGestures</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <TargetFrameworkProfile />
@@ -59,8 +61,8 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Newtonsoft.Json, Version=7.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net35\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="NLua, Version=1.3.2.0, Culture=neutral, PublicKeyToken=8df2ab518030ea95, processorArchitecture=MSIL">
@@ -155,6 +157,7 @@
     <Compile Include="Migrate\ConfigAndGestures.cs" />
     <Compile Include="Migrate\MigrateException.cs" />
     <Compile Include="Migrate\MigrateService.cs" />
+    <Compile Include="Migrate\PortableConfigService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Gui\Windows\EditGestureForm.cs">
@@ -374,26 +377,6 @@
     <EmbeddedResource Include="Resources\block.png" />
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="IWshRuntimeLibrary">
-      <Guid>{F935DC20-1CF0-11D0-ADB9-00C04FD58A0B}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
-    <COMReference Include="Shell32">
-      <Guid>{50A7E9B0-70EF-11D1-B75A-00A0C90564FE}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>0</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Resources\add.png" />
   </ItemGroup>
   <ItemGroup>
@@ -506,13 +489,11 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>call "$(SolutionDir)SIGNPASS.bat" 
-
-signtool sign /v  /t http://timestamp.digicert.com /fd sha256  /f "$(SolutionDir)YingDevSPC.pfx" /p "%25SIGNPASS%25" "$(TargetPath)"
-
-xcopy /s /y "$(SolutionDir)\packages\NLua.1.3.2.1\lib\native\*.*" "$(TargetDir)"
-del -y "$(TargetDir)\*.pdb"
-del -y "$(TargetDir)\*.xml"
+    <PostBuildEvent>if exist "$(SolutionDir)packages\NLua.1.3.2.1\lib\native\*.*" xcopy /s /y "$(SolutionDir)packages\NLua.1.3.2.1\lib\native\*.*" "$(TargetDir)"
+copy /y "$(TargetPath)" "$(TargetDir)CrossGestures.exe"
+if exist "$(TargetPath).config" copy /y "$(TargetPath).config" "$(TargetDir)CrossGestures.exe.config"
+if exist "$(TargetDir)*.pdb" del /q "$(TargetDir)*.pdb"
+if exist "$(TargetDir)*.xml" del /q "$(TargetDir)*.xml"
     </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

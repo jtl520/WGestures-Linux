@@ -72,7 +72,7 @@ namespace WGestures.App.Gui.Windows
             this.MinimizeBox = false;
             this.Name = "QuickStartGuideForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "WGestures快速入门";
+            this.Text = "CrossGestures 快速入门";
             this.Load += new System.EventHandler(this.QuickStartGuidForm_Load);
             this.MouseEnter += new System.EventHandler(this.QuickStartGuideForm_MouseEnter);
             this.ResumeLayout(false);

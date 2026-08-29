@@ -1,0 +1,68 @@
+name: Windows build and installer
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-2022:
+    runs-on: windows-2022
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Set up NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore dependencies and reference assemblies
+        shell: pwsh
+        run: |
+          nuget restore WGestures.sln -PackagesDirectory packages `
+            -ConfigFile NuGet.Config -NonInteractive
+          nuget install Microsoft.NETFramework.ReferenceAssemblies.net48 `
+            -Version 1.0.3 -OutputDirectory packages `
+            -ConfigFile NuGet.Config -NonInteractive
+
+      - name: Build Windows application
+        shell: pwsh
+        run: |
+          $framework = Resolve-Path `
+            'packages\Microsoft.NETFramework.ReferenceAssemblies.net48.1.0.3\build\.NETFramework\v4.8'
+          msbuild WGestures.sln /t:Rebuild /m /v:minimal `
+            '/p:Configuration=Release' '/p:Platform=Any CPU' `
+            "/p:FrameworkPathOverride=$framework"
+
+      - name: Verify Windows build
+        shell: pwsh
+        run: ./tools/Test-WindowsBuild.ps1
+
+      - name: Build EXE installer
+        shell: pwsh
+        run: |
+          nuget install Tools.InnoSetup -Version 6.4.3 `
+            -OutputDirectory build\tools -ConfigFile NuGet.Config -NonInteractive
+          & '.\build\tools\Tools.InnoSetup.6.4.3\tools\ISCC.exe' `
+            '.\packaging\windows\CrossGestures.iss'
+          $installer = Get-ChildItem build\windows\CrossGestures-*-Windows-Setup.exe |
+            Select-Object -First 1
+          ./tools/Test-WindowsBuild.ps1 -InstallerPath $installer.FullName
+          $hash = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLowerInvariant()
+          "$hash  $($installer.Name)" | Set-Content build\windows\SHA256SUMS.txt
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: crossgestures-windows-installer
+          path: |
+            build/windows/CrossGestures-*-Windows-Setup.exe
+            build/windows/SHA256SUMS.txt
+          if-no-files-found: error

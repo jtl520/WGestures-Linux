@@ -1,9 +1,9 @@
 {
   "uuid": "wgestures@yingdev.com",
-  "name": "WGestures",
+  "name": "CrossGestures",
   "description": "Global mouse gestures for Ubuntu 24.04 GNOME Wayland",
   "shell-version": ["46"],
   "settings-schema": "org.gnome.shell.extensions.wgestures",
   "gettext-domain": "wgestures",
-  "url": "https://github.com/yingDev/WGestures"
+  "url": "https://github.com/jtl520/WGestures-Linux"
 }

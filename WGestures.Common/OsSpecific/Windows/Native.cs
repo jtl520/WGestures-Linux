@@ -20,7 +20,7 @@ namespace WGestures.Common.OsSpecific.Windows
     public static class Native
     {
         public delegate IntPtr LowLevelMouseHookProc(int nCode, IntPtr wParam, IntPtr lParam);
-        public delegate int LowLevelkeyboardHookProc(int code, int wParam, ref keyboardHookStruct lParam);
+        public delegate IntPtr LowLevelKeyboardHookProc(int code, IntPtr wParam, IntPtr lParam);
         public const int WH_MOUSE_LL = 14;
         public const int WH_KEYBOARD_LL = 13;
 
@@ -39,7 +39,7 @@ namespace WGestures.Common.OsSpecific.Windows
             }
         }
 
-        public static IntPtr SetKeyboardHook(LowLevelkeyboardHookProc proc)
+        public static IntPtr SetKeyboardHook(LowLevelKeyboardHookProc proc)
         {
             using (var curProcess = Process.GetCurrentProcess())
             using (var curModule = curProcess.MainModule)
@@ -51,13 +51,14 @@ namespace WGestures.Common.OsSpecific.Windows
 
         
 
-        public struct keyboardHookStruct
+        [StructLayout(LayoutKind.Sequential)]
+        public struct KBDLLHOOKSTRUCT
         {
-            public int vkCode;
-            public int scanCode;
-            public int flags;
-            public int time;
-            public int dwExtraInfo;
+            public uint vkCode;
+            public uint scanCode;
+            public uint flags;
+            public uint time;
+            public UIntPtr dwExtraInfo;
         }
 
         public static Color GetWindowColorization()
@@ -806,7 +807,7 @@ namespace WGestures.Common.OsSpecific.Windows
             uint dwThreadId);
 
         [DllImport("user32.dll")]
-        public static extern IntPtr SetWindowsHookEx(int idHook, LowLevelkeyboardHookProc callback, IntPtr hInstance, uint threadId);
+        public static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardHookProc callback, IntPtr hInstance, uint threadId);
 
 
         [DllImport("user32.dll")]
@@ -858,8 +859,6 @@ namespace WGestures.Common.OsSpecific.Windows
         public static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode,
             IntPtr wParam, IntPtr lParam);
 
-        [DllImport("user32.dll")]
-        public static extern int CallNextHookEx(IntPtr idHook, int nCode, int wParam, ref keyboardHookStruct lParam);
         #endregion
 
         #region GDI

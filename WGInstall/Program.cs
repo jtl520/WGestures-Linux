@@ -30,17 +30,17 @@ namespace YingDev.WGWinInstall
             var wgDir = Path.Combine(solutionDir, "WGestures.App", "bin", "Release");
 
             var icon = Path.Combine(builderDir, "logo.ico");
-            var wgVer = FileVersionInfo.GetVersionInfo(Path.Combine(wgDir, @"WGestures.exe"));
+            var wgVer = FileVersionInfo.GetVersionInfo(Path.Combine(wgDir, @"CrossGestures.exe"));
 
-            var project = new Project("WGestures " + wgVer.ProductVersion, new WixObject[]
+            var project = new Project("CrossGestures " + wgVer.ProductVersion, new WixObject[]
             {
-                new CloseApplication("WGestures.exe", false, false){ ElevatedCloseMessage = false, ElevatedEndSessionMessage = true },
+                new CloseApplication("CrossGestures.exe", false, false){ ElevatedCloseMessage = false, ElevatedEndSessionMessage = true },
 
                 new MediaTemplate { CompressionLevel = CompressionLevel.high, EmbedCab = true },
 
-                new Dir(new Id("INSTALL_DIR"), @"%ProgramFiles%\WGestures", new Files(wgDir + @"\*.*")),
+                new Dir(new Id("INSTALL_DIR"), @"%ProgramFiles%\CrossGestures", new Files(wgDir + @"\*.*")),
 
-                new Dir(@"%ProgramMenu%", new ExeFileShortcut(wgVer.ProductName, $"[INSTALL_DIR]WGestures.exe", "")),
+                new Dir(@"%ProgramMenu%", new ExeFileShortcut(wgVer.ProductName, $"[INSTALL_DIR]CrossGestures.exe", "")),
             })
             {
                 GUID = Id, //每次新生成的安装包必须不同
@@ -54,7 +54,7 @@ namespace YingDev.WGWinInstall
                 MajorUpgrade = MajorUpgrade.Default,
                 Version = Version.Parse(wgVer.ProductVersion),
                 Language = "zh-CN",
-                OutFileName = "Install WGestures " +wgVer.ProductVersion,
+                OutFileName = "Install CrossGestures " +wgVer.ProductVersion,
                 ControlPanelInfo =
                 {
                     HelpLink = "https://yingdev.com/projects/wgestures",
@@ -66,18 +66,12 @@ namespace YingDev.WGWinInstall
                 BackgroundImage = "banner-left.jpg",
                 Actions = new Action[]
                 {
-                    new PathFileAction(@"explorer.exe", "WGestures.exe", "INSTALL_DIR", Return.ignore, When.After, Step.InstallFinalize,
+                    new PathFileAction(@"explorer.exe", "CrossGestures.exe", "INSTALL_DIR", Return.ignore, When.After, Step.InstallFinalize,
                         Condition.NOT_Installed) { Impersonate = false },
                 },
 
                 UI = WUI.WixUI_Minimal,
-                DigitalSignature = new DigitalSignature()
-                {
-                    TimeUrl = new Uri("http://timestamp.digicert.com"),
-                    PfxFilePath = Path.Combine(solutionDir, "YingDevSPC.pfx"),
-                    Password = System.IO.File.ReadAllText(Path.Combine(solutionDir, "SIGNPASS.bat")).Split('=')[1],
-                    OptionalArguments = "/fd sha256",
-                },
+                DigitalSignature = CreateOptionalSignature(solutionDir),
                 LocalizationFile = "Strings.wxl"
             };
             project.Media.Clear();
@@ -89,6 +83,22 @@ namespace YingDev.WGWinInstall
             // project.LaunchConditions.Add(new LaunchCondition("Installed OR (VersionNT >= 601)", "!(loc.OSNotSupported)"));
 
             project.BuildMsi();
+        }
+
+        private static DigitalSignature CreateOptionalSignature(string solutionDir)
+        {
+            var certificate = Path.Combine(solutionDir, "YingDevSPC.pfx");
+            var passwordFile = Path.Combine(solutionDir, "SIGNPASS.bat");
+            if (!System.IO.File.Exists(certificate) || !System.IO.File.Exists(passwordFile))
+                return null;
+
+            return new DigitalSignature
+            {
+                TimeUrl = new Uri("http://timestamp.digicert.com"),
+                PfxFilePath = certificate,
+                Password = System.IO.File.ReadAllText(passwordFile).Split('=')[1],
+                OptionalArguments = "/fd sha256",
+            };
         }
     }
 }

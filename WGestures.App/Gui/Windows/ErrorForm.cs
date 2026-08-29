@@ -38,7 +38,7 @@ namespace WGestures.App.Gui.Windows
 
         private static string GetProductInfo()
         {
-            return "WGestures Version:" + 
+            return "CrossGestures Version:" +
                 Application.ProductVersion + "\r\nOS:" + 
                 Environment.OSVersion + "\r\nAppPath:" + 
                 Application.ExecutablePath + "\r\n=======================\r\n";

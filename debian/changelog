@@ -1,3 +1,25 @@
+wgestures (2.1.2ubuntu8) noble; urgency=medium
+
+  * Add the shared .cgestures JSON format for Windows/Linux gesture transfer.
+  * Add import/export controls and compatibility reports to both Linux UIs.
+  * Simplify the Windows About page while retaining upstream attribution.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 14:00:00 +0800
+
+wgestures (2.1.2ubuntu7) noble; urgency=medium
+
+  * Rename the cross-platform product to CrossGestures while retaining the
+    wgestures Linux package, command, configuration path and extension UUID.
+  * Restore the Windows Win32 application as a maintained build target for
+    Windows 7 SP1, 8.1, 10 and 11 alongside the existing Linux backends.
+  * Make low-level keyboard hooks pointer-size safe and remove build-time COM
+    type-library dependencies for reliable x64 and Windows 11 builds.
+  * Add a per-user EXE installer, Windows CI and dual-platform release assets.
+  * Remove the original private-certificate requirement and update
+    Newtonsoft.Json to the supported 13.0.3 release.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 12:00:00 +0800
+
 wgestures (2.1.2ubuntu6) noble; urgency=high
 
   * Replay non-gesture right clicks after the physical ButtonRelease callback

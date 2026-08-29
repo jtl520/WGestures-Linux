@@ -21,7 +21,7 @@ const EVDEV_BUTTONS = Object.freeze({right: 273, middle: 274, x1: 275, x2: 276})
 
 class WGesturesIndicator extends PanelMenu.Button {
     constructor(settings, openPreferences) {
-        super(0.0, _('WGestures'));
+        super(0.0, _('CrossGestures'));
         this._settings = settings;
         this._icon = new St.Icon({icon_name: 'input-mouse-symbolic', style_class: 'system-status-icon'});
         this.add_child(this._icon);
@@ -123,7 +123,7 @@ export default class WGesturesExtension extends Extension {
         const loaded = this._store.load();
         this._config = loaded.config;
         for (const warning of loaded.warnings)
-            console.warn(`WGestures: ${warning}`);
+            console.warn(`CrossGestures: ${warning}`);
     }
 
     _onCapturedEvent(event) {
@@ -160,7 +160,7 @@ export default class WGesturesExtension extends Extension {
                 return Clutter.EVENT_STOP;
             }
         } catch (error) {
-            logError(error, 'WGestures input handler failed');
+            logError(error, 'CrossGestures input handler failed');
             this._cancelGesture(_('发生错误'));
         }
         return Clutter.EVENT_PROPAGATE;
@@ -177,7 +177,7 @@ export default class WGesturesExtension extends Extension {
             if (!this._virtualDeviceWarningShown) {
                 this._virtualDeviceWarningShown = true;
                 Main.notifyError(
-                    _('WGestures 无法启动'),
+                    _('CrossGestures 无法启动'),
                     _('GNOME Shell 未提供虚拟输入设备；为避免丢失普通点击，手势捕获已停用。')
                 );
             }
@@ -230,9 +230,9 @@ export default class WGesturesExtension extends Extension {
             });
             this._overlay.finish(actionDisplayName(matched.action, matched.gesture), false);
         } catch (error) {
-            logError(error, `WGestures action failed: ${matched.action.name}`);
+            logError(error, `CrossGestures action failed: ${matched.action.name}`);
             this._overlay.finish(_('动作失败'), true);
-            Main.notifyError(_('WGestures 动作失败'), error.message);
+            Main.notifyError(_('CrossGestures 动作失败'), error.message);
         }
         return Clutter.EVENT_STOP;
     }
@@ -295,7 +295,7 @@ export default class WGesturesExtension extends Extension {
             this._virtualPointer ||= seat.create_virtual_device(Clutter.InputDeviceType.POINTER_DEVICE);
             this._virtualKeyboard ||= seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
         } catch (error) {
-            logError(error, 'WGestures could not create Clutter virtual input devices');
+            logError(error, 'CrossGestures could not create Clutter virtual input devices');
             this._virtualPointer = null;
             this._virtualKeyboard = null;
         }

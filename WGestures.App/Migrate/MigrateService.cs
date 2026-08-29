@@ -92,6 +92,11 @@ namespace WGestures.App.Migrate
         /// <returns></returns>
         public static ConfigAndGestures Import(string from)
         {
+            if (from.EndsWith(".cgestures", StringComparison.OrdinalIgnoreCase))
+            {
+                PortableConfigReport report;
+                return PortableConfigService.Import(from, out report);
+            }
             if (from.EndsWith(".wgb") || from.EndsWith(".WGB"))
             {
                 return ImportWgb(from);
@@ -102,9 +107,9 @@ namespace WGestures.App.Migrate
             }else if (from.EndsWith(".wg") || from.EndsWith(".WG"))
             {
                 return ImportJsonGestures(from, "2");
-            }else if(from.EndsWith(".wg2"))
+            }else if(from.EndsWith(".wg2") || from.EndsWith(".WG2"))
             {
-                return ImportJsonGestures(from, "2");
+                return ImportJsonGestures(from, "3");
             }
 
             throw new MigrateException("未识别的文件类型");
@@ -220,6 +225,11 @@ namespace WGestures.App.Migrate
             arcFile.AddFile(new ArchiveFile(AppSettings.ConfigFilePath));
             arcFile.AddFile(new ArchiveFile(AppSettings.GesturesFilePath));
 
+        }
+
+        public static PortableConfigReport ExportPortableTo(string filePath, JsonGestureIntentStore store)
+        {
+            return PortableConfigService.Export(filePath, store);
         }
 
         [Flags]

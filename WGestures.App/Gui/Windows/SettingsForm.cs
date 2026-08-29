@@ -102,8 +102,12 @@ namespace WGestures.App.Gui.Windows
                                           radio_edge_0, radio_edge_1, radio_edge_2, radio_edge_3};
 
             #region tab about
-            tb_updateLog.Text = Application.ProductName + " " + Application.ProductVersion + Environment.NewLine + Environment.NewLine;
-            tb_updateLog.Text += File.ReadAllText(Path.GetDirectoryName(Application.ExecutablePath) + @"\UpdateLog.txt");
+            tb_updateLog.Text = Application.ProductName + " " + Application.ProductVersion + Environment.NewLine + Environment.NewLine
+                + "项目主页：https://github.com/jtl520/WGestures-Linux" + Environment.NewLine + Environment.NewLine
+                + "基于开源项目 WGestures" + Environment.NewLine
+                + "原项目：https://github.com/yingDev/WGestures" + Environment.NewLine
+                + "原作者：应元东（yingDev）" + Environment.NewLine
+                + "许可证：GNU GPL v2";
             #endregion
         }
 
@@ -1030,7 +1034,9 @@ namespace WGestures.App.Gui.Windows
 
         private void tabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
-            lb_info.Text = Equals(tabControl.SelectedTab.Tag, "about") ? "Copyright (c) " + DateTime.Now.Year+" 应元东" : "*改动将自动保存并立即生效";
+            lb_info.Text = Equals(tabControl.SelectedTab.Tag, "about")
+                ? "CrossGestures contributors · 原项目作者 应元东（yingDev）"
+                : "*改动将自动保存并立即生效";
 
             if (object.Equals(tabControl.SelectedTab.Tag, "gestures"))
             {
@@ -1124,15 +1130,12 @@ namespace WGestures.App.Gui.Windows
         private void menuItem_export_Click(object sender, EventArgs e)
         {
             var selectSaveToPath = new SaveFileDialog();
-            selectSaveToPath.FileOk += (o, args) =>
-            {
-                if (!selectSaveToPath.FileName.EndsWith(".wgb")) args.Cancel = true;
-            };
-            selectSaveToPath.DefaultExt = ".wgb";
-            selectSaveToPath.Filter = "WGestures备份文件 (*.wgb)|*.wgb";
+            selectSaveToPath.DefaultExt = "cgestures";
+            selectSaveToPath.AddExtension = true;
+            selectSaveToPath.Filter = "CrossGestures 跨平台配置 (*.cgestures)|*.cgestures|CrossGestures Windows 完整备份 (*.wgb)|*.wgb";
 
 
-            selectSaveToPath.FileName = "WGestures " + Application.ProductVersion + ".wgb";
+            selectSaveToPath.FileName = "CrossGestures " + Application.ProductVersion + ".cgestures";
 
             var result = selectSaveToPath.ShowDialog();
             if (result != DialogResult.OK) return;
@@ -1146,12 +1149,22 @@ namespace WGestures.App.Gui.Windows
 
             try
             {
-                Controller.ExportTo(saveTo);
-                MessageBox.Show("导出成功。", "WGestures导出", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (saveTo.EndsWith(".cgestures", StringComparison.OrdinalIgnoreCase))
+                {
+                    var report = Controller.ExportPortableTo(saveTo);
+                    MessageBox.Show(report.ToUserMessage("跨平台配置导出"), "CrossGestures 导出",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    Controller.ExportTo(saveTo);
+                    MessageBox.Show("Windows 完整备份导出成功。", "CrossGestures 导出",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
 
             } catch (Exception ex)
             {
-                MessageBox.Show("导出失败！原因：" + ex.Message,"WGestures导出失败",MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("导出失败！原因：" + ex.Message,"CrossGestures 导出失败",MessageBoxButtons.OK, MessageBoxIcon.Error);
 #if DEBUG
                 throw;
 #endif

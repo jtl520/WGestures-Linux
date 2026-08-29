@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Net;
 using System.Threading;
 using System.Windows.Forms;
 using WGestures.App.Gui.Windows;
@@ -39,6 +40,7 @@ namespace WGestures.App
 
         static NotifyIcon trayIcon;
         static GlobalHotKeyManager hotkeyMgr;
+        static bool showSettingsOnStartup;
         
         //for adding hotkey
         static MenuItem menuItem_pause;
@@ -46,7 +48,10 @@ namespace WGestures.App
         [STAThread]
         static void Main(string[] args)
         {
+            ConfigureRuntimeTrace();
             Debug.Listeners.Add(new DetailedConsoleListener());
+            showSettingsOnStartup = Array.Exists(args ?? new string[0],
+                arg => string.Equals(arg, "--settings", StringComparison.OrdinalIgnoreCase));
 
             if (IsDuplicateInstance())
             {
@@ -74,8 +79,14 @@ namespace WGestures.App
                 //显示托盘图标
                 ShowTrayIcon();
 
-                //监听IPC消息
+                // Start IPC before opening a modal settings window so a second
+                // launch can still bring that window to the foreground.
                 StartIpcPipe();
+
+                if (showSettingsOnStartup)
+                {
+                    ShowSettings();
+                }
 
 
                 Application.Run();
@@ -93,6 +104,18 @@ namespace WGestures.App
 
         }
 
+        static void ConfigureRuntimeTrace()
+        {
+            var tracePath = Environment.GetEnvironmentVariable("CROSSGESTURES_TRACE_FILE");
+            if (string.IsNullOrWhiteSpace(tracePath)) return;
+
+            var traceDirectory = Path.GetDirectoryName(Path.GetFullPath(tracePath));
+            if (!string.IsNullOrEmpty(traceDirectory)) Directory.CreateDirectory(traceDirectory);
+            Trace.Listeners.Add(new TextWriterTraceListener(tracePath));
+            Trace.AutoFlush = true;
+            Trace.WriteLine("CrossGestures runtime trace started: " + DateTime.UtcNow.ToString("o"));
+        }
+
         //TODO: refactor out
         static void StartIpcPipe()
         {
@@ -103,7 +126,7 @@ namespace WGestures.App
             {
                 while (true)
                 {
-                    using (var server = new System.IO.Pipes.NamedPipeServerStream("WGestures_IPC_API"))
+                    using (var server = new System.IO.Pipes.NamedPipeServerStream(Constants.IpcPipeName))
                     {
                         server.WaitForConnection();
 
@@ -124,19 +147,32 @@ namespace WGestures.App
                         }
                     }
                 }
-            }, maxStackSize: 1) { IsBackground = true };
+            }) { IsBackground = true };
             pipeThread.Start();
         }
 
         static void PostIpcCmd(string cmd)
         {
-            using (var pipeClient = new System.IO.Pipes.NamedPipeClientStream("WGestures_IPC_API"))
+            try
             {
-                pipeClient.Connect();
-                using (var writer = new StreamWriter(pipeClient) { AutoFlush = true })
+                using (var pipeClient = new System.IO.Pipes.NamedPipeClientStream(Constants.IpcPipeName))
                 {
-                    writer.WriteLine(cmd);
+                    pipeClient.Connect(2000);
+                    using (var writer = new StreamWriter(pipeClient) { AutoFlush = true })
+                    {
+                        writer.WriteLine(cmd);
+                    }
                 }
+            }
+            catch (TimeoutException)
+            {
+                MessageBox.Show("CrossGestures 正在运行，但暂时无法打开设置。请稍后重试。",
+                    "CrossGestures", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (IOException e)
+            {
+                MessageBox.Show("无法连接正在运行的 CrossGestures：" + e.Message,
+                    "CrossGestures", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -156,7 +192,7 @@ namespace WGestures.App
                     ShowFatalError(e);
                 }
 #endif
-            }, maxStackSize: 1) {Name = "Parser线程", Priority = ThreadPriority.Highest, IsBackground = false}.Start();
+            }) {Name = "Parser线程", Priority = ThreadPriority.Highest, IsBackground = false}.Start();
         }
 
         static bool IsDuplicateInstance()
@@ -208,6 +244,8 @@ namespace WGestures.App
         static void AppWideInit()
         {
             Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             Native.SetProcessDPIAware();
 
             Thread.CurrentThread.IsBackground = false;
@@ -215,8 +253,8 @@ namespace WGestures.App
 
             using (var proc = Process.GetCurrentProcess())
             {
-                //高优先级
-                proc.PriorityClass = ProcessPriorityClass.High;
+                // Avoid starving Explorer and the Windows 11 notification area.
+                proc.PriorityClass = ProcessPriorityClass.AboveNormal;
             }
 
             hotkeyMgr = new GlobalHotKeyManager();
@@ -224,6 +262,8 @@ namespace WGestures.App
         
         static void LoadFailSafeConfigFile()
         {
+            Directory.CreateDirectory(AppSettings.UserDataDirectory);
+
             if (!File.Exists(AppSettings.ConfigFilePath))
             {
                 File.Copy(string.Format("{0}/defaults/config.plist", Path.GetDirectoryName(Application.ExecutablePath)), AppSettings.ConfigFilePath);
@@ -261,7 +301,7 @@ namespace WGestures.App
                 Debug.WriteLine("加载配置文件出错："+e);
 
                 File.Delete(AppSettings.GesturesFilePath);
-                File.Copy(string.Format("{0}/defaults/gestures.wg", Path.GetDirectoryName(Application.ExecutablePath)), AppSettings.GesturesFilePath);
+                File.Copy(AppSettings.DefaultGesturesFilePath, AppSettings.GesturesFilePath);
 
                 intentStore = new JsonGestureIntentStore(AppSettings.GesturesFilePath, AppSettings.GesturesFileVersion);
             }
@@ -406,11 +446,9 @@ namespace WGestures.App
 
             trayIcon.BalloonTipClosed += handleBalloon;
             trayIcon.BalloonTipClicked += handleBalloon;
-            trayIcon.DoubleClick += (sender, args) => ShowSettings();
-            
             if (isFirstRun)
             {
-                trayIcon.ShowBalloonTip(1000 * 10, "WGstures在这里", "双击图标打开设置，右击查看菜单", ToolTipIcon.Info);
+                trayIcon.ShowBalloonTip(1000 * 10, "CrossGestures 在这里", "单击图标打开设置，右击查看菜单", ToolTipIcon.Info);
             }
             else
             {
@@ -517,7 +555,7 @@ namespace WGestures.App
 
             if(trayIcon.Visible)
             {
-                trayIcon.ShowBalloonTip(10*1000, "WGestures图标将隐藏", "按 Shift+左键+中键 恢复显示\n再次运行程序可打开设置界面", ToolTipIcon.Info);
+                trayIcon.ShowBalloonTip(10*1000, "CrossGestures 图标将隐藏", "按 Shift+左键+中键 恢复显示\n再次运行程序可打开设置界面", ToolTipIcon.Info);
              }else
             {
                 trayIcon.Visible = true;
@@ -545,7 +583,7 @@ namespace WGestures.App
         //用配置信息去同步自启动
         static void SyncAutoStartState()
         {
-            var fact = AutoStarter.IsRegistered(Constants.Identifier, Application.ExecutablePath);
+            var fact = AutoStarter.IsRegistered(Constants.AutoStartIdentifier, Application.ExecutablePath);
             var conf = config.Get<bool>(ConfigKeys.AutoStart);
 
             if (fact == conf && !isFirstRun) return;
@@ -553,10 +591,10 @@ namespace WGestures.App
             try
             {
                 //可能被杀毒软件阻止
-                if (conf) AutoStarter.Register(Constants.Identifier, Application.ExecutablePath);
+                if (conf) AutoStarter.Register(Constants.AutoStartIdentifier, Application.ExecutablePath);
                 else
                 {
-                    AutoStarter.Unregister(Constants.Identifier);
+                    AutoStarter.Unregister(Constants.AutoStartIdentifier);
                 }
             }
             catch (Exception)
@@ -633,6 +671,11 @@ namespace WGestures.App
             //notifyIcon.Text = Application.ProductName;
             notifyIcon.ContextMenu = contextMenu1;
             notifyIcon.Visible = true;
+            notifyIcon.MouseClick += (sender, args) =>
+            {
+                if (args.Button == MouseButtons.Left)
+                    ShowSettings();
+            };
             
             //todo: move out
             gestureParser.StateChanged += GestureParser_StateChanged;

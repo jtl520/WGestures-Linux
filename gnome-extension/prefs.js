@@ -7,7 +7,7 @@ import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Ex
 
 import {GestureRecognizer, BUTTONS, DIRECTIONS, gestureKey} from './core/gesture.js';
 import {ACTION_TYPES, createDefaultConfig} from './core/config.js';
-import {importLegacyConfig} from './core/importer.js';
+import {exportPortableConfig, importConfig} from './core/portable.js';
 import {displayAccelerator, normalizeAccelerator} from './core/shortcut.js';
 import {ConfigStore} from './shell/storage.js';
 
@@ -66,7 +66,7 @@ function setSessionAutostart(enabled) {
     const contents = [
         '[Desktop Entry]',
         'Type=Application',
-        'Name=WGestures Session Backend',
+        'Name=CrossGestures Session Backend',
         'Exec=wgestures --daemon',
         'TryExec=wgestures',
         'Icon=input-mouse',
@@ -638,11 +638,16 @@ export default class WGesturesPreferences extends ExtensionPreferences {
         const page = new Adw.PreferencesPage({title: _('导入与恢复'), icon_name: 'document-open-symbolic'});
         this._window.add(page);
         const importGroup = new Adw.PreferencesGroup({
-            title: _('Windows 配置'),
-            description: _('安全读取 .wg2 JSON；Windows 路径、命令、Lua 和修饰手势不会自动启用。'),
+            title: _('跨平台配置'),
+            description: _('.cgestures 可与 Windows 双向交换通用手势；平台专属命令会安全跳过。旧 .wg2 仍按白名单安全解析。'),
         });
         page.add(importGroup);
-        const importRow = new Adw.ActionRow({title: _('导入 .wg2 文件')});
+        const exportRow = new Adw.ActionRow({title: _('导出跨平台配置 (.cgestures)')});
+        const exportButton = new Gtk.Button({label: _('导出文件'), valign: Gtk.Align.CENTER});
+        exportButton.connect('clicked', () => this._exportPortableFile());
+        exportRow.add_suffix(exportButton);
+        importGroup.add(exportRow);
+        const importRow = new Adw.ActionRow({title: _('导入 .cgestures / .wg2 文件')});
         const importButton = new Gtk.Button({label: _('选择文件'), valign: Gtk.Align.CENTER});
         importButton.connect('clicked', () => this._chooseLegacyFile());
         importRow.add_suffix(importButton);
@@ -660,10 +665,41 @@ export default class WGesturesPreferences extends ExtensionPreferences {
         resetGroup.add(resetRow);
     }
 
-    _chooseLegacyFile() {
-        const chooser = new Gtk.FileDialog({title: _('选择 WGestures .wg2 配置')});
+    _exportPortableFile() {
+        const chooser = new Gtk.FileDialog({
+            title: _('导出 CrossGestures 跨平台配置'),
+            initial_name: 'CrossGestures.cgestures',
+        });
         const filter = new Gtk.FileFilter();
-        filter.name = 'WGestures (*.wg2)';
+        filter.name = 'CrossGestures (*.cgestures)';
+        filter.add_pattern('*.cgestures');
+        const filters = new Gio.ListStore({item_type: Gtk.FileFilter});
+        filters.append(filter);
+        chooser.filters = filters;
+        chooser.save(this._window, null, (source, result) => {
+            try {
+                let file = source.save_finish(result);
+                if (!file.get_basename().toLocaleLowerCase().endsWith('.cgestures'))
+                    file = file.get_parent().get_child(`${file.get_basename()}.cgestures`);
+                file.replace_contents(
+                    new TextEncoder().encode(exportPortableConfig(this._config)),
+                    null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null
+                );
+                this._toast(_('跨平台配置已导出'));
+            } catch (error) {
+                const dismissed = error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED) ||
+                    String(error.message || '').toLocaleLowerCase().includes('dismiss');
+                if (!dismissed)
+                    this._toast(`${_('导出失败')}：${error.message}`);
+            }
+        });
+    }
+
+    _chooseLegacyFile() {
+        const chooser = new Gtk.FileDialog({title: _('选择 CrossGestures 配置')});
+        const filter = new Gtk.FileFilter();
+        filter.name = 'CrossGestures (*.cgestures; *.wg2)';
+        filter.add_pattern('*.cgestures');
         filter.add_pattern('*.wg2');
         const filters = new Gio.ListStore({item_type: Gtk.FileFilter});
         filters.append(filter);
@@ -674,7 +710,7 @@ export default class WGesturesPreferences extends ExtensionPreferences {
                 const [ok, contents] = file.load_contents(null);
                 if (!ok)
                     throw new Error(_('无法读取文件'));
-                const imported = importLegacyConfig(new TextDecoder('utf-8').decode(contents));
+                const imported = importConfig(new TextDecoder('utf-8').decode(contents));
                 this._showImportPreview(imported);
             } catch (error) {
                 const dismissed = error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.CANCELLED) ||

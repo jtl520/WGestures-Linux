@@ -4,7 +4,6 @@ using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Shell32;
 using WGestures.Common.OsSpecific.Windows;
 using WGestures.Core;
 using WGestures.Core.Persistence;
@@ -220,51 +219,7 @@ namespace WGestures.App.Gui.Windows
         #region util
         private static string GetLnkTarget(string lnkPath)
         {
-            Shell shl = null;
-            Folder dir = null;
-            FolderItem itm = null;
-            ShellLinkObject lnk = null;
-
-            try
-            {
-                shl = new Shell32.Shell(); // Move this to class scope
-                lnkPath = System.IO.Path.GetFullPath(lnkPath);
-                dir = shl.NameSpace(System.IO.Path.GetDirectoryName(lnkPath));
-                itm = dir.Items().Item(System.IO.Path.GetFileName(lnkPath));
-
-
-                lnk = (Shell32.ShellLinkObject)itm.GetLink;
-
-                Console.WriteLine(lnk.Target.Type);
-                if (lnk.Target.Type.Equals("System Folder"))
-                {
-                    Console.WriteLine("explore.exe");
-                    return Environment.GetEnvironmentVariable("windir") + @"\explorer.exe";
-
-                }
-
-                try
-                {
-                    var p = lnk.Target.Path;
-                    Console.WriteLine(p);
-
-                    return p;
-                }
-                catch (COMException)
-                {
-                    return null;
-                }
-
-            }
-            finally
-            {
-                if (shl != null) Marshal.ReleaseComObject(shl);
-                if (dir != null) Marshal.ReleaseComObject(dir);
-                if (itm != null) Marshal.ReleaseComObject(itm);
-                if (lnk != null) Marshal.ReleaseComObject(lnk);
-            }
-
-
+            return GetLnkTargetSimple(lnkPath);
         }
 
         private static string GetShortcutTarget(string file)
@@ -329,19 +284,22 @@ namespace WGestures.App.Gui.Windows
 
         private static string GetLnkTargetSimple(string lnkPath)
         {
-            IWshRuntimeLibrary.IWshShell wsh = null;
-            IWshRuntimeLibrary.IWshShortcut sc = null;
+            dynamic wsh = null;
+            dynamic sc = null;
 
             try
             {
-                wsh = new IWshRuntimeLibrary.WshShell();
-                sc = (IWshRuntimeLibrary.IWshShortcut)wsh.CreateShortcut(lnkPath);
-                return sc.TargetPath;
+                var shellType = Type.GetTypeFromProgID("WScript.Shell");
+                if (shellType == null)
+                    return null;
+                wsh = Activator.CreateInstance(shellType);
+                sc = wsh.CreateShortcut(Path.GetFullPath(lnkPath));
+                return (string)sc.TargetPath;
             }
             finally
             {
-                if (wsh != null) Marshal.ReleaseComObject(wsh);
-                if (sc != null) Marshal.ReleaseComObject(sc);
+                if (sc != null && Marshal.IsComObject(sc)) Marshal.FinalReleaseComObject(sc);
+                if (wsh != null && Marshal.IsComObject(wsh)) Marshal.FinalReleaseComObject(wsh);
             }
         }
 

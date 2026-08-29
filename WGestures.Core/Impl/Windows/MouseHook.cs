@@ -7,6 +7,7 @@ using WGestures.Common;
 using Win32;
 using System.Windows.Forms;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace WGestures.Core.Impl.Windows
 {
@@ -21,7 +22,7 @@ namespace WGestures.Core.Impl.Windows
         private Thread _hookThread;
 
         private Native.LowLevelMouseHookProc _mouseHookProc;
-        private Native.LowLevelkeyboardHookProc _kbdHookProc;
+        private Native.LowLevelKeyboardHookProc _kbdHookProc;
 
         public class MouseHookEventArgs : EventArgs
         {
@@ -50,12 +51,12 @@ namespace WGestures.Core.Impl.Windows
         public class KeyboardHookEventArgs : EventArgs
         {
             public KeyboardEventType Type;
-            public int wParam;
-            public Native.keyboardHookStruct lParam;
+            public IntPtr wParam;
+            public Native.KBDLLHOOKSTRUCT lParam;
             public Keys key;
             public bool Handled;
 
-            public KeyboardHookEventArgs(KeyboardEventType type, Keys key, int wParam, Native.keyboardHookStruct lParam)
+            public KeyboardHookEventArgs(KeyboardEventType type, Keys key, IntPtr wParam, Native.KBDLLHOOKSTRUCT lParam)
             {
                 Type = type;
                 this.wParam = wParam;
@@ -87,6 +88,7 @@ namespace WGestures.Core.Impl.Windows
             {
                 throw new Win32Exception("Fail to install mouse hook:" + Native.GetLastError());
             }
+            Trace.WriteLine("CrossGestures hooks installed: mouse=" + _hookId + ", keyboard=" + _kbdHookId);
         }
 
         private void _uinstall()
@@ -167,7 +169,7 @@ namespace WGestures.Core.Impl.Windows
 
                 //GC.KeepAlive(hookProc);
 
-            }, maxStackSize: 1) {
+            }) {
                 IsBackground = true,
                 Priority = ThreadPriority.Highest,
                 Name = "MouseHook钩子线程" };
@@ -205,6 +207,12 @@ namespace WGestures.Core.Impl.Windows
             Native.GetCursorPos(out curPos);
             //Debug.WriteLine(wParam);
             var args = new MouseHookEventArgs((MouseMsg)wParam, curPos.x, curPos.y,wParam,lParam);
+            if (args.Msg == MouseMsg.WM_RBUTTONDOWN || args.Msg == MouseMsg.WM_RBUTTONUP ||
+                args.Msg == MouseMsg.WM_MBUTTONDOWN || args.Msg == MouseMsg.WM_MBUTTONUP ||
+                args.Msg == MouseMsg.WM_XBUTTONDOWN || args.Msg == MouseMsg.WM_XBUTTONUP)
+            {
+                Trace.WriteLine("CrossGestures mouse hook: " + args.Msg + " at " + args.X + "," + args.Y);
+            }
 
             try
             {
@@ -234,30 +242,43 @@ namespace WGestures.Core.Impl.Windows
             return args.Handled ?  new IntPtr(-1) : Native.CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
 
-        protected virtual int KeyboardHookProc(int code, int wParam, ref Native.keyboardHookStruct lParam)
+        protected virtual IntPtr KeyboardHookProc(int code, IntPtr wParam, IntPtr lParam)
         {
-            if (code >= 0 && KeyboardHookEvent != null)
-            {
-                var key = (Keys)lParam.vkCode;
-                KeyboardEventType type;
+            if (code < 0)
+                return Native.CallNextHookEx(_kbdHookId, code, wParam, lParam);
 
-                if ((wParam == (int)User32.WM.WM_KEYDOWN || wParam == (int) User32.WM.WM_SYSKEYDOWN))
+            var hookData = (Native.KBDLLHOOKSTRUCT)Marshal.PtrToStructure(
+                lParam, typeof(Native.KBDLLHOOKSTRUCT));
+
+            if (KeyboardHookEvent != null)
+            {
+                var key = (Keys)hookData.vkCode;
+                KeyboardEventType type;
+                var message = wParam.ToInt32();
+
+                if (message == (int)User32.WM.WM_KEYDOWN ||
+                    message == (int)User32.WM.WM_SYSKEYDOWN)
                 {
                     type = KeyboardEventType.KeyDown;
                 }
-                else if ((wParam == (int)User32.WM.WM_KEYUP || wParam == (int)User32.WM.WM_SYSKEYUP))
+                else if (message == (int)User32.WM.WM_KEYUP ||
+                         message == (int)User32.WM.WM_SYSKEYUP)
                 {
                     type = KeyboardEventType.KeyUp;
-                }else return Native.CallNextHookEx(_hookId, code, wParam, ref lParam);
-                
-                var args = new KeyboardHookEventArgs(type, key, wParam, lParam);
+                }
+                else
+                {
+                    return Native.CallNextHookEx(_kbdHookId, code, wParam, lParam);
+                }
+
+                var args = new KeyboardHookEventArgs(type, key, wParam, hookData);
                 KeyboardHookEvent(args);
 
-                if (args.Handled) return 1;
+                if (args.Handled) return new IntPtr(1);
 
-            }  
-                  
-            return Native.CallNextHookEx(_hookId, code, wParam, ref lParam);
+            }
+
+            return Native.CallNextHookEx(_kbdHookId, code, wParam, lParam);
         }
 
         #region dispose

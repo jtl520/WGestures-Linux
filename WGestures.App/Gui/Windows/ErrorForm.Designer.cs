@@ -188,7 +188,7 @@
             this.Name = "ErrorForm";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "WGestures错误";
+            this.Text = "CrossGestures 错误";
             this.TopMost = true;
             this.flowLayoutPanel1.ResumeLayout(false);
             this.flowLayoutPanel2.ResumeLayout(false);

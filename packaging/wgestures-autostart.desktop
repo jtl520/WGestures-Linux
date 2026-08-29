@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=WGestures Session Backend
+Name=CrossGestures Session Backend
 Comment=Start the appropriate mouse gesture backend for this desktop session
 Exec=wgestures --daemon
 TryExec=wgestures

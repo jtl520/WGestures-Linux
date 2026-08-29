@@ -109,6 +109,7 @@ namespace WGestures.Core
             PathTracker.BeforePathStart += PathTrackerOnBeforePathStart;
             PathTracker.PathStart += PathTrackerOnPathStart;
             PathTracker.PathEnd += PathTrackerOnPathEnd;
+            PathTracker.PathCanceled += PathTrackerOnPathCanceled;
             PathTracker.EffectivePathGrow += PathTrackerOnEffectivePathGrow;
             PathTracker.PathModifier += PathTrackerOnPathModifier;
             PathTracker.HotCornerTriggered += PathTracker_HotCornerTriggered;
@@ -252,6 +253,8 @@ namespace WGestures.Core
 
             var shouldStart = IntentFinder.IsGesturingEnabledForContext(args.PathEventArgs.Context, out _currentApp);
             args.ShouldPathStart = shouldStart;
+            Trace.WriteLine("CrossGestures gesture context: process=" + args.PathEventArgs.Context.ProcId +
+                ", enabled=" + shouldStart + ", matchedApp=" + (_currentApp != null));
         }
 
         //Stopwatch sw = new Stopwatch();
@@ -276,6 +279,8 @@ namespace WGestures.Core
 
             var lastEffectiveIntent = _effectiveIntent;
             _effectiveIntent = IntentFinder.Find(_gesture, _currentApp);
+            Trace.WriteLine("CrossGestures gesture changed: " + _gesture +
+                ", intent=" + (_effectiveIntent == null ? "none" : _effectiveIntent.Name));
 
             if (_effectiveIntent != null)
             {
@@ -292,6 +297,8 @@ namespace WGestures.Core
 
         private void PathTrackerOnPathEnd(PathEventArgs args)
         {
+            Trace.WriteLine("CrossGestures parser path end: gesture=" + _gesture +
+                ", intent=" + (_effectiveIntent == null ? "none" : _effectiveIntent.Name));
             if (IsInCaptureMode)
             {
                 OnGestureCaptured(_gesture);
@@ -329,6 +336,15 @@ namespace WGestures.Core
             if (IntentExecuted != null) IntentExecuted(_effectiveIntent, result);
         }
 
+        private void PathTrackerOnPathCanceled(PathEventArgs args)
+        {
+            Trace.WriteLine("CrossGestures parser path canceled");
+            _effectiveIntent = null;
+            _gesture = null;
+            _pointCount = 0;
+            if (IntentOrPathCanceled != null) IntentOrPathCanceled();
+        }
+
         private void PathTrackerOnPathStart(PathEventArgs args)
         {
             //初始化
@@ -336,6 +352,8 @@ namespace WGestures.Core
             _pointCount = 1;
             _gesture = new Gesture(args.Context.GestureButton);
             _lastPoint = args.Location;
+            Trace.WriteLine("CrossGestures parser path start: button=" + args.Context.GestureButton +
+                ", point=" + args.Location);
         }
 
         private void PathTrackerOnPathModifier(PathEventArgs args)
@@ -614,6 +632,7 @@ namespace WGestures.Core
                 PathTracker.BeforePathStart -= PathTrackerOnBeforePathStart;
                 PathTracker.PathStart -= PathTrackerOnPathStart;
                 PathTracker.PathEnd -= PathTrackerOnPathEnd;
+                PathTracker.PathCanceled -= PathTrackerOnPathCanceled;
                 PathTracker.EffectivePathGrow -= PathTrackerOnEffectivePathGrow;
                 PathTracker.PathModifier -= PathTrackerOnPathModifier;
                 PathTracker.HotCornerTriggered -= PathTracker_HotCornerTriggered;

@@ -43,7 +43,7 @@ def set_session_autostart(enabled):
     contents = "\n".join((
         "[Desktop Entry]",
         "Type=Application",
-        "Name=WGestures Session Backend",
+        "Name=CrossGestures Session Backend",
         "Exec=wgestures --daemon",
         "TryExec=wgestures",
         "Icon=input-mouse",

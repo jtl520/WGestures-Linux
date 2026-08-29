@@ -32,7 +32,14 @@ namespace WGestures.App
 
         public static string UserDataDirectory
         {
-            get { return Application.LocalUserAppDataPath; }
+            // Keep the original WGestures data location so that rebranding does not
+            // make existing Windows gesture and application profiles disappear.
+            get
+            {
+                return System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "YingDev.com", "WGestures", Application.ProductVersion);
+            }
         }
 
 

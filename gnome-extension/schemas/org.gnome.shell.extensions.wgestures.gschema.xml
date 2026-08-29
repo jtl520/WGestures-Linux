@@ -11,7 +11,7 @@
     </key>
     <key name="autostart-enabled" type="b">
       <default>true</default>
-      <summary>Start WGestures automatically with the graphical login session</summary>
+      <summary>Start CrossGestures automatically with the graphical login session</summary>
     </key>
     <key name="minimize-to-tray" type="b">
       <default>true</default>

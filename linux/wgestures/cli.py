@@ -88,7 +88,7 @@ def _settings(diagnostics):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="WGestures Linux control utility")
+    parser = argparse.ArgumentParser(description="CrossGestures Linux control utility")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--daemon", action="store_true", help=argparse.SUPPRESS)
     group.add_argument("--settings", action="store_true", help="打开设置")

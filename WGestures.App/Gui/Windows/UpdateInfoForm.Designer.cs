@@ -64,7 +64,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(232, 19);
             this.label1.TabIndex = 1;
-            this.label1.Text = "WGestures发布了新版本！";
+            this.label1.Text = "CrossGestures 发布了新版本！";
             // 
             // label2
             // 

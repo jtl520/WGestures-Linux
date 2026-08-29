@@ -12,7 +12,7 @@ from Xlib import X, Xatom, display
 from Xlib.ext import xtest
 
 
-TITLE = "WGestures Acceptance Harness"
+TITLE = "CrossGestures Acceptance Harness"
 
 
 def _text_property(window, connection, name):

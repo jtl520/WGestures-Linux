@@ -1501,6 +1501,7 @@ namespace WGestures.App.Gui.Windows
             this.flowLayoutPanel7.Name = "flowLayoutPanel7";
             this.flowLayoutPanel7.Size = new System.Drawing.Size(615, 441);
             this.flowLayoutPanel7.TabIndex = 7;
+            this.flowLayoutPanel7.Visible = false;
             // 
             // label12
             // 
@@ -1512,7 +1513,7 @@ namespace WGestures.App.Gui.Windows
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(570, 24);
             this.label12.TabIndex = 6;
-            this.label12.Text = "若WGestures对您有用，可以考虑捐助支持该项目，以帮助我做得更好";
+            this.label12.Text = "若 CrossGestures 对您有用，可以考虑捐助支持该项目，以帮助我做得更好";
             this.label12.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // label10
@@ -1547,8 +1548,8 @@ namespace WGestures.App.Gui.Windows
             this.tb_updateLog.Multiline = true;
             this.tb_updateLog.Name = "tb_updateLog";
             this.tb_updateLog.ReadOnly = true;
-            this.tb_updateLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.tb_updateLog.Size = new System.Drawing.Size(616, 229);
+            this.tb_updateLog.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.tb_updateLog.Size = new System.Drawing.Size(616, 250);
             this.tb_updateLog.TabIndex = 3;
             // 
             // flowLayoutPanel5
@@ -1590,6 +1591,7 @@ namespace WGestures.App.Gui.Windows
             this.linkLabel2.TabStop = true;
             this.linkLabel2.Text = "作者邮箱";
             this.linkLabel2.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            this.linkLabel2.Visible = false;
             this.linkLabel2.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabel2_LinkClicked);
             // 
             // picture_logo
@@ -1701,7 +1703,7 @@ namespace WGestures.App.Gui.Windows
             this.MaximizeBox = false;
             this.Name = "SettingsForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "WGestures设置";
+            this.Text = "CrossGestures 设置";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.SettingsForm_FormClosing);
             this.Shown += new System.EventHandler(this.SettingsForm_Shown);
             this.tabControl.ResumeLayout(false);

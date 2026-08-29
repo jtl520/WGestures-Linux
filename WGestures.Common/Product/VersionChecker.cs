@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace WGestures.Common.Product
 {
@@ -17,6 +18,7 @@ namespace WGestures.Common.Product
             _client = new TimeOutWebClient(){TimeOutSecs = timeOutSeconds};
             _client.Proxy = null;
             _client.Encoding = System.Text.Encoding.UTF8;
+            _client.Headers[HttpRequestHeader.UserAgent] = "CrossGestures-Windows";
 
             _client.DownloadStringCompleted += (sender, args) =>
             {
@@ -38,6 +40,20 @@ namespace WGestures.Common.Product
                 try
                 {
                     versionInfo = JsonConvert.DeserializeObject<VersionInfo>(args.Result);
+                    if (versionInfo == null || string.IsNullOrWhiteSpace(versionInfo.Version))
+                    {
+                        var release = JsonConvert.DeserializeObject<GitHubRelease>(args.Result);
+                        versionInfo = new VersionInfo
+                        {
+                            Version = NormalizeVersion(release == null ? null : release.TagName),
+                            WhatsNew = release == null ? string.Empty : release.Body ?? string.Empty,
+                        };
+                    }
+
+                    if (string.IsNullOrWhiteSpace(versionInfo.Version))
+                        throw new FormatException("更新信息中没有有效版本号");
+                    if (versionInfo.WhatsNew == null)
+                        versionInfo.WhatsNew = string.Empty;
 
                     /*const string versionPattern = "\"Version\"\\s*:\\s*\"\\d.\\d.\\d.\\d\"";
                     const string whatsNewPattern = "\"WhatsNew\"\\s*:\\s*((?<![\\\\])['\"])((?:.(?!(?<![\\\\])\\1))*.?)\\1";
@@ -66,6 +82,32 @@ namespace WGestures.Common.Product
             };
 
 
+        }
+
+        private sealed class GitHubRelease
+        {
+            [JsonProperty("tag_name")]
+            public string TagName { get; set; }
+
+            [JsonProperty("body")]
+            public string Body { get; set; }
+        }
+
+        private static string NormalizeVersion(string value)
+        {
+            var match = Regex.Match(value ?? string.Empty, @"\d+(?:\.\d+){1,3}");
+            if (!match.Success)
+                return null;
+
+            Version version;
+            if (!Version.TryParse(match.Value, out version))
+                return null;
+
+            return string.Format(CultureInfo.InvariantCulture, "{0}.{1}.{2}.{3}",
+                version.Major,
+                version.Minor,
+                version.Build < 0 ? 0 : version.Build,
+                version.Revision < 0 ? 0 : version.Revision);
         }
 
         public event Action<VersionInfo> Finished;

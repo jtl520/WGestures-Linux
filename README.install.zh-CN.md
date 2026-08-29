@@ -1,6 +1,6 @@
-# WGestures Linux 安装说明
+# CrossGestures Linux 安装说明
 
-本文适用于当前构建的 `wgestures_2.1.2ubuntu6_all.deb`。
+本文适用于 CrossGestures 当前构建的 `wgestures_2.1.2ubuntu8_all.deb`。
 
 ## 1. 支持的桌面会话
 
@@ -42,7 +42,7 @@ Ubuntu 24.04 桌面版已有 GNOME Shell，无需另外安装桌面环境。
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.2ubuntu6_all.deb
+sudo apt install ./wgestures_2.1.2ubuntu8_all.deb
 ```
 
 本地文件名前面的 `./` 不能省略。安装后先运行诊断：
@@ -107,7 +107,7 @@ wgestures --diagnose
 - 没有缺少 `gi`、`pythonXlib` 或 `cairo`。
 
 安装包同时提供 `/etc/xdg/autostart/wgestures-autostart.desktop`。以后每次
-该用户登录图形桌面时，WGestures 会在后台自动运行；它不是 root 服务，也不会
+该用户登录图形桌面时，CrossGestures 会在后台自动运行；它不是 root 服务，也不会
 在无人登录时抓取输入。X11 后端会显示托盘图标，优先使用 AppIndicator，
 不可用时回退到 GTK 托盘；菜单可启用、暂停、打开设置或退出后台。关闭或最小化
 设置窗口不会停止手势后台。打开设置：
@@ -183,10 +183,10 @@ sudo apt install python3 python3-xlib python3-gi python3-cairo python3-gi-cairo 
 # 可选但推荐：为桌面安装原生 AppIndicator 托盘支持（二选一）
 sudo apt install gir1.2-appindicator3-0.1 || \
   sudo apt install gir1.2-ayatanaappindicator3-0.1
-sudo apt install ./wgestures_2.1.2ubuntu6_all.deb
+sudo apt install ./wgestures_2.1.2ubuntu8_all.deb
 ```
 
-完全离线时，除了 WGestures 的 `.deb`，还必须准备目标发行版和版本对应的上述
+完全离线时，除了 CrossGestures 的 `.deb`，还必须准备目标发行版和版本对应的上述
 依赖包及其传递依赖。不要混用 Ubuntu 18.04、Ubuntu 24.04 与 Kali 软件源中
 下载的依赖包。最稳妥的方式是在同版本、同架构且联网的机器中先下载依赖，再把
 所有 `.deb` 一起复制到离线机器安装。
@@ -249,5 +249,5 @@ sudo apt install --reinstall python3-xlib python3-gi python3-cairo \
 在 Linux 上计算 SHA-256，并与发布方在包外提供的校验值比较：
 
 ```sh
-sha256sum wgestures_2.1.2ubuntu6_all.deb
+sha256sum wgestures_2.1.2ubuntu8_all.deb
 ```

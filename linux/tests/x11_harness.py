@@ -14,7 +14,7 @@ from gi.repository import Gdk, Gtk
 
 class Harness(Gtk.Window):
     def __init__(self, log_path):
-        Gtk.Window.__init__(self, title="WGestures Acceptance Harness")
+        Gtk.Window.__init__(self, title="CrossGestures Acceptance Harness")
         self.log_path = log_path
         self._last_button_event = None
         self.set_default_size(520, 360)
@@ -27,7 +27,7 @@ class Harness(Gtk.Window):
                         Gdk.EventMask.BUTTON_RELEASE_MASK |
                         Gdk.EventMask.KEY_PRESS_MASK)
         label = Gtk.Label(label=(
-            "WGestures X11 acceptance target\n"
+            "CrossGestures X11 acceptance target\n"
             "Automated input is expected in this window."))
         self.add(label)
 

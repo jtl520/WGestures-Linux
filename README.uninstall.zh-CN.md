@@ -1,6 +1,6 @@
-# WGestures Linux 卸载说明
+# CrossGestures Linux 卸载说明
 
-本文适用于通过 WGestures Linux `.deb` 安装包安装的版本。卸载分为两种：
+本文适用于通过 CrossGestures Linux `.deb` 安装包安装的版本。卸载分为两种：
 
 - 只卸载程序、保留手势配置，方便以后重装；
 - 卸载程序后，再由当前用户清理自己的配置和自启动覆盖。
@@ -30,7 +30,7 @@ wgestures --disable
 
 这一步会先释放鼠标按钮抓取。Ubuntu 24.04 GNOME Wayland 会禁用 GNOME Shell
 扩展；X11 桌面还应从托盘菜单选择“退出后台”。如果托盘不可用，可只结束当前
-用户且命令行完全匹配的 WGestures 后台：
+用户且命令行完全匹配的 CrossGestures 后台：
 
 ```sh
 pkill -u "$(id -u)" -f '^/usr/bin/python3 /usr/lib/wgestures/main.py --daemon$' || true
@@ -53,10 +53,10 @@ sudo apt purge --simulate wgestures
 sudo apt purge wgestures
 ```
 
-推荐使用 `purge`，它会同时移除 WGestures 的系统级自启动文件和包级配置。
+推荐使用 `purge`，它会同时移除 CrossGestures 的系统级自启动文件和包级配置。
 `remove` 也能卸载主程序，但可能保留 `/etc/xdg/autostart/` 下的包配置。
 
-不要为了卸载 WGestures 手动删除 Python、GTK、GNOME Shell 或 GSettings。
+不要为了卸载 CrossGestures 手动删除 Python、GTK、GNOME Shell 或 GSettings。
 这些依赖可能正在被其他桌面程序共用。如果需要清理 APT 自动安装且已不再使用的
 依赖，仍应先模拟并逐项确认：
 
@@ -74,7 +74,7 @@ command -v wgestures
 pgrep -af '/usr/lib/wgestures/main.py --daemon'
 ```
 
-前两个命令应提示未安装或不再返回程序路径，最后一个命令不应列出 WGestures
+前两个命令应提示未安装或不再返回程序路径，最后一个命令不应列出 CrossGestures
 后台。GNOME 桌面可以再检查扩展：
 
 ```sh
@@ -147,4 +147,4 @@ pgrep -af '/usr/lib/wgestures/main.py --daemon'
 
 如果仍有匹配项，执行第 2 节中的精确 `pkill` 命令，然后完整注销并重新登录。
 如果没有匹配项，则检查系统中是否还运行着其他全局鼠标手势、按键映射或输入抓取
-软件；已经卸载的 WGestures 文件本身不会继续抓取鼠标按钮。
+软件；已经卸载的 CrossGestures 文件本身不会继续抓取鼠标按钮。

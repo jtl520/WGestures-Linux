@@ -6,7 +6,6 @@ using System.Security.Principal;
 using System.Text;
 using System.Windows.Forms;
 using Microsoft.Win32;
-using IWshRuntimeLibrary;
 
 namespace WGestures.Common.OsSpecific.Windows
 {
@@ -88,11 +87,26 @@ namespace WGestures.Common.OsSpecific.Windows
         {
             try
             {
-                WshShell shell = new WshShell();
-                IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath);
+                var shellType = Type.GetTypeFromProgID("WScript.Shell");
+                if (shellType == null)
+                    throw new InvalidOperationException("Windows Script Host is unavailable.");
 
-                shortcut.TargetPath = targetFileLocation;                 // The path of the file that will launch when the shortcut is run
-                shortcut.Save();
+                dynamic shell = Activator.CreateInstance(shellType);
+                dynamic shortcut = null;
+                try
+                {
+                    shortcut = shell.CreateShortcut(shortcutPath);
+                    shortcut.TargetPath = targetFileLocation;
+                    shortcut.WorkingDirectory = System.IO.Path.GetDirectoryName(targetFileLocation);
+                    shortcut.Save();
+                }
+                finally
+                {
+                    if (shortcut != null && System.Runtime.InteropServices.Marshal.IsComObject(shortcut))
+                        System.Runtime.InteropServices.Marshal.FinalReleaseComObject(shortcut);
+                    if (shell != null && System.Runtime.InteropServices.Marshal.IsComObject(shell))
+                        System.Runtime.InteropServices.Marshal.FinalReleaseComObject(shell);
+                }
             }catch(Exception e)
             {
                 Debug.WriteLine(e);

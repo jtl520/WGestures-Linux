@@ -6,6 +6,7 @@ import {
 } from '../core/gesture.js';
 import {createDefaultConfig, findMatchingProfile, normalizeConfig, resolveGesture} from '../core/config.js';
 import {importLegacyConfig} from '../core/importer.js';
+import {exportPortableConfig, importConfig} from '../core/portable.js';
 import {GestureSession, ReplayGuard} from '../core/input-state.js';
 import {
     actionDisplayName, copyAccelerator, displayAccelerator, isTerminalIdentity,
@@ -250,6 +251,26 @@ test('repository default wg2 has a stable safe conversion report', () => {
     assert.equal(imported.report.imported, 35);
     assert.equal(imported.report.unsupported.length, 31);
     assert.equal(imported.report.unboundProfiles.length, 3);
+});
+
+test('portable config round trip preserves the normalized Linux configuration', () => {
+    const source = createDefaultConfig();
+    const text = exportPortableConfig(source);
+    const document = JSON.parse(text);
+    assert.equal(document.portableFormat, 'crossgestures-portable');
+    const imported = importConfig(text);
+    assert.equal(imported.report.portable, true);
+    assert.equal(imported.report.imported, 3);
+    assert.deepEqual(imported.report.unsupported, []);
+    assert.deepEqual(imported.config, source);
+});
+
+test('portable importer rejects unknown versions and still accepts wg2', () => {
+    const document = JSON.parse(exportPortableConfig(createDefaultConfig()));
+    document.schemaVersion = 999;
+    assert.throws(() => importConfig(JSON.stringify(document)), /不支持/);
+    const legacyText = JSON.stringify({Global: {GestureIntents: []}, Apps: {}});
+    assert.equal(importConfig(legacyText).report.imported, 0);
 });
 
 test('gesture session distinguishes short clicks, gestures, mismatched releases and cancellation', () => {

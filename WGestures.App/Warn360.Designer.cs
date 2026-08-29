@@ -56,7 +56,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(225, 25);
             this.label1.TabIndex = 1;
-            this.label1.Text = "WGestures兼容性警告！";
+            this.label1.Text = "CrossGestures 兼容性警告！";
             // 
             // label2
             // 
@@ -65,7 +65,7 @@
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(360, 41);
             this.label2.TabIndex = 1;
-            this.label2.Text = "您正在运行“360安全卫士”，已知其可能导致WGestures在某些情况下失效甚至崩溃。";
+            this.label2.Text = "您正在运行“360安全卫士”，已知其可能导致 CrossGestures 在某些情况下失效甚至崩溃。";
             // 
             // label3
             // 
@@ -74,7 +74,7 @@
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(360, 59);
             this.label3.TabIndex = 1;
-            this.label3.Text = " 要避免此问题，请确保将 WGestures.exe 添加到360的“信任列表”中，并重启360。\r\n（若上一版本已添加过，请删除记录后重新添加）";
+            this.label3.Text = " 要避免此问题，请确保将 CrossGestures.exe 添加到360的“信任列表”中，并重启360。\r\n（若上一版本已添加过，请删除记录后重新添加）";
             // 
             // linkLabel1
             // 
@@ -105,7 +105,7 @@
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(95, 17);
             this.label4.TabIndex = 1;
-            this.label4.Text = "WGestures位于";
+            this.label4.Text = "CrossGestures 位于";
             // 
             // tb_wgPath
             // 
@@ -134,7 +134,7 @@
             this.MinimizeBox = false;
             this.Name = "Warn360";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "WGestures";
+            this.Text = "CrossGestures";
             this.TopMost = true;
             this.Load += new System.EventHandler(this.Warn360_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();

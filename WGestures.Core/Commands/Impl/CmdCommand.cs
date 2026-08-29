@@ -156,24 +156,35 @@ namespace WGestures.Core.Commands.Impl
         {
             string path = null;
             
-            var shellWindows = new SHDocVw.ShellWindows();
+            dynamic shell = null;
+            dynamic shellWindows = null;
 
             try
             {
+                var shellType = Type.GetTypeFromProgID("Shell.Application");
+                if (shellType == null)
+                    return null;
+                shell = Activator.CreateInstance(shellType);
+                shellWindows = shell.Windows();
 
-                foreach (SHDocVw.InternetExplorer ie in shellWindows)
+                foreach (dynamic ie in shellWindows)
                 {
-                    var filename = Path.GetFileNameWithoutExtension(ie.FullName).ToLower();
-
-                    var activeWindow = Native.GetForegroundWindow();
-
-                    if (filename.Equals("explorer") && activeWindow == new IntPtr(ie.HWND))
+                    try
                     {
-                        var uri = ie.LocationURL;
-                        if (Uri.IsWellFormedUriString(uri, UriKind.Absolute))
+                        var filename = Path.GetFileNameWithoutExtension((string)ie.FullName).ToLower();
+                        var activeWindow = Native.GetForegroundWindow();
+
+                        if (filename.Equals("explorer") && activeWindow == new IntPtr((long)ie.HWND))
                         {
-                            path = new Uri(uri).LocalPath;
+                            var uri = (string)ie.LocationURL;
+                            if (Uri.IsWellFormedUriString(uri, UriKind.Absolute))
+                                path = new Uri(uri).LocalPath;
                         }
+                    }
+                    finally
+                    {
+                        if (ie != null && Marshal.IsComObject(ie))
+                            Marshal.FinalReleaseComObject(ie);
                     }
                 }
 
@@ -181,7 +192,10 @@ namespace WGestures.Core.Commands.Impl
             }
             finally
             {
-                Marshal.ReleaseComObject(shellWindows);
+                if (shellWindows != null && Marshal.IsComObject(shellWindows))
+                    Marshal.FinalReleaseComObject(shellWindows);
+                if (shell != null && Marshal.IsComObject(shell))
+                    Marshal.FinalReleaseComObject(shell);
             }
 
         }

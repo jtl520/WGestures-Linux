@@ -143,7 +143,7 @@ def collect_diagnostics(probe_x11=True):
 
 def format_diagnostics(data):
     lines = [
-        "WGestures {0}".format(data["version"]),
+        "CrossGestures {0}".format(data["version"]),
         "系统: {0}".format(data["distributionName"] or data["distribution"]),
         "桌面/会话: {0} / {1}".format(data["desktop"], data["sessionType"]),
         "后端: {0}".format(data["backend"]),

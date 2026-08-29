@@ -15,10 +15,13 @@ namespace WGestures.App.Migrate
 
         public JsonGestureIntentStore GestureIntentStore { get; private set; }
 
-        public ConfigAndGestures(PlistConfig config, JsonGestureIntentStore gestures)
+        public string ImportSummary { get; private set; }
+
+        public ConfigAndGestures(PlistConfig config, JsonGestureIntentStore gestures, string importSummary = null)
         {
             Config = config;
             GestureIntentStore = gestures;
+            ImportSummary = importSummary;
         }
     }
 }

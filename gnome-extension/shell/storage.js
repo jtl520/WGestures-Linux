@@ -51,7 +51,7 @@ export class ConfigStore {
                     this.save(recovered.config, false);
                     return recovered;
                 } catch (backupError) {
-                    logError(backupError, 'WGestures backup configuration is invalid');
+                    logError(backupError, 'CrossGestures backup configuration is invalid');
                 }
             }
 
@@ -83,7 +83,7 @@ export class ConfigStore {
                     null
                 );
             } catch (error) {
-                console.warn(`WGestures: 当前配置无效，保留上一次有效备份：${error.message}`);
+                console.warn(`CrossGestures: 当前配置无效，保留上一次有效备份：${error.message}`);
             }
         }
         Gio.File.new_for_path(tempPath).move(

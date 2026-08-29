@@ -22,6 +22,7 @@ from wgestures.gesture import (GestureRecognizer, GestureSession,
                                direction_error_degrees, direction_from_delta,
                                gesture_key, simplify_corner_transitions)
 from wgestures.importer import import_legacy_config
+from wgestures.portable import export_portable_config, import_config
 from wgestures.settings import DEFAULTS
 from wgestures.storage import ConfigStore
 from wgestures.shortcut import (action_display_name, copy_accelerator,
@@ -263,6 +264,30 @@ class ImporterTests(unittest.TestCase):
         self.assertEqual(result["report"]["imported"], 35)
         self.assertEqual(len(result["report"]["unsupported"]), 31)
         self.assertEqual(len(result["report"]["unboundProfiles"]), 3)
+
+    def test_portable_round_trip_preserves_all_native_gestures(self):
+        source = create_default_config()
+        text = export_portable_config(source)
+        document = json.loads(text)
+        self.assertEqual(document["portableFormat"], "crossgestures-portable")
+        result = import_config(text)
+        self.assertTrue(result["report"]["portable"])
+        self.assertEqual(result["report"]["imported"], 3)
+        self.assertEqual(result["report"]["unsupported"], [])
+        self.assertEqual(result["config"], source)
+
+    def test_portable_import_rejects_unknown_version(self):
+        document = json.loads(export_portable_config(create_default_config()))
+        document["schemaVersion"] = 999
+        with self.assertRaises(ValueError):
+            import_config(json.dumps(document))
+
+    def test_generic_import_still_accepts_legacy_wg2(self):
+        result = import_config(json.dumps(self._legacy({
+            "$type": "WGestures.Core.Commands.Impl.HotKeyCommand, WGestures.Core",
+            "Modifiers": [164], "Keys": [37],
+        })))
+        self.assertEqual(result["report"]["imported"], 1)
 
 
 class EnvironmentTests(unittest.TestCase):

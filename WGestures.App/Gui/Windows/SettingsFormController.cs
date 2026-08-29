@@ -137,8 +137,8 @@ namespace WGestures.App.Gui.Windows
 
                 try
                 {
-                    if (value) AutoStarter.Register(Constants.Identifier, Application.ExecutablePath);
-                    else AutoStarter.Unregister(Constants.Identifier);
+                    if (value) AutoStarter.Register(Constants.AutoStartIdentifier, Application.ExecutablePath);
+                    else AutoStarter.Unregister(Constants.AutoStartIdentifier);
 
                     _config.Set(ConfigKeys.AutoStart, value);
                 }
@@ -437,6 +437,11 @@ namespace WGestures.App.Gui.Windows
         internal void ExportTo(string filePath)
         {
             MigrateService.ExportTo(filePath);
+        }
+
+        internal PortableConfigReport ExportPortableTo(string filePath)
+        {
+            return MigrateService.ExportPortableTo(filePath, _intentStore);
         }
 
         internal void RestoreDefaultGestures()

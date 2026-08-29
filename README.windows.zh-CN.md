@@ -23,7 +23,7 @@ Windows 与 Linux 使用各自原生的输入后端和设置界面，不是在 W
 从 GitHub Releases 下载：
 
 ```text
-CrossGestures-2.1.3.0-Windows-Setup.exe
+CrossGestures-2.1.4.0-Windows-Setup.exe
 ```
 
 双击安装并同意一次 Windows UAC 提示。安装器会安装到：
@@ -37,6 +37,10 @@ Windows 公开构建没有原作者的 UIAccess 私钥证书，因此使用管�
 配置，并注册“最高权限”登录任务；以后登录后台启动不会重复弹出 UAC。安装器会检查
 .NET Framework 4.8；缺少时会打开微软官方下载页。
 
+应用使用 `AnyCPU` 且禁用 `Prefer32Bit`：在 x64 Windows 上作为 64 位进程运行，
+在 x86 Windows 上作为 32 位进程运行。安装器相应地在 x64 系统使用原生
+`Program Files` 和 64 位注册表视图，在 x86 系统保留 32 位安装模式。
+
 公开 CI 在没有代码签名证书时会生成未签名安装器，因此 Windows SmartScreen
 可能显示“未知发布者”。正式公开发布建议在仓库 Secrets 中配置：
 
@@ -48,7 +52,7 @@ Windows 公开构建没有原作者的 UIAccess 私钥证书，因此使用管�
 ## 卸载
 
 在“设置 → 应用 → 已安装的应用”中搜索完整名称
-`CrossGestures version 2.1.3.0`。如果应用列表没有及时刷新，可直接运行：
+`CrossGestures version 2.1.4.0`。如果应用列表没有及时刷新，可直接运行：
 
 ```powershell
 Stop-Process -Name CrossGestures -Force -ErrorAction SilentlyContinue
@@ -104,7 +108,7 @@ Desktop ID、Windows 文件路径和修饰/滚轮手势会在兼容性报告中�
 产物位于：
 
 ```text
-build\windows\CrossGestures-2.1.3.0-Windows-Setup.exe
+build\windows\CrossGestures-2.1.4.0-Windows-Setup.exe
 ```
 
 原 `WGInstall` WixSharp/MSI 工程仍作为历史参考保留，但默认解决方案构建不再执行

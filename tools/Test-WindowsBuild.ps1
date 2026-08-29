@@ -13,6 +13,7 @@ $commonProjectPath = Join-Path $repoRoot 'WGestures.Common\WGestures.Common.cspr
 $windowsInputProjectPath = Join-Path $repoRoot 'WindowsInput\WindowsInput.csproj'
 $autoStarterPath = Join-Path $repoRoot 'WGestures.Common\OsSpecific\Windows\AutoStarter.cs'
 $installerScriptPath = Join-Path $repoRoot 'packaging\windows\CrossGestures.iss'
+$defaultGesturesPath = Join-Path $repoRoot 'WGestures.App\defaults\gestures.wg2'
 
 [xml]$manifest = Get-Content -LiteralPath $manifestPath -Raw
 $manifestText = Get-Content -LiteralPath $manifestPath -Raw
@@ -36,6 +37,7 @@ $settingsText = Get-Content -LiteralPath `
     (Join-Path $repoRoot 'WGestures.App\Gui\Windows\SettingsForm.cs') -Raw
 $settingsDesignerText = Get-Content -LiteralPath `
     (Join-Path $repoRoot 'WGestures.App\Gui\Windows\SettingsForm.Designer.cs') -Raw
+$defaultGestures = Get-Content -LiteralPath $defaultGesturesPath -Raw | ConvertFrom-Json
 
 if ($manifestText -match 'uiAccess="true"' -or
     $manifestText -notmatch 'level="requireAdministrator"') {
@@ -92,8 +94,29 @@ if ($autoStarterText -notmatch 'Schedule\.Service' -or
     $autoStarterText -notmatch 'TaskRunLevelHighest' -or
     $installerScriptText -notmatch 'PrivilegesRequired=admin' -or
     $installerScriptText -notmatch 'DefaultDirName=\{autopf\}\\CrossGestures' -or
+    $installerScriptText -notmatch 'ArchitecturesAllowed=x86compatible' -or
+    $installerScriptText -notmatch 'ArchitecturesInstallIn64BitMode=x64compatible' -or
     $installerScriptText -notmatch 'schtasks\.exe') {
     throw 'Elevated Windows builds must install securely and autostart through a highest-privilege task.'
+}
+if ($installerScriptText -notmatch
+    'Flags:\s+nowait\s+postinstall\s+skipifsilent\s+runascurrentuser') {
+    throw 'The post-install launch must inherit Setup elevation because CrossGestures requires administrator privileges.'
+}
+$hotCornerCommands = @($defaultGestures.HotCornerCommands)
+$rightTopCommand = $hotCornerCommands[2]
+$unexpectedDefaults = @(@(0, 1, 3, 4, 5, 6, 7) | Where-Object {
+    $null -ne $hotCornerCommands[$_]
+})
+if ($hotCornerCommands.Count -ne 8 -or
+    $unexpectedDefaults.Count -ne 0 -or
+    $null -eq $rightTopCommand -or
+    $rightTopCommand.'$type' -notmatch 'HotKeyCommand' -or
+    @($rightTopCommand.Modifiers).Count -ne 1 -or
+    $rightTopCommand.Modifiers[0] -ne 91 -or
+    @($rightTopCommand.Keys).Count -ne 1 -or
+    $rightTopCommand.Keys[0] -ne 9) {
+    throw 'Windows defaults must assign only the top-right corner to Win+Tab.'
 }
 if ($parserText -notmatch 'FindTolerantSingleDirectionIntent' -or
     $parserText -notmatch 'error <= 35\.0f') {
@@ -139,7 +162,7 @@ if (-not $SourceOnly) {
 
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo(
         (Join-Path $outputDir 'CrossGestures.exe')).FileVersion
-    if ($version -ne '2.1.3.0') {
+    if ($version -ne '2.1.4.0') {
         throw "Unexpected CrossGestures.exe version: $version"
     }
 

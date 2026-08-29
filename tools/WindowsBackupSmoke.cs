@@ -3,8 +3,8 @@ using System.Collections;
 using System.IO;
 using System.Reflection;
 
-[assembly: AssemblyVersion("2.1.3.0")]
-[assembly: AssemblyFileVersion("2.1.3.0")]
+[assembly: AssemblyVersion("2.1.4.0")]
+[assembly: AssemblyFileVersion("2.1.4.0")]
 
 internal static class WindowsBackupSmoke
 {

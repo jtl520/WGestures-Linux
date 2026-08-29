@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing Git tag to publish
         required: true
-        default: v2.1.3
+        default: v2.1.4
 
 permissions:
   contents: write
@@ -142,8 +142,11 @@ jobs:
           windows_package="$(find build/windows -name 'CrossGestures-*-Windows-Setup.exe' -print -quit)"
           windows_name="$(basename "$windows_package")"
           windows_sha256="$(sha256sum "$windows_package" | cut -d ' ' -f 1)"
-          notes="$(printf '%s\n\n%s\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s' \
-            'CrossGestures v2.1.3 Linux 与 Windows 双平台修复版。' \
+          notes="$(printf '%s\n\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s' \
+            'CrossGestures v2.1.4 Linux 与 Windows 双平台修复版。' \
+            '- Windows x64 使用原生 64 位 Program Files 和注册表视图，同时保留 AnyCPU/x86 兼容' \
+            '- Windows 默认仅右上角触发 Win+Tab，其余触发角与摩擦边均为无操作' \
+            '- Windows 安装完成页继承安装器提升权限启动程序，修复 CreateProcess 740' \
             '- Windows 与 Linux 首次安装/恢复默认值均只提供四个手势：复制、粘贴、Enter、窗口置顶' \
             '- Windows 跨平台导出只包含当前手势列表，不再夹带其他应用配置' \
             '- Windows 锁定手势开始时的目标窗口并按节奏发送按键，修复 Codex、Chromium/WebView2 的复制粘贴' \

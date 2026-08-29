@@ -1,3 +1,14 @@
+wgestures (2.1.4ubuntu1) noble; urgency=high
+
+  * Launch CrossGestures from the installer completion page with the elevated
+    Setup token, avoiding Windows CreateProcess error 740.
+  * Use native 64-bit Program Files and registry views on x64 Windows while
+    retaining x86 compatibility and the AnyCPU application build.
+  * Set only the Windows top-right trigger corner to Win+Tab by default; leave
+    every other trigger corner and rub edge unassigned.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 21:30:00 +0800
+
 wgestures (2.1.3ubuntu1) noble; urgency=high
 
   * Ship exactly four first-install and reset-default gestures on Windows and

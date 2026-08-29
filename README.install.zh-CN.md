@@ -1,6 +1,6 @@
 # CrossGestures Linux 安装说明
 
-本文适用于 CrossGestures 当前构建的 `wgestures_2.1.3ubuntu1_all.deb`。
+本文适用于 CrossGestures 当前构建的 `wgestures_2.1.4ubuntu1_all.deb`。
 
 ## 1. 支持的桌面会话
 
@@ -42,7 +42,7 @@ Ubuntu 24.04 桌面版已有 GNOME Shell，无需另外安装桌面环境。
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.3ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.4ubuntu1_all.deb
 ```
 
 本地文件名前面的 `./` 不能省略。安装后先运行诊断：
@@ -184,7 +184,7 @@ sudo apt install python3 python3-xlib python3-gi python3-cairo python3-gi-cairo 
 # 可选但推荐：为桌面安装原生 AppIndicator 托盘支持（二选一）
 sudo apt install gir1.2-appindicator3-0.1 || \
   sudo apt install gir1.2-ayatanaappindicator3-0.1
-sudo apt install ./wgestures_2.1.3ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.4ubuntu1_all.deb
 ```
 
 完全离线时，除了 CrossGestures 的 `.deb`，还必须准备目标发行版和版本对应的上述
@@ -250,5 +250,5 @@ sudo apt install --reinstall python3-xlib python3-gi python3-cairo \
 在 Linux 上计算 SHA-256，并与发布方在包外提供的校验值比较：
 
 ```sh
-sha256sum wgestures_2.1.3ubuntu1_all.deb
+sha256sum wgestures_2.1.4ubuntu1_all.deb
 ```

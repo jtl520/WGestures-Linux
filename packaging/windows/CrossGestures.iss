@@ -30,6 +30,8 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
+ArchitecturesAllowed=x86compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 UsePreviousAppDir=no
 MinVersion=6.1sp1
 CloseApplications=yes
@@ -61,7 +63,7 @@ Name: "{group}\卸载 CrossGestures"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\CrossGestures"; Filename: "{app}\CrossGestures.exe"; Parameters: "--settings"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\CrossGestures.exe"; Parameters: "--settings"; Description: "启动 CrossGestures 并打开设置"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\CrossGestures.exe"; Parameters: "--settings"; Description: "启动 CrossGestures 并打开设置"; Flags: nowait postinstall skipifsilent runascurrentuser
 
 [Code]
 function IsDotNet48Installed(): Boolean;

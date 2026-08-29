@@ -54,5 +54,18 @@
     ],
     "IsGesturingEnabled": true
   },
-  "HotCornerCommands": [null, null, null, null, null, null, null, null]
+  "HotCornerCommands": [
+    null,
+    null,
+    {
+      "$type": "WGestures.Core.Commands.Impl.HotKeyCommand, WGestures.Core",
+      "Modifiers": [91],
+      "Keys": [9]
+    },
+    null,
+    null,
+    null,
+    null,
+    null
+  ]
 }

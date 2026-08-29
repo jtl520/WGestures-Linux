@@ -180,7 +180,7 @@ if (-not $SourceOnly) {
 
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo(
         (Join-Path $outputDir 'CrossGestures.exe')).FileVersion
-    if ($version -ne '2.1.5.0') {
+    if ($version -ne '2.1.6.0') {
         throw "Unexpected CrossGestures.exe version: $version"
     }
 

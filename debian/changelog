@@ -1,3 +1,14 @@
+wgestures (2.1.6ubuntu1) noble; urgency=high
+
+  * Render X11 gesture result labels with Pango/PangoCairo so Unicode action
+    names use proper font fallback instead of Cairo's limited toy text API.
+  * Install a Chinese font and recommend IBus/libpinyin or compatible Fcitx5
+    components so Kali and Ubuntu users can display and enter Chinese names.
+  * Verify Chinese overlay rendering, GTK entry input and UTF-8 configuration
+    persistence in a live Kali Xfce VMware session.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 18:10:00 +0800
+
 wgestures (2.1.5ubuntu1) noble; urgency=high
 
   * Serialize Windows gesture overlay updates to prevent a fade-out race from

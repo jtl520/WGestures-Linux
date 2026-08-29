@@ -47,10 +47,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>WindowsInput.snk</AssemblyOriginatorKeyFile>
+    <!-- Keep release builds reproducible from a clean checkout. The legacy
+         strong-name key is intentionally not distributed with this project. -->
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -83,7 +82,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="WindowsInput.nuspec" />
-    <None Include="WindowsInput.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

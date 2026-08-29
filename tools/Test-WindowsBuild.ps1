@@ -10,11 +10,13 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestPath = Join-Path $repoRoot 'WGestures.App\app.manifest'
 $appProjectPath = Join-Path $repoRoot 'WGestures.App\WGestures.App.csproj'
 $commonProjectPath = Join-Path $repoRoot 'WGestures.Common\WGestures.Common.csproj'
+$windowsInputProjectPath = Join-Path $repoRoot 'WindowsInput\WindowsInput.csproj'
 
 [xml]$manifest = Get-Content -LiteralPath $manifestPath -Raw
 $manifestText = Get-Content -LiteralPath $manifestPath -Raw
 $appProjectText = Get-Content -LiteralPath $appProjectPath -Raw
 $commonProjectText = Get-Content -LiteralPath $commonProjectPath -Raw
+$windowsInputProjectText = Get-Content -LiteralPath $windowsInputProjectPath -Raw
 $programText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.App\Program.cs') -Raw
 $constantsText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.App\Constants.cs') -Raw
 $trackerText = Get-Content -LiteralPath `
@@ -35,6 +37,10 @@ if ($manifestText -notmatch '8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a') {
 }
 if ($appProjectText -match 'YingDevSPC|SIGNPASS') {
     throw 'The public Windows build still depends on the original private signing material.'
+}
+if ($windowsInputProjectText -notmatch '<SignAssembly>false</SignAssembly>' -or
+    $windowsInputProjectText -match 'AssemblyOriginatorKeyFile|WindowsInput\.snk') {
+    throw 'WindowsInput must build from a clean checkout without a private strong-name key.'
 }
 if ($appProjectText -notmatch '<AssemblyName>WGestures</AssemblyName>' -or
     $appProjectText -notmatch 'CrossGestures\.exe') {

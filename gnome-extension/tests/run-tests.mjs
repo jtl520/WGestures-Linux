@@ -72,10 +72,10 @@ test('gesture keys reject invalid input', () => {
     assert.throws(() => gestureKey('left-button', ['left']));
 });
 
-test('defaults bind copy paste and window above', () => {
+test('defaults are the same four gestures as Windows', () => {
     const config = createDefaultConfig();
     assert.deepEqual(config.actions.map(item => item.type), [
-        'CopyAction', 'PasteAction', 'WindowAction',
+        'ShortcutAction', 'ShortcutAction', 'ShortcutAction', 'WindowAction',
     ]);
     assert.deepEqual(config.globalProfile.gestures.map(item => ({
         button: item.button,
@@ -85,9 +85,16 @@ test('defaults bind copy paste and window above', () => {
         {button: 'right', directions: ['up'], actionId: 'smart-copy'},
         {button: 'right', directions: ['down'], actionId: 'smart-paste'},
         {
+            button: 'right', directions: ['down', 'right', 'down'],
+            actionId: 'press-enter',
+        },
+        {
             button: 'right', directions: ['up', 'right', 'up'],
             actionId: 'window-toggle-above',
         },
+    ]);
+    assert.deepEqual(config.actions.slice(0, 3).map(item => item.accelerator), [
+        '<Control>c', '<Control>v', 'Return',
     ]);
 });
 
@@ -190,7 +197,7 @@ test('rounded corners match the window above gesture', () => {
         'up', 'up-right', 'right', 'up-right', 'up',
     ]);
     assert.equal(rounded.action.id, 'window-toggle-above');
-    assert.equal(rounded.gesture.name, '窗口置顶/取消置顶');
+    assert.equal(rounded.gesture.name, '窗口置顶');
 });
 
 test('packaged default configuration is valid and matches the generated defaults', () => {
@@ -248,9 +255,9 @@ test('repository default wg2 has a stable safe conversion report', () => {
         'utf8'
     );
     const imported = importLegacyConfig(legacyText);
-    assert.equal(imported.report.imported, 35);
-    assert.equal(imported.report.unsupported.length, 31);
-    assert.equal(imported.report.unboundProfiles.length, 3);
+    assert.equal(imported.report.imported, 4);
+    assert.deepEqual(imported.report.unsupported, []);
+    assert.deepEqual(imported.report.unboundProfiles, []);
 });
 
 test('portable config round trip preserves the normalized Linux configuration', () => {
@@ -260,7 +267,7 @@ test('portable config round trip preserves the normalized Linux configuration', 
     assert.equal(document.portableFormat, 'crossgestures-portable');
     const imported = importConfig(text);
     assert.equal(imported.report.portable, true);
-    assert.equal(imported.report.imported, 3);
+    assert.equal(imported.report.imported, 4);
     assert.deepEqual(imported.report.unsupported, []);
     assert.deepEqual(imported.config, source);
 });

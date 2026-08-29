@@ -35,9 +35,13 @@ def create_default_config():
     return {
         "schemaVersion": SCHEMA_VERSION,
         "actions": [
-            _action("smart-copy", "复制", "CopyAction"),
-            _action("smart-paste", "粘贴", "PasteAction"),
-            _action("window-toggle-above", "窗口置顶/取消置顶",
+            _action("smart-copy", "复制", "ShortcutAction",
+                    accelerator="<Control>c"),
+            _action("smart-paste", "粘贴", "ShortcutAction",
+                    accelerator="<Control>v"),
+            _action("press-enter", "Enter", "ShortcutAction",
+                    accelerator="Return"),
+            _action("window-toggle-above", "窗口置顶",
                     "WindowAction", operation="toggle-above"),
         ],
         "globalProfile": {
@@ -46,7 +50,9 @@ def create_default_config():
             "gestures": [
                 _gesture("gesture-copy", "复制", "right", ["up"], "smart-copy"),
                 _gesture("gesture-paste", "粘贴", "right", ["down"], "smart-paste"),
-                _gesture("gesture-toggle-above", "窗口置顶/取消置顶", "right",
+                _gesture("gesture-enter", "Enter", "right",
+                         ["down", "right", "down"], "press-enter"),
+                _gesture("gesture-toggle-above", "窗口置顶", "right",
                          ["up", "right", "up"], "window-toggle-above"),
             ],
         },

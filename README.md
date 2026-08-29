@@ -37,10 +37,12 @@ Windows 8.1 已结束系统安全支持，而且 GitHub Actions 没有对应 Run
 下载并运行：
 
 ```text
-CrossGestures-2.1.2.0-Windows-Setup.exe
+CrossGestures-2.1.3.0-Windows-Setup.exe
 ```
 
-安装器按当前用户安装，不需要管理员权限，并会检查 .NET Framework 4.8。
+安装器会请求一次管理员权限并安装到 Program Files，以保证手势覆盖 Codex、管理员
+终端等受 Windows UIPI 保护的窗口；登录自启动使用最高权限计划任务，不会每次弹出
+UAC。安装器也会检查 .NET Framework 4.8。
 Windows 11 可能把托盘图标放入隐藏区域；也可以从开始菜单打开
 “CrossGestures 设置”。
 
@@ -49,12 +51,12 @@ Windows 11 可能把托盘图标放入隐藏区域；也可以从开始菜单打
 ### Windows
 
 先从托盘菜单退出 CrossGestures，然后在“设置 → 应用 → 已安装的应用”中搜索
-完整名称 `CrossGestures version 2.1.2.0` 并卸载。如果 Windows 应用列表尚未刷新，
-可直接运行当前用户安装目录中的卸载器：
+完整名称 `CrossGestures version 2.1.3.0` 并卸载。如果 Windows 应用列表尚未刷新，
+可直接运行 Program Files 安装目录中的卸载器：
 
 ```powershell
 Stop-Process -Name CrossGestures -Force -ErrorAction SilentlyContinue
-& "$env:LOCALAPPDATA\Programs\CrossGestures\unins000.exe"
+& "$env:ProgramFiles\CrossGestures\unins000.exe"
 ```
 
 卸载程序默认保留 `%LOCALAPPDATA%\YingDev.com\WGestures\` 下的手势配置，方便
@@ -92,12 +94,12 @@ echo "$XDG_CURRENT_DESKTOP / $XDG_SESSION_TYPE"
 ### 2. 下载并安装
 
 从 [GitHub Releases](https://github.com/jtl520/WGestures-Linux/releases/latest)
-下载 `wgestures_2.1.2ubuntu8_all.deb`，保存到“下载”目录，然后运行：
+下载 `wgestures_2.1.3ubuntu1_all.deb`，保存到“下载”目录，然后运行：
 
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.2ubuntu8_all.deb
+sudo apt install ./wgestures_2.1.3ubuntu1_all.deb
 ```
 
 必须使用 `apt install ./文件名.deb`，文件名前的 `./` 不能省略。APT 会自动安装
@@ -130,8 +132,9 @@ wgestures --settings
 
 ### 4. 安装后的默认手势
 
-- 按住右键向上：智能复制。终端发送 `Ctrl+Shift+C`，其他软件发送 `Ctrl+C`。
-- 按住右键向下：智能粘贴。终端发送 `Ctrl+Shift+V`，其他软件发送 `Ctrl+V`。
+- 按住右键向上：复制，发送 `Ctrl+C`。
+- 按住右键向下：粘贴，发送 `Ctrl+V`。
+- 按住右键依次“下 → 右 → 下”：发送 `Enter`。
 - 按住右键依次“上 → 右 → 上”：窗口置顶/取消置顶。
 - 短按右键仍然只产生一次普通右键单击。
 
@@ -154,7 +157,7 @@ wgestures --settings
 从仓库的 **Releases** 页面下载：
 
 ```text
-wgestures_2.1.2ubuntu8_all.deb
+wgestures_2.1.3ubuntu1_all.deb
 ```
 
 联网安装时依赖会由 APT 自动解决：
@@ -162,7 +165,7 @@ wgestures_2.1.2ubuntu8_all.deb
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.2ubuntu8_all.deb
+sudo apt install ./wgestures_2.1.3ubuntu1_all.deb
 wgestures --diagnose
 ```
 
@@ -173,7 +176,8 @@ wgestures --diagnose
 - “智能复制”动作让同一手势在终端发送 `Ctrl+Shift+C`，在其他软件发送 `Ctrl+C`。
 - “智能粘贴”动作让同一手势在终端发送 `Ctrl+Shift+V`，在其他软件发送 `Ctrl+V`。
 - 单方向手势提供约 ±35° 的轨迹容错，鼠标按钮和精确多段手势仍严格匹配。
-- 默认预置右键向上复制、右键向下粘贴和右键“上→右→上”切换窗口置顶。
+- 默认预置四个手势：右键向上复制、向下粘贴、“下→右→下”发送 Enter、
+  “上→右→上”切换窗口置顶。
 - X11 登录后自动启动并显示托盘菜单；GNOME 46 Wayland 使用顶部面板指示器。
 - “常规”页可由用户开关登录自启动和最小化/关闭到托盘。
 - 成功提示优先显示手势名称，默认 300 毫秒淡出。
@@ -202,7 +206,8 @@ wgestures --diagnose --json
 普通方向手势、右/中/X1/X2 触发键、快捷键、复制/粘贴、常用窗口控制、网址、
 暂停和空动作。Linux Shell 命令、Desktop ID、Windows CMD/Lua/文本输入、Windows
 文件路径及修饰/滚轮手势没有可靠的跨平台等价项，因此不会被悄悄转换；导入或
-导出完成后会显示兼容数量和跳过原因。Windows 专用的 `.wgb` 完整备份仍保留。
+导出完成后会显示兼容数量和跳过原因。Windows 的 `.cgestures` 只导出“手势”页
+当前选中的列表；Windows 专用的 `.wgb` 完整备份仍保留。
 
 ## 源码结构
 

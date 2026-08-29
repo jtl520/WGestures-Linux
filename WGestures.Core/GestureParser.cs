@@ -297,6 +297,9 @@ namespace WGestures.Core
 
         private void PathTrackerOnPathEnd(PathEventArgs args)
         {
+            if (_effectiveIntent == null && !IsInCaptureMode)
+                _effectiveIntent = FindTolerantSingleDirectionIntent(args.Context);
+
             Trace.WriteLine("CrossGestures parser path end: gesture=" + _gesture +
                 ", intent=" + (_effectiveIntent == null ? "none" : _effectiveIntent.Name));
             if (IsInCaptureMode)
@@ -334,6 +337,66 @@ namespace WGestures.Core
 
             //发布事件
             if (IntentExecuted != null) IntentExecuted(_effectiveIntent, result);
+        }
+
+        private GestureIntent FindTolerantSingleDirectionIntent(GestureContext context)
+        {
+            if (_gesture == null || context == null ||
+                _gesture.Modifier != GestureModifier.None) return null;
+
+            var movement = new Point(
+                context.EndPoint.X - context.StartPoint.X,
+                context.StartPoint.Y - context.EndPoint.Y);
+            if (movement.X == 0 && movement.Y == 0) return null;
+
+            GestureIntent best = null;
+            var bestError = 35.0f;
+            foreach (var intent in SingleDirectionCandidates(_currentApp))
+            {
+                if (intent == null || intent.Gesture == null ||
+                    intent.Gesture.GestureButton != _gesture.GestureButton ||
+                    intent.Gesture.Modifier != GestureModifier.None ||
+                    intent.Gesture.Dirs.Count != 1) continue;
+
+                var expected = DirectionVector(intent.Gesture.Dirs[0]);
+                var error = GetAngle(expected, movement);
+                if (!float.IsNaN(error) && error <= 35.0f &&
+                    (best == null || error < bestError))
+                {
+                    bestError = error;
+                    best = intent;
+                }
+            }
+            if (best != null)
+                Trace.WriteLine("CrossGestures tolerant single-direction match: " +
+                    best.Name + ", error=" + bestError);
+            return best;
+        }
+
+        private IEnumerable<GestureIntent> SingleDirectionCandidates(ExeApp app)
+        {
+            if (app != null)
+            {
+                foreach (var intent in app.GestureIntents.Values) yield return intent;
+                if (!app.InheritGlobalGestures) yield break;
+            }
+            foreach (var intent in IntentFinder.IntentStore.GlobalApp.GestureIntents.Values)
+                yield return intent;
+        }
+
+        private static Point DirectionVector(Gesture.GestureDir direction)
+        {
+            switch (direction)
+            {
+                case Gesture.GestureDir.Up: return new Point(0, 1);
+                case Gesture.GestureDir.RightUp: return new Point(1, 1);
+                case Gesture.GestureDir.Right: return new Point(1, 0);
+                case Gesture.GestureDir.RightDown: return new Point(1, -1);
+                case Gesture.GestureDir.Down: return new Point(0, -1);
+                case Gesture.GestureDir.LeftDown: return new Point(-1, -1);
+                case Gesture.GestureDir.Left: return new Point(-1, 0);
+                default: return new Point(-1, 1);
+            }
         }
 
         private void PathTrackerOnPathCanceled(PathEventArgs args)

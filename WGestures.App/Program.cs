@@ -48,10 +48,12 @@ namespace WGestures.App
         [STAThread]
         static void Main(string[] args)
         {
-            ConfigureRuntimeTrace();
+            ConfigureRuntimeTrace(args);
             Debug.Listeners.Add(new DetailedConsoleListener());
             showSettingsOnStartup = Array.Exists(args ?? new string[0],
                 arg => string.Equals(arg, "--settings", StringComparison.OrdinalIgnoreCase));
+            var skipAutoStart = Array.Exists(args ?? new string[0],
+                arg => string.Equals(arg, "--skip-autostart", StringComparison.OrdinalIgnoreCase));
 
             if (IsDuplicateInstance())
             {
@@ -67,7 +69,9 @@ namespace WGestures.App
                 //加载配置文件，如果文件不存在或损坏，则加载默认配置文件
                 LoadFailSafeConfigFile();
                 
-                SyncAutoStartState();
+                if (!skipAutoStart && !string.Equals(Environment.GetEnvironmentVariable(
+                    "CROSSGESTURES_SKIP_AUTOSTART"), "1", StringComparison.Ordinal))
+                    SyncAutoStartState();
                 CheckAndDoFirstRunStuff();
 
                 ConfigureComponents();
@@ -104,9 +108,13 @@ namespace WGestures.App
 
         }
 
-        static void ConfigureRuntimeTrace()
+        static void ConfigureRuntimeTrace(string[] args)
         {
             var tracePath = Environment.GetEnvironmentVariable("CROSSGESTURES_TRACE_FILE");
+            var traceArgument = Array.Find(args ?? new string[0], arg =>
+                arg != null && arg.StartsWith("--trace-file=", StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(traceArgument))
+                tracePath = traceArgument.Substring("--trace-file=".Length).Trim('"');
             if (string.IsNullOrWhiteSpace(tracePath)) return;
 
             var traceDirectory = Path.GetDirectoryName(Path.GetFullPath(tracePath));

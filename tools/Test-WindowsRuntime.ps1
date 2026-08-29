@@ -1,7 +1,7 @@
 param(
     [ValidateSet('Run', 'Harness')]
     [string]$Mode = 'Run',
-    [string]$AppPath = "$env:LOCALAPPDATA\Programs\CrossGestures\CrossGestures.exe",
+    [string]$AppPath = "$env:ProgramFiles\CrossGestures\CrossGestures.exe",
     [string]$OutputDirectory = "$PSScriptRoot\..\build\windows-runtime",
     [string]$EventLog
 )

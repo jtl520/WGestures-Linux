@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
 using System.Windows.Forms;
@@ -11,7 +13,11 @@ namespace WGestures.Common.OsSpecific.Windows
 {
     public static class AutoStarter
     {
-        //private const string RunLocation = @"Software\Microsoft\Windows\CurrentVersion\Run";
+        private const int TaskCreateOrUpdate = 6;
+        private const int TaskActionExecute = 0;
+        private const int TaskLogonInteractiveToken = 3;
+        private const int TaskRunLevelHighest = 1;
+        private const int TaskTriggerLogon = 9;
 
         static string MakeShortcutPath(string identifier)
         {
@@ -21,66 +27,116 @@ namespace WGestures.Common.OsSpecific.Windows
         public static void Register(string identifier, string appPath)
         {
             Unregister(identifier);
-            CreateShortcut(MakeShortcutPath(identifier), appPath);
-
-            //var key = Registry.CurrentUser.CreateSubKey(RunLocation);
-            //key.SetValue(identifier, appPath);
-            /*using (var ts = new Microsoft.Win32.TaskScheduler.TaskService())
+            dynamic service = null;
+            dynamic rootFolder = null;
+            dynamic task = null;
+            dynamic trigger = null;
+            dynamic action = null;
+            try
             {
-                var userId = WindowsIdentity.GetCurrent().Name;
+                var serviceType = Type.GetTypeFromProgID("Schedule.Service");
+                if (serviceType == null)
+                    throw new InvalidOperationException("Windows Task Scheduler is unavailable.");
 
-                var task = ts.NewTask();
+                service = Activator.CreateInstance(serviceType);
+                service.Connect();
+                rootFolder = service.GetFolder("\\");
+                task = service.NewTask(0);
                 task.RegistrationInfo.Description = identifier;
                 task.Settings.DisallowStartIfOnBatteries = false;
-                task.Settings.ExecutionTimeLimit = TimeSpan.Zero;
+                task.Settings.StopIfGoingOnBatteries = false;
+                task.Settings.StartWhenAvailable = true;
+                task.Settings.ExecutionTimeLimit = "PT0S";
                 task.Settings.Hidden = false;
+                task.Settings.MultipleInstances = 2; // Ignore a duplicate launch.
 
-                task.Principal.LogonType = TaskLogonType.InteractiveToken;
+                var userId = WindowsIdentity.GetCurrent().Name;
+                task.Principal.LogonType = TaskLogonInteractiveToken;
                 task.Principal.UserId = userId;
+                task.Principal.RunLevel = TaskRunLevelHighest;
 
-                task.Principal.RunLevel = TaskRunLevel.Highest;
-                task.Settings.Priority = ProcessPriorityClass.High;
+                trigger = task.Triggers.Create(TaskTriggerLogon);
+                trigger.UserId = userId;
+                action = task.Actions.Create(TaskActionExecute);
+                action.Path = appPath;
+                action.WorkingDirectory = Path.GetDirectoryName(appPath);
 
-                task.Triggers.Add(new LogonTrigger());
-                task.Actions.Add(new ExecAction(appPath, "",workingDirectory));
-
-                ts.RootFolder.RegisterTaskDefinition(identifier, task, 
-                    TaskCreation.CreateOrUpdate, userId, 
-                    LogonType: TaskLogonType.InteractiveToken);
-            }*/
+                rootFolder.RegisterTaskDefinition(identifier, task, TaskCreateOrUpdate,
+                    userId, null, TaskLogonInteractiveToken, null);
+            }
+            finally
+            {
+                ReleaseComObject(action);
+                ReleaseComObject(trigger);
+                ReleaseComObject(task);
+                ReleaseComObject(rootFolder);
+                ReleaseComObject(service);
+            }
         }
-
         public static void Unregister(string identifier)
         {
             System.IO.File.Delete(MakeShortcutPath(identifier));
 
             //ensure removing registry item added in older versions
-            RegistryKey key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(
+                @"Software\Microsoft\Windows\CurrentVersion\Run"))
+            {
+                if (key != null) key.DeleteValue(identifier, throwOnMissingValue: false);
+            }
 
-            key.DeleteValue(identifier,throwOnMissingValue: false);
-            /* using (var ts = new TaskService())
-             {
-                 ts.RootFolder.DeleteTask(identifier);
-             }*/
+            dynamic service = null;
+            dynamic rootFolder = null;
+            try
+            {
+                var serviceType = Type.GetTypeFromProgID("Schedule.Service");
+                if (serviceType == null) return;
+                service = Activator.CreateInstance(serviceType);
+                service.Connect();
+                rootFolder = service.GetFolder("\\");
+                try { rootFolder.DeleteTask(identifier, 0); }
+                catch (Exception) { }
+            }
+            finally
+            {
+                ReleaseComObject(rootFolder);
+                ReleaseComObject(service);
+            }
         }
-
         public static bool IsRegistered(string identifier,string appPath)
         {
-            return System.IO.File.Exists(MakeShortcutPath(identifier));
-            /*var key = Registry.CurrentUser.OpenSubKey(RunLocation);
-            if (key == null)
-                return false;
-
-            var value = (string)key.GetValue(identifier);
-            if (value == null)
-                return false;
-
-            return (value == appPath);*/
-            /*
-            using (var ts = new TaskService())
+            dynamic service = null;
+            dynamic rootFolder = null;
+            dynamic registeredTask = null;
+            dynamic action = null;
+            try
             {
-                return ts.RootFolder.Tasks.Exists(identifier);
-            }*/
+                var serviceType = Type.GetTypeFromProgID("Schedule.Service");
+                if (serviceType == null) return false;
+                service = Activator.CreateInstance(serviceType);
+                service.Connect();
+                rootFolder = service.GetFolder("\\");
+                registeredTask = rootFolder.GetTask(identifier);
+                action = registeredTask.Definition.Actions.Item(1);
+                return string.Equals((string)action.Path, appPath,
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            finally
+            {
+                ReleaseComObject(action);
+                ReleaseComObject(registeredTask);
+                ReleaseComObject(rootFolder);
+                ReleaseComObject(service);
+            }
+        }
+
+        private static void ReleaseComObject(object value)
+        {
+            if (value != null && Marshal.IsComObject(value))
+                Marshal.FinalReleaseComObject(value);
         }
 
         public static void CreateShortcut(string shortcutPath, string targetFileLocation)

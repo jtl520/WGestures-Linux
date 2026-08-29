@@ -79,18 +79,22 @@ class ConformanceTests(unittest.TestCase):
 
 
 class ConfigurationTests(unittest.TestCase):
-    def test_defaults_bind_copy_paste_and_window_above(self):
+    def test_defaults_are_the_same_four_gestures_as_windows(self):
         config = create_default_config()
         self.assertEqual([item["type"] for item in config["actions"]],
-                         ["CopyAction", "PasteAction", "WindowAction"])
+                         ["ShortcutAction", "ShortcutAction", "ShortcutAction",
+                          "WindowAction"])
         self.assertEqual([
             (item["button"], item["directions"], item["actionId"])
             for item in config["globalProfile"]["gestures"]
         ], [
             ("right", ["up"], "smart-copy"),
             ("right", ["down"], "smart-paste"),
+            ("right", ["down", "right", "down"], "press-enter"),
             ("right", ["up", "right", "up"], "window-toggle-above"),
         ])
+        self.assertEqual([item.get("accelerator") for item in config["actions"][:3]],
+                         ["<Control>c", "<Control>v", "Return"])
 
     def test_shortcuts_accept_friendly_and_legacy_formats(self):
         for value in ("Ctrl+C", "Control+C", "Ctrl C", "control c",
@@ -187,7 +191,7 @@ class ConfigurationTests(unittest.TestCase):
             "up", "up-right", "right", "up-right", "up",
         ])
         self.assertEqual(rounded["action"]["id"], "window-toggle-above")
-        self.assertEqual(rounded["gesture"]["name"], "窗口置顶/取消置顶")
+        self.assertEqual(rounded["gesture"]["name"], "窗口置顶")
 
     def test_invalid_schema_fails_closed(self):
         with self.assertRaises(ValueError):
@@ -261,9 +265,9 @@ class ImporterTests(unittest.TestCase):
                             "gestures.wg2")
         with open(path, "r", encoding="utf-8") as stream:
             result = import_legacy_config(stream.read())
-        self.assertEqual(result["report"]["imported"], 35)
-        self.assertEqual(len(result["report"]["unsupported"]), 31)
-        self.assertEqual(len(result["report"]["unboundProfiles"]), 3)
+        self.assertEqual(result["report"]["imported"], 4)
+        self.assertEqual(result["report"]["unsupported"], [])
+        self.assertEqual(result["report"]["unboundProfiles"], [])
 
     def test_portable_round_trip_preserves_all_native_gestures(self):
         source = create_default_config()
@@ -272,7 +276,7 @@ class ImporterTests(unittest.TestCase):
         self.assertEqual(document["portableFormat"], "crossgestures-portable")
         result = import_config(text)
         self.assertTrue(result["report"]["portable"])
-        self.assertEqual(result["report"]["imported"], 3)
+        self.assertEqual(result["report"]["imported"], 4)
         self.assertEqual(result["report"]["unsupported"], [])
         self.assertEqual(result["config"], source)
 

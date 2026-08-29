@@ -4,10 +4,10 @@
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
 
-        <!-- uiAccess=true requires a trusted Authenticode signature and a secure
-             installation directory. Keep the public build runnable without the
-             original author's private certificate. -->
-        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+        <!-- The unsigned public build cannot use uiAccess=true. Run elevated so
+             the global hook and SendInput can cross UIPI boundaries such as the
+             protected Codex desktop window and administrator consoles. -->
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
       </requestedPrivileges>
       <applicationRequestMinimum>
         <defaultAssemblyRequest permissionSetReference="Custom" />

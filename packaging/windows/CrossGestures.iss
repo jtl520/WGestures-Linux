@@ -1,4 +1,4 @@
-; CrossGestures per-user Windows installer
+; CrossGestures elevated Windows installer
 #define ScriptDir ExtractFilePath(__PATHFILENAME__)
 #define RepoRoot ScriptDir + "..\.."
 #define BuildDir RepoRoot + "\WGestures.App\bin\Release"
@@ -18,7 +18,7 @@ AppPublisher=YingDev contributors
 AppPublisherURL=https://github.com/jtl520/WGestures-Linux
 AppSupportURL=https://github.com/jtl520/WGestures-Linux/issues
 AppUpdatesURL=https://github.com/jtl520/WGestures-Linux/releases/latest
-DefaultDirName={localappdata}\Programs\CrossGestures
+DefaultDirName={autopf}\CrossGestures
 DefaultGroupName=CrossGestures
 DisableProgramGroupPage=yes
 LicenseFile={#RepoRoot}\LICENSE
@@ -29,7 +29,8 @@ UninstallDisplayIcon={app}\CrossGestures.exe
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
-PrivilegesRequired=lowest
+PrivilegesRequired=admin
+UsePreviousAppDir=no
 MinVersion=6.1sp1
 CloseApplications=yes
 RestartApplications=no
@@ -50,6 +51,9 @@ Type: files; Name: "{app}\WGestures.exe.config"
 
 [UninstallDelete]
 Type: files; Name: "{userstartup}\com.jtl520.CrossGestures.lnk"
+
+[UninstallRun]
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN ""com.jtl520.CrossGestures"" /F"; Flags: runhidden; RunOnceId: "DeleteCrossGesturesAutoStartTask"
 
 [Icons]
 Name: "{group}\CrossGestures 设置"; Filename: "{app}\CrossGestures.exe"; Parameters: "--settings"; WorkingDir: "{app}"

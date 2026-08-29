@@ -39,9 +39,16 @@ export function createDefaultConfig() {
     return {
         schemaVersion: SCHEMA_VERSION,
         actions: [
-            action('smart-copy', '复制', 'CopyAction'),
-            action('smart-paste', '粘贴', 'PasteAction'),
-            action('window-toggle-above', '窗口置顶/取消置顶', 'WindowAction', {
+            action('smart-copy', '复制', 'ShortcutAction', {
+                accelerator: '<Control>c',
+            }),
+            action('smart-paste', '粘贴', 'ShortcutAction', {
+                accelerator: '<Control>v',
+            }),
+            action('press-enter', 'Enter', 'ShortcutAction', {
+                accelerator: 'Return',
+            }),
+            action('window-toggle-above', '窗口置顶', 'WindowAction', {
                 operation: 'toggle-above',
             }),
         ],
@@ -54,7 +61,9 @@ export function createDefaultConfig() {
             gestures: [
                 gesture('gesture-copy', '复制', 'right', ['up'], 'smart-copy'),
                 gesture('gesture-paste', '粘贴', 'right', ['down'], 'smart-paste'),
-                gesture('gesture-toggle-above', '窗口置顶/取消置顶', 'right',
+                gesture('gesture-enter', 'Enter', 'right',
+                    ['down', 'right', 'down'], 'press-enter'),
+                gesture('gesture-toggle-above', '窗口置顶', 'right',
                     ['up', 'right', 'up'], 'window-toggle-above'),
             ],
         },

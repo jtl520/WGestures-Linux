@@ -1151,8 +1151,8 @@ namespace WGestures.App.Gui.Windows
             {
                 if (saveTo.EndsWith(".cgestures", StringComparison.OrdinalIgnoreCase))
                 {
-                    var report = Controller.ExportPortableTo(saveTo);
-                    MessageBox.Show(report.ToUserMessage("跨平台配置导出"), "CrossGestures 导出",
+                    var report = Controller.ExportPortableTo(saveTo, GetSelectedAppOrGlobal());
+                    MessageBox.Show(report.ToUserMessage("当前手势列表导出"), "CrossGestures 导出",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else

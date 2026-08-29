@@ -11,16 +11,24 @@ $manifestPath = Join-Path $repoRoot 'WGestures.App\app.manifest'
 $appProjectPath = Join-Path $repoRoot 'WGestures.App\WGestures.App.csproj'
 $commonProjectPath = Join-Path $repoRoot 'WGestures.Common\WGestures.Common.csproj'
 $windowsInputProjectPath = Join-Path $repoRoot 'WindowsInput\WindowsInput.csproj'
+$autoStarterPath = Join-Path $repoRoot 'WGestures.Common\OsSpecific\Windows\AutoStarter.cs'
+$installerScriptPath = Join-Path $repoRoot 'packaging\windows\CrossGestures.iss'
 
 [xml]$manifest = Get-Content -LiteralPath $manifestPath -Raw
 $manifestText = Get-Content -LiteralPath $manifestPath -Raw
 $appProjectText = Get-Content -LiteralPath $appProjectPath -Raw
 $commonProjectText = Get-Content -LiteralPath $commonProjectPath -Raw
 $windowsInputProjectText = Get-Content -LiteralPath $windowsInputProjectPath -Raw
+$autoStarterText = Get-Content -LiteralPath $autoStarterPath -Raw
+$installerScriptText = Get-Content -LiteralPath $installerScriptPath -Raw
 $programText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.App\Program.cs') -Raw
 $constantsText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.App\Constants.cs') -Raw
 $trackerText = Get-Content -LiteralPath `
     (Join-Path $repoRoot 'WGestures.Core\Impl\Windows\Win32MousePathTracker2.cs') -Raw
+$parserText = Get-Content -LiteralPath `
+    (Join-Path $repoRoot 'WGestures.Core\GestureParser.cs') -Raw
+$hotKeyText = Get-Content -LiteralPath `
+    (Join-Path $repoRoot 'WGestures.Core\Commands\Impl\HotKeyCommand.cs') -Raw
 $pathTrackerText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.Core\IPathTracker.cs') -Raw
 $portableText = Get-Content -LiteralPath `
     (Join-Path $repoRoot 'WGestures.App\Migrate\PortableConfigService.cs') -Raw
@@ -29,8 +37,9 @@ $settingsText = Get-Content -LiteralPath `
 $settingsDesignerText = Get-Content -LiteralPath `
     (Join-Path $repoRoot 'WGestures.App\Gui\Windows\SettingsForm.Designer.cs') -Raw
 
-if ($manifestText -match 'uiAccess="true"') {
-    throw 'Release manifest must not require the original author signing certificate.'
+if ($manifestText -match 'uiAccess="true"' -or
+    $manifestText -notmatch 'level="requireAdministrator"') {
+    throw 'Unsigned release builds must run elevated instead of depending on the original uiAccess certificate.'
 }
 if ($manifestText -notmatch '8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a') {
     throw 'Release manifest is missing the Windows 10/11 compatibility identifier.'
@@ -63,6 +72,32 @@ if ($trackerText -notmatch 'e\.key == Keys\.Escape' -or
     $trackerText -notmatch 'Post\(WM\.GESTBTN_CANCEL\)' -or
     $pathTrackerText -notmatch 'event PathTrackEventHandler PathCanceled') {
     throw 'Windows gesture cancellation must suppress Escape and cancel the active path.'
+}
+if ($trackerText -notmatch 'UpdateContextAndEventArgs\(true\)' -or
+    $trackerText -notmatch 'Native\.GetForegroundWindow\(\)' -or
+    $hotKeyText -notmatch 'Context\.WinId' -or
+    $hotKeyText -notmatch 'SendModifiedKeyStrokeWithPacing' -or
+    $hotKeyText -notmatch 'transitionDelayMillis = 25' -or
+    $hotKeyText -match 'WindowFromPoint') {
+    throw 'Windows shortcuts must keep the mouse-down target and pace key transitions reliably.'
+}
+if ($hotKeyText -notmatch 'TryGetConsoleClipboardShortcut' -or
+    $hotKeyText -notmatch 'VirtualKeyCode\.INSERT' -or
+    $hotKeyText -notmatch 'IsLegacyConsoleMenuShortcut' -or
+    $hotKeyText -notmatch 'IsWindowsTerminalTarget' -or
+    $hotKeyText -notmatch 'VirtualKeyCode\.LSHIFT') {
+    throw 'Windows console copy/paste must distinguish Terminal native shortcuts from Console Host.'
+}
+if ($autoStarterText -notmatch 'Schedule\.Service' -or
+    $autoStarterText -notmatch 'TaskRunLevelHighest' -or
+    $installerScriptText -notmatch 'PrivilegesRequired=admin' -or
+    $installerScriptText -notmatch 'DefaultDirName=\{autopf\}\\CrossGestures' -or
+    $installerScriptText -notmatch 'schtasks\.exe') {
+    throw 'Elevated Windows builds must install securely and autostart through a highest-privilege task.'
+}
+if ($parserText -notmatch 'FindTolerantSingleDirectionIntent' -or
+    $parserText -notmatch 'error <= 35\.0f') {
+    throw 'Windows single-direction gestures must retain the documented 35-degree tolerance.'
 }
 if ($programText -match 'maxStackSize:\s*1' -or $trackerText -match 'maxStackSize:\s*1') {
     throw 'Long-lived Windows threads must use the runtime default stack size.'
@@ -104,7 +139,7 @@ if (-not $SourceOnly) {
 
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo(
         (Join-Path $outputDir 'CrossGestures.exe')).FileVersion
-    if ($version -ne '2.1.2.0') {
+    if ($version -ne '2.1.3.0') {
         throw "Unexpected CrossGestures.exe version: $version"
     }
 

@@ -7,6 +7,7 @@ using System.Text;
 using NativeMultiFileArchiveLib;
 using WGestures.Common.Config;
 using WGestures.Common.Config.Impl;
+using WGestures.Core;
 using WGestures.Core.Persistence;
 using WGestures.Core.Persistence.Impl;
 
@@ -227,9 +228,9 @@ namespace WGestures.App.Migrate
 
         }
 
-        public static PortableConfigReport ExportPortableTo(string filePath, JsonGestureIntentStore store)
+        public static PortableConfigReport ExportPortableTo(string filePath, AbstractApp sourceApp)
         {
-            return PortableConfigService.Export(filePath, store);
+            return PortableConfigService.Export(filePath, sourceApp);
         }
 
         [Flags]

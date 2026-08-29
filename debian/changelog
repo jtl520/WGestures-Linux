@@ -1,3 +1,16 @@
+wgestures (2.1.3ubuntu1) noble; urgency=high
+
+  * Ship exactly four first-install and reset-default gestures on Windows and
+    Linux: copy, paste, Enter and toggle always-on-top.
+  * Export only the gestures visible in the selected Windows gesture list.
+  * Lock Windows commands to the gesture-start target and pace injected keys
+    for reliable copy and paste in Codex, Chromium and WebView2 applications.
+  * Adapt copy and paste for Windows Terminal and legacy Console Host.
+  * Install the public Windows build elevated and autostart it with a
+    highest-privilege scheduled task so protected applications remain global.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 20:30:00 +0800
+
 wgestures (2.1.2ubuntu8) noble; urgency=medium
 
   * Add the shared .cgestures JSON format for Windows/Linux gesture transfer.

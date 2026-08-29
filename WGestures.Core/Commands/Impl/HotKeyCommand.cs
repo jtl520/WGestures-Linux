@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -42,9 +43,12 @@ namespace WGestures.Core.Commands.Impl
             }
 
 
-            //活动进程 未必 是活动root窗口进程, 就像clover
-            var fgWindow = Native.GetForegroundWindow();
-            var rootWindow = IntPtr.Zero;
+            // Keyboard shortcuts belong to the window/focus captured when the
+            // gesture started, not whichever internal child is under the cursor
+            // after drawing the gesture.
+            var fgWindow = Context != null && Context.WinId != IntPtr.Zero
+                ? Context.WinId
+                : Native.GetForegroundWindow();
 
             Debug.WriteLine(string.Format("FGWindow: {0:X}", fgWindow.ToInt64()));
 
@@ -80,63 +84,38 @@ namespace WGestures.Core.Commands.Impl
             }*/
 
 
-            //if (useCursorWindow)
-            {
-                //Debug.WriteLine("* * Why Is fgWindow NULL?");
-
-                if(Context != null) //触发角将不会注入此字段
-                {
-                    fgWindow = Native.WindowFromPoint(new Native.POINT(){x = Context.StartPoint.X, y = Context.StartPoint.Y});
-                    Debug.WriteLine(string.Format("WinforFromPoint={0:x}", fgWindow.ToInt64()));
-                    if (fgWindow == IntPtr.Zero)
-                        return;
-                }
-                
-            }
-
-            if (rootWindow == IntPtr.Zero)
-                rootWindow = Native.GetAncestor(fgWindow, Native.GetAncestorFlags.GetRoot);
-
-            //User32.SetForegroundWindow(fgWindow);
-            //ForceWindowIntoForeground(fgWindow);
-            uint pid;
-            var fgThread = Native.GetWindowThreadProcessId(fgWindow, out pid);
-            Debug.WriteLine("pid=" + pid);
+            if (fgWindow == IntPtr.Zero) return;
 
             //失败可能原因之一：被杀毒软件或系统拦截
 
             try
             {
-                foreach (var k in Modifiers)
+                IEnumerable<VirtualKeyCode> actualModifiers = Modifiers;
+                IEnumerable<VirtualKeyCode> actualKeys = Keys;
+                List<VirtualKeyCode> consoleModifiers;
+                List<VirtualKeyCode> consoleKeys;
+                if (TryGetConsoleClipboardShortcut(out consoleModifiers, out consoleKeys))
                 {
-                    Debug.Write(k);
-                    PerformKey(pid, fgThread, k);
+                    actualModifiers = consoleModifiers;
+                    actualKeys = consoleKeys;
                 }
 
-                foreach (var k in Keys)
-                {
-                    Debug.Write(k);
-                    PerformKey(pid, fgThread, k);
-                }
+                var modifierList = actualModifiers.ToList();
+                var keyList = actualKeys.ToList();
 
-
-                foreach (var k in Keys)
-                {
-                    Debug.Write(k + " Up:");
-
-                    PerformKey(pid, fgThread, k, true);
-                }
-
-                foreach (var k in Modifiers)
-                {
-                    Debug.Write(k + " Up:");
-
-                    PerformKey(pid, fgThread, k, true);
-                }
+                // Some Chromium editors and terminal hosts discard a complete
+                // chord when all transitions arrive in one SendInput call. The
+                // original WGestures releases paced each transition; retain that
+                // behavior while always releasing modifiers in a finally block.
+                SendModifiedKeyStrokeWithPacing(modifierList, keyList);
+                Trace.WriteLine("CrossGestures shortcut injected: target=" +
+                    fgWindow.ToInt64().ToString("X") + ", shortcut=" +
+                    HotKeyToString(modifierList, keyList));
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("发送按键的时候发生异常： " + ex);
+                Trace.WriteLine("CrossGestures shortcut injection failed: " + ex.Message);
                 Native.TryResetKeys(Keys, Modifiers);
 #if TEST
                 throw;
@@ -149,32 +128,175 @@ namespace WGestures.Core.Commands.Impl
 
         }
 
+        private bool TryGetConsoleClipboardShortcut(out List<VirtualKeyCode> modifiers,
+            out List<VirtualKeyCode> keys)
+        {
+            modifiers = null;
+            keys = null;
+            if (Context == null || !IsConsoleTarget(Context)) return false;
+
+            var isCopy = IsControlShortcut(VirtualKeyCode.VK_C) ||
+                IsLegacyConsoleMenuShortcut(VirtualKeyCode.VK_Y);
+            var isPaste = IsControlShortcut(VirtualKeyCode.VK_V) ||
+                IsLegacyConsoleMenuShortcut(VirtualKeyCode.VK_P);
+            if (!isCopy && !isPaste) return false;
+
+            if (IsWindowsTerminalTarget(Context))
+            {
+                // Windows Terminal's native defaults. These work with selected
+                // terminal text and avoid the inconsistent Insert handling seen
+                // with some Terminal/keyboard-layout combinations.
+                modifiers = new List<VirtualKeyCode>
+                {
+                    VirtualKeyCode.LCONTROL,
+                    VirtualKeyCode.LSHIFT
+                };
+                keys = new List<VirtualKeyCode>
+                {
+                    isCopy ? VirtualKeyCode.VK_C : VirtualKeyCode.VK_V
+                };
+                Trace.WriteLine("CrossGestures adapted " + (isCopy ? "copy" : "paste") +
+                    " for Windows Terminal.");
+            }
+            else
+            {
+                // Console Host supports these independently of QuickEdit and of
+                // whether Ctrl+C is currently interpreted as BREAK.
+                modifiers = new List<VirtualKeyCode>
+                {
+                    isCopy ? VirtualKeyCode.LCONTROL : VirtualKeyCode.LSHIFT
+                };
+                keys = new List<VirtualKeyCode> { VirtualKeyCode.INSERT };
+                Trace.WriteLine("CrossGestures adapted " + (isCopy ? "copy" : "paste") +
+                    " for Console Host.");
+            }
+            return true;
+        }
+
+        private static void SendModifiedKeyStrokeWithPacing(
+            IList<VirtualKeyCode> modifiers, IList<VirtualKeyCode> keys)
+        {
+            const int transitionDelayMillis = 25;
+            var pressedModifiers = new Stack<VirtualKeyCode>();
+            try
+            {
+                // Let the mouse-up that completed the gesture reach the target
+                // before beginning the keyboard chord.
+                Thread.Sleep(25);
+                foreach (var modifier in modifiers)
+                {
+                    Sim.KeyDown(modifier);
+                    pressedModifiers.Push(modifier);
+                    Thread.Sleep(transitionDelayMillis);
+                }
+
+                foreach (var key in keys)
+                {
+                    Sim.KeyDown(key);
+                    Thread.Sleep(transitionDelayMillis);
+                    Sim.KeyUp(key);
+                    Thread.Sleep(transitionDelayMillis);
+                }
+            }
+            finally
+            {
+                while (pressedModifiers.Count > 0)
+                {
+                    Sim.KeyUp(pressedModifiers.Pop());
+                    Thread.Sleep(transitionDelayMillis);
+                }
+            }
+        }
+
+        private bool IsControlShortcut(VirtualKeyCode key)
+        {
+            return Keys.Count == 1 && Keys[0] == key && Modifiers.Count == 1 &&
+                IsControl(Modifiers[0]);
+        }
+
+        private bool IsLegacyConsoleMenuShortcut(VirtualKeyCode finalKey)
+        {
+            return Modifiers.Count == 1 && IsAlt(Modifiers[0]) && Keys.Count == 3 &&
+                Keys[0] == VirtualKeyCode.SPACE && Keys[1] == VirtualKeyCode.VK_E &&
+                Keys[2] == finalKey;
+        }
+
+        private static bool IsConsoleTarget(GestureContext context)
+        {
+            if (IsWindowsTerminalTarget(context)) return true;
+
+            if (context.WinId != IntPtr.Zero)
+            {
+                var root = Native.GetAncestor(context.WinId, Native.GetAncestorFlags.GetRoot);
+                var className = new StringBuilder(128);
+                Native.GetClassName(root, className, className.Capacity);
+                var windowClass = className.ToString();
+                if (windowClass.Equals("ConsoleWindowClass", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            string processPath;
+            try
+            {
+                processPath = Native.GetProcessFile(context.ProcId);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(processPath)) return false;
+            var name = Path.GetFileNameWithoutExtension(processPath).ToLowerInvariant();
+            return name == "cmd" || name == "conhost" || name == "openconsole" ||
+                name == "windowsterminal" || name == "wt" || name == "powershell" ||
+                name == "pwsh" || name == "mintty" || name == "wezterm" ||
+                name == "alacritty";
+        }
+
+        private static bool IsWindowsTerminalTarget(GestureContext context)
+        {
+            if (context.WinId != IntPtr.Zero)
+            {
+                var root = Native.GetAncestor(context.WinId, Native.GetAncestorFlags.GetRoot);
+                var className = new StringBuilder(128);
+                Native.GetClassName(root, className, className.Capacity);
+                if (className.ToString().IndexOf(
+                    "CASCADIA", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+
+            string processPath;
+            try
+            {
+                processPath = Native.GetProcessFile(context.ProcId);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(processPath)) return false;
+            var name = Path.GetFileNameWithoutExtension(processPath);
+            return name.Equals("WindowsTerminal", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("wt", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsControl(VirtualKeyCode key)
+        {
+            return key == VirtualKeyCode.CONTROL || key == VirtualKeyCode.LCONTROL ||
+                key == VirtualKeyCode.RCONTROL;
+        }
+
+        private static bool IsAlt(VirtualKeyCode key)
+        {
+            return key == VirtualKeyCode.MENU || key == VirtualKeyCode.LMENU ||
+                key == VirtualKeyCode.RMENU;
+        }
+
         private static bool IsWindowMinimized(IntPtr hwnd)
         {
             int style = User32.GetWindowLong(hwnd, User32.GWL.GWL_STYLE);
 
             return (int)User32.WS.WS_MINIMIZE == (style & (int)User32.WS.WS_MINIMIZE);
         }
-
-        private void PerformKey(uint pid, uint tid, VirtualKeyCode key, bool isUp = false)
-        {
-
-            //Native.WaitForInputIdle(pid, tid, 100);
-            Thread.Sleep(10);
-            if (!isUp)
-            {
-                Sim.KeyDown(key);
-
-            }
-            else
-            {
-                Sim.KeyUp(key);
-            }
-
-            //Native.WaitForInputIdle(pid, tid, 20);
-
-        }
-
 
         private static bool IsCursorAndWindowSameScreen(IntPtr win)
         {

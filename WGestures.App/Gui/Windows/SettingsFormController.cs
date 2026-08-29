@@ -439,9 +439,9 @@ namespace WGestures.App.Gui.Windows
             MigrateService.ExportTo(filePath);
         }
 
-        internal PortableConfigReport ExportPortableTo(string filePath)
+        internal PortableConfigReport ExportPortableTo(string filePath, AbstractApp sourceApp)
         {
-            return MigrateService.ExportPortableTo(filePath, _intentStore);
+            return MigrateService.ExportPortableTo(filePath, sourceApp);
         }
 
         internal void RestoreDefaultGestures()

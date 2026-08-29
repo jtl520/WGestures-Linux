@@ -44,9 +44,11 @@ namespace WGestures.App.Migrate
             "down", "down-left", "left", "up-left"
         };
 
-        public static PortableConfigReport Export(string path, JsonGestureIntentStore store)
+        public static PortableConfigReport Export(string path, AbstractApp sourceApp)
         {
-            if (store == null) throw new ArgumentNullException("store");
+            if (sourceApp == null) throw new ArgumentNullException("sourceApp");
+            // The settings UI shows one profile's gesture list at a time. Export that
+            // exact list so hidden profiles cannot inflate the result or surprise users.
             var report = new PortableConfigReport();
             var document = new PortableDocument
             {
@@ -58,7 +60,7 @@ namespace WGestures.App.Migrate
                 {
                     Id = "global",
                     Name = "全局",
-                    Enabled = store.GlobalApp.IsGesturingEnabled,
+                    Enabled = true,
                     InheritGlobal = false,
                     Matchers = new List<Dictionary<string, string>>(),
                     Gestures = new List<PortableGesture>()
@@ -66,21 +68,26 @@ namespace WGestures.App.Migrate
             };
 
             var nextId = 0;
-            ExportApp(store.GlobalApp, document.GlobalProfile, document, report, ref nextId);
-            foreach (var app in store.Apps.Values.OrderBy(item => item.Name))
+            var selectedApp = sourceApp as ExeApp;
+            if (selectedApp == null)
+            {
+                document.GlobalProfile.Enabled = sourceApp.IsGesturingEnabled;
+                ExportApp(sourceApp, document.GlobalProfile, document, report, ref nextId);
+            }
+            else
             {
                 var profile = new PortableProfile
                 {
                     Id = "windows-profile-" + (++nextId),
-                    Name = app.Name,
-                    Enabled = app.IsGesturingEnabled,
-                    InheritGlobal = app.InheritGlobalGestures,
+                    Name = selectedApp.Name,
+                    Enabled = selectedApp.IsGesturingEnabled,
+                    InheritGlobal = selectedApp.InheritGlobalGestures,
                     Matchers = new List<Dictionary<string, string>>(),
-                    LegacyExecutablePath = app.ExecutablePath,
+                    LegacyExecutablePath = selectedApp.ExecutablePath,
                     Gestures = new List<PortableGesture>()
                 };
-                ExportApp(app, profile, document, report, ref nextId);
-                if (profile.Gestures.Count > 0) document.Profiles.Add(profile);
+                ExportApp(selectedApp, profile, document, report, ref nextId);
+                document.Profiles.Add(profile);
             }
 
             var json = JsonConvert.SerializeObject(document, Formatting.Indented,

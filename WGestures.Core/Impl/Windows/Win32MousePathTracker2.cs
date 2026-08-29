@@ -285,7 +285,7 @@ namespace WGestures.Core.Impl.Windows
                 {
                     while (_msgQueue.Count == 0) Monitor.Wait(_msgQueue);
                     msg = _msgQueue.Dequeue();
-                    UpdateContextAndEventArgs();
+                    UpdateContextAndEventArgs(false);
                 }
 
                 switch (msg.message)
@@ -863,21 +863,24 @@ namespace WGestures.Core.Impl.Windows
             Post(WM.STAY_TIMEOUT);
         }
         
-        private void UpdateContextAndEventArgs()
+        private void UpdateContextAndEventArgs(bool captureTarget)
         {
-            if (_moveCount == 0)
+            if (captureTarget)
             {
                 _currentContext.StartPoint = _curPos; //ToLeftDownCoord(ref _curPos);
 
-                if(PreferWindowUnderCursorAsTarget)
-                {
-                    var fgWin = Native.WindowFromPoint(new Native.POINT() { x = _curPos.X, y = _curPos.Y });
-                    _currentContext.WinId = fgWin;
-                    _currentContext.ProcId = Native.GetProcessIdByWindowHandle(fgWin);
-                }else
-                {
-                    _currentContext.ProcId = Native.GetActiveProcessId();
-                }
+                // Freeze the target at mouse-down. Re-resolving WindowFromPoint when
+                // the command runs is unreliable for Chromium/WebView applications:
+                // it can return a compositor child instead of the focused editor.
+                var targetWindow = PreferWindowUnderCursorAsTarget
+                    ? Native.WindowFromPoint(new Native.POINT() { x = _curPos.X, y = _curPos.Y })
+                    : Native.GetForegroundWindow();
+                if (targetWindow == IntPtr.Zero)
+                    targetWindow = Native.GetForegroundWindow();
+                _currentContext.WinId = targetWindow;
+                _currentContext.ProcId = targetWindow == IntPtr.Zero
+                    ? Native.GetActiveProcessId()
+                    : Native.GetProcessIdByWindowHandle(targetWindow);
 
             }
 
@@ -900,7 +903,7 @@ namespace WGestures.Core.Impl.Windows
         {
             if (DisableInFullscreen && IsInFullScreenMode()) return false;
 
-            UpdateContextAndEventArgs();
+            UpdateContextAndEventArgs(true);
 
             var args = new BeforePathStartEventArgs(_currentEventArgs);
             if (BeforePathStart != null) BeforePathStart(args);

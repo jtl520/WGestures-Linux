@@ -7,7 +7,7 @@ wgestures (2.1.6ubuntu1) noble; urgency=high
   * Verify Chinese overlay rendering, GTK entry input and UTF-8 configuration
     persistence in a live Kali Xfce VMware session.
 
- -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 18:10:00 +0800
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 23:30:00 +0800
 
 wgestures (2.1.5ubuntu1) noble; urgency=high
 

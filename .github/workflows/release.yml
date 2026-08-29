@@ -8,7 +8,7 @@ on:
       tag:
         description: Existing Git tag to publish
         required: true
-        default: v2.1.6
+        default: v2.1.7
 
 permissions:
   contents: write
@@ -143,17 +143,17 @@ jobs:
           windows_name="$(basename "$windows_package")"
           windows_sha256="$(sha256sum "$windows_package" | cut -d ' ' -f 1)"
           notes="$(printf '%s\n\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s' \
-            'CrossGestures v2.1.6 Linux 中文兼容性修复版，并同步提供 Windows 安装包。' \
-            '- Linux X11 手势完成提示改用 Pango/PangoCairo 排版，中文动作名称不再显示方框或乱码' \
-            '- Debian 包补齐 Pango 与中文字体依赖，并推荐安装 IBus/拼音或兼容的 Fcitx5 中文输入法组件' \
-            '- GTK 名称输入框和 UTF-8 配置保存已在 Kali Xfce 实机验证；仍保留四项默认手势及终端智能复制粘贴' \
+            'CrossGestures v2.1.7 Windows 右键响应优化版，并同步提供 Ubuntu/Debian 安装包。' \
+            '- Windows 普通右键起始移动阈值由 4 像素提高到 10 像素，降低手部轻微抖动被误判为手势的概率' \
+            '- Windows 合并尚未处理的连续鼠标移动消息，避免高回报率鼠标让右键抬起长期排在旧坐标之后' \
+            '- Ubuntu 的 GNOME Wayland 与 X11 输入逻辑保持不变，继续沿用现有右键回放和压力恢复机制' \
             "Linux 安装：\`sudo apt install ./$package_name\`" \
             'Linux 首次运行：`wgestures --diagnose`，然后执行 `wgestures --enable`；卸载：`wgestures --disable && sudo apt purge wgestures`。' \
             "Windows 安装：运行 \`$windows_name\` 并同意一次 UAC（需要 .NET Framework 4.8）；卸载：运行 \`%ProgramFiles%\\CrossGestures\\unins000.exe\`。" \
             'Windows 安装到 Program Files，并使用最高权限登录任务覆盖 Codex 和管理员终端；升级会保留用户手势配置。' \
             "Linux SHA-256: \`$sha256\`" \
             "Windows SHA-256: \`$windows_sha256\`" \
-            '验证：Linux Python/JavaScript 测试、Kali Xfce 中文显示与拼音输入、Debian 打包检查通过；Windows Release 构建、安装包检查及手势提示并发压力测试通过。')"
+            '验证：Linux Python/JavaScript 测试与 Debian 打包检查通过；Windows Debug/Release 构建、安装包检查、短按右键回放及 1000 次移动队列合并验证通过。')"
           gh release create "$RELEASE_TAG" "$package" "$windows_package" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \

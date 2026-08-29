@@ -169,6 +169,10 @@ namespace WGestures.Core.Impl.Windows
         //private TouchHook _touchHook;
 
         private Queue<MSG> _msgQueue = new Queue<MSG>(16);
+        // Mouse hooks can publish far more move notifications than the parser
+        // can consume while drawing an overlay.  One pending move is enough:
+        // OnMouseMove reads the latest cursor position from _curPos.
+        private bool _moveMessagePending;
         
         //表明是否是“performNormal”的情况下自己模拟的鼠标事件。
         private GestureModifier _filteredModifiers;
@@ -285,6 +289,7 @@ namespace WGestures.Core.Impl.Windows
                 {
                     while (_msgQueue.Count == 0) Monitor.Wait(_msgQueue);
                     msg = _msgQueue.Dequeue();
+                    if (msg.message == WM.GESTBTN_MOVE) _moveMessagePending = false;
                     UpdateContextAndEventArgs(false);
                 }
 
@@ -795,6 +800,12 @@ namespace WGestures.Core.Impl.Windows
         {
             lock (_msgQueue)
             {
+                if (msg == WM.GESTBTN_MOVE)
+                {
+                    if (_moveMessagePending) return;
+                    _moveMessagePending = true;
+                }
+
                 _msgQueue.Enqueue(new MSG(){message = msg, param = param});
                 Monitor.Pulse(_msgQueue);
             }

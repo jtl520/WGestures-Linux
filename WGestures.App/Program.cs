@@ -357,7 +357,10 @@ namespace WGestures.App
             pathTracker.DisableInFullscreen = config.Get(ConfigKeys.PathTrackerDisableInFullScreen, true);
             pathTracker.PreferWindowUnderCursorAsTarget = config.Get(ConfigKeys.PathTrackerPreferCursorWindow, false);
             pathTracker.TriggerButton = (GestureTriggerButton)config.Get(ConfigKeys.PathTrackerTriggerButton, GestureTriggerButton.Right);
-            pathTracker.InitialValidMove = config.Get(ConfigKeys.PathTrackerInitialValidMove, 4);
+            // Match the value shown by the settings UI. Four pixels is small
+            // enough for ordinary hand jitter to be mistaken for a gesture,
+            // which suppresses the context menu on an otherwise normal click.
+            pathTracker.InitialValidMove = config.Get(ConfigKeys.PathTrackerInitialValidMove, 10);
             pathTracker.StayTimeout = config.Get(ConfigKeys.PathTrackerStayTimeout, true);
             pathTracker.StayTimeoutMillis = config.Get(ConfigKeys.PathTrackerStayTimeoutMillis, 500);
             pathTracker.InitialStayTimeout = config.Get(ConfigKeys.PathTrackerInitialStayTimeout, true);

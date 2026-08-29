@@ -12,6 +12,8 @@
     <true />
     <key>PathTrackerTriggerButton</key>
     <integer>15</integer>
+    <key>PathTrackerInitialValidMove</key>
+    <integer>10</integer>
     <key>PathTrackerStayTimeout</key>
     <false />
     <key>PathTrackerInitialStayTimoutMillis</key>

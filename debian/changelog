@@ -1,3 +1,13 @@
+wgestures (2.1.7ubuntu1) noble; urgency=high
+
+  * Increase the Windows gesture-start movement threshold from four to ten
+    pixels so normal right clicks tolerate small amounts of hand jitter.
+  * Coalesce pending Windows mouse-move notifications so high-polling-rate
+    devices cannot delay the queued right-button release behind stale points.
+  * Keep the Ubuntu GNOME Wayland and X11 input behavior unchanged.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 19:05:00 +0800
+
 wgestures (2.1.6ubuntu1) noble; urgency=high
 
   * Render X11 gesture result labels with Pango/PangoCairo so Unicode action

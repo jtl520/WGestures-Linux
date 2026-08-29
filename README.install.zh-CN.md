@@ -254,8 +254,9 @@ X11 成功提示使用 Pango 进行 UTF-8 排版，并需要系统中存在中�
 sudo apt install gir1.2-pango-1.0 fonts-wqy-zenhei
 ```
 
-名称输入框是标准 GTK3 输入框，CrossGestures 不限制中文字符。如果可以粘贴中文、
-但无法用键盘打出中文，需要安装并在 Kali 会话中启用输入法，二选一即可：
+名称输入框是标准 GTK3 输入框，CrossGestures 不限制中文字符。APT 默认会根据安装包的
+推荐依赖安装 IBus、拼音引擎和 `im-config`；使用 `--no-install-recommends` 安装，或系统
+已有其他输入法时，可以手动安装并在 Kali 会话中启用输入法，二选一即可：
 
 ```sh
 # IBus

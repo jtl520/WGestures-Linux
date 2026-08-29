@@ -330,6 +330,9 @@ class EnvironmentTests(unittest.TestCase):
         self.assertIn("gir1.2-pango-1.0", source)
         self.assertIn("gir1.2-pango-1.0", package)
         self.assertRegex(package, r"fonts-wqy-zenhei\s*\|\s*fonts-noto-cjk")
+        self.assertIn("im-config", package)
+        self.assertRegex(package, r"ibus\s*\|\s*fcitx5")
+        self.assertRegex(package, r"ibus-libpinyin\s*\|\s*fcitx5-chinese-addons")
 
     def test_user_can_enable_and_disable_session_autostart(self):
         directory = tempfile.mkdtemp(prefix="wgestures-autostart-test-")

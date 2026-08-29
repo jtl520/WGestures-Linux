@@ -8,7 +8,7 @@ wgestures (2.1.5ubuntu1) noble; urgency=high
     retaining exactly four default gestures, and migrate affected 2.1.4
     default configurations without overwriting customized shortcuts.
 
- -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 17:11:41 +0800
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sat, 29 Aug 2026 22:30:00 +0800
 
 wgestures (2.1.4ubuntu1) noble; urgency=high
 

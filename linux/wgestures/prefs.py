@@ -19,6 +19,8 @@ from .storage import ConfigStore
 
 
 BUTTON_LABELS = {"right": "右键", "middle": "中键", "x1": "X1", "x2": "X2"}
+GESTURE_BUTTONS = ("right", "x1", "x2")
+GENERAL_TRIGGER_BUTTONS = ("right", "middle", "x1", "x2")
 ACTION_LABELS = {
     "ShortcutAction": "快捷键", "CopyAction": "智能复制（自动适配终端）",
     "PasteAction": "智能粘贴（自动适配终端）",
@@ -94,8 +96,13 @@ class GestureDialog(Gtk.Dialog):
         self.get_content_area().pack_start(grid, True, True, 0)
         self.name_entry = Gtk.Entry(text=self.gesture.get("name", "") if self.gesture else "")
         _row(grid, 0, "名称", self.name_entry)
-        self.button_combo = _combo([(item, BUTTON_LABELS[item]) for item in BUTTONS],
-                                   BUTTONS.index(self.gesture["button"] if self.gesture else "right"))
+        self.button_choices = (("middle",) + GESTURE_BUTTONS
+                               if self.gesture and self.gesture["button"] == "middle"
+                               else GESTURE_BUTTONS)
+        self.button_combo = _combo([
+            (item, "中键（已停用）" if item == "middle" else BUTTON_LABELS[item])
+            for item in self.button_choices],
+            self.button_choices.index(self.gesture["button"] if self.gesture else "right"))
         _row(grid, 1, "触发按钮", self.button_combo)
         self.direction_entry = Gtk.Entry()
         self.direction_entry.set_placeholder_text("left,up,right")
@@ -285,9 +292,13 @@ class PreferencesWindow(Gtk.ApplicationWindow):
                          self.settings.set("minimize-to-tray", widget.get_active()))
         _row(grid, 3, "最小化/关闭到托盘", minimize)
         button_box = Gtk.Box(spacing=12)
-        for name in BUTTONS:
-            check = Gtk.CheckButton(label=BUTTON_LABELS[name])
-            check.set_active(name in self.settings.get("trigger-buttons"))
+        for name in GENERAL_TRIGGER_BUTTONS:
+            label = "中键（面板）" if name == "middle" else BUTTON_LABELS[name]
+            check = Gtk.CheckButton(label=label)
+            check.set_active(
+                bool(self.settings.get("middle-panel-enabled"))
+                if name == "middle" else
+                name in self.settings.get("trigger-buttons"))
             check.connect("toggled", self._buttons_changed, name, button_box)
             button_box.pack_start(check, False, False, 0)
         _row(grid, 4, "触发按钮", button_box)
@@ -358,13 +369,18 @@ class PreferencesWindow(Gtk.ApplicationWindow):
 
     def _buttons_changed(self, widget, name, box):
         current = []
-        for child, button_name in zip(box.get_children(), BUTTONS):
-            if child.get_active():
+        middle_enabled = False
+        for child, button_name in zip(box.get_children(), GENERAL_TRIGGER_BUTTONS):
+            active = child.get_active()
+            if button_name == "middle":
+                middle_enabled = active
+            elif active:
                 current.append(button_name)
-        if not current:
+        if not current and not middle_enabled:
             widget.set_active(True)
             return
         self.settings.set("trigger-buttons", current)
+        self.settings.set("middle-panel-enabled", middle_enabled)
 
     def _spin_changed(self, widget, key, floating):
         value = widget.get_value() if floating else int(widget.get_value())

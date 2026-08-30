@@ -25,9 +25,24 @@ namespace WGestures.Core.Commands.Impl
 
         public override void Execute()
         {
-            var cursorWin = Native.WindowFromPoint(new Native.POINT() { x = Context.StartPoint.X, y = Context.StartPoint.Y });
-           
-            DoOperation(cursorWin);
+            // The tracker freezes WinId before the trail overlay is shown.  Looking
+            // the window up again here can select CrossGestures' own topmost layered
+            // canvas instead of the application beneath it, which made every window
+            // action (most visibly toggle-always-on-top) appear to do nothing.
+            var targetWindow = Context == null ? IntPtr.Zero : Context.WinId;
+            if (targetWindow == IntPtr.Zero && Context != null)
+            {
+                targetWindow = Native.WindowFromPoint(new Native.POINT
+                {
+                    x = Context.StartPoint.X,
+                    y = Context.StartPoint.Y
+                });
+            }
+
+            Trace.WriteLine("CrossGestures window command: operation=" +
+                            ChangeWindowStateTo + ", target=0x" +
+                            targetWindow.ToInt64().ToString("X"));
+            DoOperation(targetWindow);
         }
 
         private void DoOperation(IntPtr win)
@@ -101,23 +116,40 @@ namespace WGestures.Core.Commands.Impl
                         goto end;
 
                     case WindowOperation.TOP_MOST:
-
-                        if ((rootWinExStyle & (int)User32.WS_EX.WS_EX_TOPMOST) != 0)
+                        var makeTopMost =
+                            (rootWinExStyle & (int)User32.WS_EX.WS_EX_TOPMOST) == 0;
+                        var changed = User32.SetWindowPos(rootWin,
+                            makeTopMost ? new IntPtr(-1) : new IntPtr(-2),
+                            0, 0, 0, 0,
+                            User32.SWP.SWP_NOMOVE | User32.SWP.SWP_NOSIZE |
+                            User32.SWP.SWP_NOACTIVATE);
+                        Trace.WriteLine("CrossGestures window topmost result: target=0x" +
+                                        rootWin.ToInt64().ToString("X") +
+                                        ", requested=" + makeTopMost +
+                                        ", success=" + changed +
+                                        ", win32Error=" + Marshal.GetLastWin32Error());
+                        if (!changed)
                         {
-                            User32.SetWindowPos(rootWin, new IntPtr(-2), 0, 0, 0, 0, User32.SWP.SWP_NOMOVE | User32.SWP.SWP_NOSIZE);
+                            // Some framework windows expose a child/owner root that
+                            // rejects SetWindowPos.  The foreground target captured at
+                            // mouse-down is the safest bounded fallback.
+                            var foreground = Native.GetForegroundWindow();
+                            if (foreground != IntPtr.Zero && foreground != rootWin)
+                                User32.SetWindowPos(foreground,
+                                    makeTopMost ? new IntPtr(-1) : new IntPtr(-2),
+                                    0, 0, 0, 0,
+                                    User32.SWP.SWP_NOMOVE | User32.SWP.SWP_NOSIZE |
+                                    User32.SWP.SWP_NOACTIVATE);
                         }
-                        else
-                        {
-                            User32.SetWindowPos(rootWin, new IntPtr(-1), 0, 0, 0, 0, User32.SWP.SWP_NOMOVE | User32.SWP.SWP_NOSIZE);
-                        }
-                        
                         goto end;
                 }
                 break;
             }
 
-        end: GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced);
-
+        end:
+        // 这里绝不能做强制 GC：窗口手势在手势线程上执行，强制全量回收
+        // 会卡住手势解析，让下一次手势明显变卡。
+        ;
         }
 
         public GestureContext Context { set; private get; }

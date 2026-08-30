@@ -12,9 +12,10 @@ from gi.repository import Gtk
 class X11TrayIcon(object):
     """X11 tray menu with AppIndicator and Gtk.StatusIcon fallbacks."""
 
-    def __init__(self, settings, on_quit):
+    def __init__(self, settings, on_quit, on_show_panel=None):
         self.settings = settings
         self.on_quit = on_quit
+        self.on_show_panel = on_show_panel
         self.indicator = None
         self._indicator_module = None
         self.status_icon = None
@@ -32,6 +33,9 @@ class X11TrayIcon(object):
         self.paused_item = Gtk.CheckMenuItem.new_with_label("暂停")
         self.paused_item.connect("toggled", self._paused_toggled)
         self.menu.append(self.paused_item)
+        panel_item = Gtk.MenuItem.new_with_label("弹出快捷面板")
+        panel_item.connect("activate", self._show_panel)
+        self.menu.append(panel_item)
         self.menu.append(Gtk.SeparatorMenuItem())
 
         settings_item = Gtk.MenuItem.new_with_label("打开设置")
@@ -87,6 +91,10 @@ class X11TrayIcon(object):
     def _paused_toggled(self, item):
         if not self._syncing:
             self.settings.set("paused", item.get_active())
+
+    def _show_panel(self, _item):
+        if self.on_show_panel is not None:
+            self.on_show_panel()
 
     def sync(self):
         enabled = bool(self.settings.get("enabled"))

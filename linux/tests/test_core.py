@@ -15,6 +15,7 @@ sys.path.insert(0, LINUX_ROOT)
 
 from wgestures.autostart import (session_autostart_enabled,
                                  set_session_autostart)
+from wgestures.cli import _detach_background_gui_stdio
 from wgestures.config import (create_default_config, find_matching_profile,
                               normalize_config, resolve_gesture)
 from wgestures.diagnostics import dependency_status, select_backend
@@ -23,6 +24,10 @@ from wgestures.gesture import (GestureRecognizer, GestureSession,
                                gesture_key, simplify_corner_transitions)
 from wgestures.importer import import_legacy_config
 from wgestures.portable import export_portable_config, import_config
+from wgestures.panel import (PanelStore, create_default_panel,
+                             favicon_cache_path, favicon_url,
+                             find_running_process_pid, is_valid_favicon,
+                             normalize_panel, panel_item_from_drop_uri)
 from wgestures.settings import DEFAULTS
 from wgestures.storage import ConfigStore
 from wgestures.shortcut import (action_display_name, copy_accelerator,
@@ -76,6 +81,159 @@ class ConformanceTests(unittest.TestCase):
         session.begin({"button_number": 3}, 0, 0)
         self.assertTrue(session.cancel())
         self.assertIsNone(session.active)
+
+
+class PanelConfigurationTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.mkdtemp(prefix="wgestures-panel-test-")
+        self.path = os.path.join(self.directory, "panel-v1.json")
+
+    def tearDown(self):
+        shutil.rmtree(self.directory)
+
+    def test_panel_has_exactly_sixteen_slots_and_validates_targets(self):
+        panel = create_default_panel()
+        panel["slots"][0] = {
+            "id": "browser", "label": "Example", "type": "url",
+            "target": "https://example.com/path",
+        }
+        panel["slots"].append({
+            "id": "bad", "label": "Bad", "type": "url",
+            "target": "javascript:alert(1)",
+        })
+        normalized = normalize_panel(panel)
+        self.assertEqual(len(normalized["config"]["slots"]), 16)
+        self.assertEqual(normalized["config"]["slots"][0]["target"],
+                         "https://example.com/path")
+        self.assertTrue(normalized["warnings"])
+
+    def test_panel_preserves_advanced_launch_and_browser_options(self):
+        panel = create_default_panel()
+        panel["slots"][0] = {
+            "id": "editor", "label": "Editor", "type": "application",
+            "target": "org.example.Editor.desktop", "arguments": "--new-window",
+            "workingDirectory": "/tmp", "runAsAdministrator": True,
+            "activateIfRunning": True, "description": "Text editor",
+        }
+        panel["slots"][1] = {
+            "id": "site", "label": "Site", "type": "url",
+            "target": "https://example.com", "browser": "firefox.desktop",
+        }
+        slots = normalize_panel(panel)["config"]["slots"]
+        self.assertEqual(slots[0]["arguments"], "--new-window")
+        self.assertEqual(slots[0]["workingDirectory"], "/tmp")
+        self.assertTrue(slots[0]["runAsAdministrator"])
+        self.assertTrue(slots[0]["activateIfRunning"])
+        self.assertEqual(slots[1]["browser"], "firefox.desktop")
+
+    def test_panel_accepts_absolute_and_working_directory_executables(self):
+        panel = create_default_panel()
+        panel["slots"][0] = {
+            "id": "studio", "label": "", "type": "application",
+            "target": "/opt/android-studio/bin/studio.sh",
+        }
+        panel["slots"][1] = {
+            "id": "jadx", "label": "JADX", "type": "application",
+            "target": "./jadx-gui", "workingDirectory": "/opt/jadx/bin",
+        }
+        slots = normalize_panel(panel)["config"]["slots"]
+        self.assertEqual(slots[0]["target"],
+                         "/opt/android-studio/bin/studio.sh")
+        self.assertEqual(slots[0]["label"], "studio.sh")
+        self.assertEqual(slots[1]["target"], "./jadx-gui")
+        self.assertEqual(slots[1]["workingDirectory"], "/opt/jadx/bin")
+
+    def test_panel_store_recovers_last_valid_backup(self):
+        store = PanelStore(self.path)
+        first = create_default_panel()
+        first["slots"][0] = {
+            "id": "one", "label": "Home", "type": "folder",
+            "target": os.path.abspath(self.directory),
+        }
+        store.save(first, create_backup=False)
+        second = create_default_panel()
+        second["slots"][1] = {
+            "id": "two", "label": "Web", "type": "url",
+            "target": "https://example.com",
+        }
+        store.save(second, create_backup=True)
+        with open(self.path, "w", encoding="utf-8") as stream:
+            stream.write("{broken")
+        loaded = store.load()
+        self.assertEqual(loaded["source"], "backup")
+        self.assertEqual(loaded["config"]["slots"][0]["id"], "one")
+
+    def test_favicon_helpers_validate_and_resolve(self):
+        self.assertEqual(favicon_url("https://ChatGPT.com/x"),
+                         "https://chatgpt.com/favicon.ico")
+        self.assertIsNone(favicon_url("ftp://example.com/a"))
+        self.assertIsNone(favicon_url("not a url"))
+
+        png = bytes((0x89, 0x50, 0x4E, 0x47)) + b"0" * 40
+        ico = bytes((0x00, 0x00, 0x01, 0x00)) + b"0" * 40
+        self.assertTrue(is_valid_favicon(png))
+        self.assertTrue(is_valid_favicon(ico))
+        self.assertFalse(is_valid_favicon(b"<html>" + b"0" * 40))
+        self.assertFalse(is_valid_favicon(png[:10]))
+
+        directory = os.path.join(self.directory, "favicons")
+        self.assertEqual(
+            favicon_cache_path(directory, "https://a.com/"),
+            os.path.join(directory, "a.com.ico"))
+        self.assertIsNone(favicon_cache_path(directory, "ftp://a.com"))
+
+    def test_find_running_process_pid_matches_executable_name(self):
+        scan = iter([(101, "code"), (202, "firefox"), (303, "gnome-shell")])
+        self.assertEqual(find_running_process_pid("/usr/bin/code", scan=scan), 101)
+        self.assertEqual(find_running_process_pid("firefox", scan=iter(
+            [(101, "code"), (202, "firefox")])), 202)
+        self.assertIsNone(find_running_process_pid("thunderbird", scan=iter(
+            [(101, "code")])))
+        self.assertIsNone(find_running_process_pid("  ", scan=iter(
+            [(101, "code")])))
+
+    def test_find_running_process_pid_matches_truncated_comm(self):
+        # The kernel truncates /proc comm to 15 visible characters.
+        self.assertEqual(find_running_process_pid(
+            "reallylongapplicationname",
+            scan=iter([(7, "reallylongappli")]),
+        ), 7)
+
+    def test_drop_uri_becomes_matching_panel_item(self):
+        from urllib.request import pathname2url
+
+        def file_uri(path):
+            prefix = "file://" if os.sep == "/" else "file:///"
+            return prefix + pathname2url(path)
+
+        folder = os.path.join(self.directory, "dropped")
+        os.makedirs(folder)
+        document = os.path.join(self.directory, "note with space.txt")
+        with open(document, "w", encoding="utf-8") as stream:
+            stream.write("drop")
+        launcher = os.path.join(self.directory, "wg-drop-app.desktop")
+        with open(launcher, "w", encoding="utf-8") as stream:
+            stream.write("[Desktop Entry]\nType=Application\nName=Drop\n")
+
+        item = panel_item_from_drop_uri(file_uri(folder))
+        self.assertEqual(item["type"], "folder")
+        item = panel_item_from_drop_uri(file_uri(document))
+        self.assertEqual(item["type"], "file")
+        self.assertEqual(item["target"], document)
+        item = panel_item_from_drop_uri(file_uri(launcher))
+        self.assertEqual(item, {"type": "application", "target": "wg-drop-app.desktop"})
+        self.assertIsNone(panel_item_from_drop_uri(
+            file_uri(launcher), desktop_lookup=lambda _desktop_id: False))
+
+        self.assertEqual(panel_item_from_drop_uri("https://example.com/x"),
+                         {"type": "url", "target": "https://example.com/x"})
+        self.assertIsNone(panel_item_from_drop_uri("ftp://example.com/file"))
+        self.assertIsNone(panel_item_from_drop_uri("file://relative/path"))
+        self.assertIsNone(panel_item_from_drop_uri(""))
+        self.assertIsNone(panel_item_from_drop_uri(
+            os.path.join(self.directory, "missing-file")))
+        self.assertIsNone(panel_item_from_drop_uri(
+            file_uri(os.path.join(self.directory, "missing-file"))))
 
 
 class ConfigurationTests(unittest.TestCase):
@@ -147,6 +305,25 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(DEFAULTS["fade-duration"], 300)
         self.assertTrue(DEFAULTS["autostart-enabled"])
         self.assertTrue(DEFAULTS["minimize-to-tray"])
+        self.assertTrue(DEFAULTS["middle-panel-enabled"])
+
+    @mock.patch("wgestures.cli.os.close")
+    @mock.patch("wgestures.cli.os.dup2")
+    @mock.patch("wgestures.cli.os.open", side_effect=(10, 11, 12))
+    @mock.patch("wgestures.cli.os.getpgrp", return_value=200)
+    @mock.patch("wgestures.cli.os.tcgetpgrp", return_value=100)
+    @mock.patch("wgestures.cli.os.isatty", return_value=True)
+    def test_background_settings_detach_from_terminal_job_control(
+            self, _isatty, _tcgetpgrp, _getpgrp, _open, dup2, close):
+        with mock.patch.object(sys.stdin, "fileno", return_value=0), \
+                mock.patch.object(sys.stdout, "fileno", return_value=1), \
+                mock.patch.object(sys.stderr, "fileno", return_value=2):
+            self.assertTrue(_detach_background_gui_stdio())
+        self.assertEqual(
+            dup2.call_args_list,
+            [mock.call(10, 0), mock.call(11, 1), mock.call(12, 2)])
+        self.assertEqual(close.call_args_list,
+                         [mock.call(10), mock.call(11), mock.call(12)])
 
     def test_packaged_default_matches_python_default(self):
         path = os.path.join(REPOSITORY_ROOT, "gnome-extension", "defaults",
@@ -196,6 +373,40 @@ class ConfigurationTests(unittest.TestCase):
             config, {}, "middle", ["up-right", "up"],
             {"origin": (0, 0), "end": (60, -100)})
         self.assertIsNone(wrong_button)
+
+    def test_fast_multi_stroke_paths_do_not_degrade_to_copy_or_paste(self):
+        config = create_default_config()
+        fast_enter = {
+            "origin": (0, 0), "end": (0, 120), "pathLength": 320,
+        }
+        self.assertIsNone(resolve_gesture(
+            config, {}, "right", ["down"], fast_enter))
+        self.assertIsNone(resolve_gesture(
+            config, {}, "right", ["down-right", "down"], fast_enter))
+        fast_topmost = {
+            "origin": (0, 120), "end": (0, 0), "pathLength": 320,
+        }
+        self.assertIsNone(resolve_gesture(
+            config, {}, "right", ["up"], fast_topmost))
+        self.assertIsNone(resolve_gesture(
+            config, {}, "right", ["up-right", "up"], fast_topmost))
+
+        straight_copy = {
+            "origin": (0, 100), "end": (8, 0), "pathLength": 104,
+        }
+        self.assertEqual(resolve_gesture(
+            config, {}, "right", ["up"], straight_copy
+        )["action"]["id"], "smart-copy")
+
+    def test_recognizer_tracks_raw_path_length_across_fast_corners(self):
+        recognizer = GestureRecognizer(start_threshold=5, segment_threshold=12)
+        recognizer.begin(0, 0)
+        for point in ((2, 1), (0, 100), (100, 100), (100, 200)):
+            recognizer.add_point(*point)
+        result = recognizer.finish()
+        self.assertEqual(result["pathLength"], 300.0)
+        self.assertEqual(result["origin"], (0, 0))
+        self.assertEqual(result["end"], (100, 200))
 
     def test_rounded_corners_match_window_above_gesture(self):
         config = create_default_config()

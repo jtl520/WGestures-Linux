@@ -23,6 +23,17 @@ const WINDOW_OPERATIONS = Object.freeze([
     'toggle-above',
 ]);
 const SINGLE_DIRECTION_TOLERANCE = 35;
+const SINGLE_DIRECTION_MIN_STRAIGHTNESS = 0.80;
+
+function singleDirectionMovementAllowed(gesture, movement) {
+    if (gesture.directions.length !== 1 || !movement)
+        return true;
+    const {origin, end, pathLength} = movement;
+    if (!origin || !end || !Number.isFinite(Number(pathLength)) || Number(pathLength) <= 0)
+        return true;
+    const displacement = Math.hypot(end.x - origin.x, end.y - origin.y);
+    return displacement / Number(pathLength) >= SINGLE_DIRECTION_MIN_STRAIGHTNESS;
+}
 
 function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -258,7 +269,8 @@ export function resolveGesture(config, identity, button, directions, movement = 
         if (!candidate.enabled)
             continue;
         const matched = candidate.gestures.find(item =>
-            item.enabled && gestureKey(item.button, item.directions) === key
+            item.enabled && gestureKey(item.button, item.directions) === key &&
+            singleDirectionMovementAllowed(item, movement)
         );
         if (!matched)
             continue;
@@ -274,7 +286,8 @@ export function resolveGesture(config, identity, button, directions, movement = 
             if (!candidate.enabled)
                 continue;
             const matched = candidate.gestures.find(item =>
-                item.enabled && gestureKey(item.button, item.directions) === simplifiedKey
+                item.enabled && gestureKey(item.button, item.directions) === simplifiedKey &&
+                singleDirectionMovementAllowed(item, movement)
             );
             const matchedAction = matched ? actions.get(matched.actionId) : null;
             if (matchedAction?.enabled)
@@ -293,7 +306,8 @@ export function resolveGesture(config, identity, button, directions, movement = 
             continue;
         let best = null;
         for (const gesture of candidate.gestures) {
-            if (!gesture.enabled || gesture.button !== button || gesture.directions.length !== 1)
+            if (!gesture.enabled || gesture.button !== button || gesture.directions.length !== 1 ||
+                !singleDirectionMovementAllowed(gesture, movement))
                 continue;
             const error = directionErrorDegrees(gesture.directions[0], dx, dy);
             const action = actions.get(gesture.actionId);

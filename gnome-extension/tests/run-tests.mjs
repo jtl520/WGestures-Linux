@@ -8,6 +8,7 @@ import {createDefaultConfig, findMatchingProfile, normalizeConfig, resolveGestur
 import {importLegacyConfig} from '../core/importer.js';
 import {exportPortableConfig, importConfig} from '../core/portable.js';
 import {GestureSession, ReplayGuard} from '../core/input-state.js';
+import {createDefaultPanel, matchesExecutableName, normalizePanel, validPanelTarget} from '../core/panel.js';
 import {
     actionDisplayName, copyAccelerator, displayAccelerator, isTerminalIdentity,
     normalizeAccelerator, pasteAccelerator,
@@ -22,6 +23,14 @@ const sharedFixtures = JSON.parse(readFileSync(
     new URL('../../tests/fixtures/core-conformance.json', import.meta.url),
     'utf8'
 ));
+
+const shellPanelSource = readFileSync(
+    new URL('../shell/panel.js', import.meta.url), 'utf8'
+);
+
+const extensionSource = readFileSync(
+    new URL('../extension.js', import.meta.url), 'utf8'
+);
 
 test('JavaScript recognizer matches cross-backend conformance fixtures', () => {
     for (const item of sharedFixtures.directionCases) {
@@ -70,6 +79,104 @@ test('recognizer ignores jitter and compresses repeated directions', () => {
 test('gesture keys reject invalid input', () => {
     assert.equal(gestureKey('right', ['left', 'up']), 'right:left,up');
     assert.throws(() => gestureKey('left-button', ['left']));
+});
+
+test('quick panel keeps sixteen validated slots', () => {
+    const panel = createDefaultPanel();
+    assert.equal(panel.slots.length, 16);
+    panel.slots[0] = {
+        id: 'browser', label: '', type: 'url', target: 'https://example.com/path',
+        browser: 'firefox.desktop', description: 'Example site',
+    };
+    panel.slots.push({id: 'bad', label: 'Bad', type: 'url', target: 'javascript:alert(1)'});
+    const normalized = normalizePanel(panel);
+    assert.equal(normalized.config.slots.length, 16);
+    assert.equal(normalized.config.slots[0].label, 'example.com');
+    assert.equal(normalized.config.slots[0].browser, 'firefox.desktop');
+    assert.equal(normalized.config.slots[0].description, 'Example site');
+    assert.ok(normalized.warnings.length > 0);
+    assert.equal(validPanelTarget('url', 'https://example.com'), true);
+    assert.equal(validPanelTarget('url', 'file:///tmp/test'), false);
+    assert.equal(validPanelTarget('application', '/opt/jadx/bin/jadx-gui'), true);
+    assert.equal(validPanelTarget('application', './studio.sh'), true);
+    assert.equal(validPanelTarget('application', 'bad\\windows-path'), false);
+});
+
+test('GNOME panel resolves executable paths without a shell', () => {
+    assert.match(shellPanelSource, /_resolveExecutable\(target, workingDirectory = null\)/);
+    assert.match(shellPanelSource, /GLib\.find_program_in_path\(executable\)/);
+    assert.match(shellPanelSource, /GLib\.FileTest\.IS_EXECUTABLE/);
+    assert.match(shellPanelSource, /launcher\.set_cwd\(GLib\.path_get_dirname\(executable\)\)/);
+    assert.doesNotMatch(shellPanelSource, /shell:\s*true/);
+});
+
+test('GNOME indicator exposes a fallback panel entry and responsive layout', () => {
+    assert.match(extensionSource, /PopupMenuItem\(_\('弹出快捷面板'\)\)/);
+    assert.match(extensionSource, /global\.get_pointer\(\)/);
+    assert.match(shellPanelSource, /_applyMonitorLayout\(area\)/);
+    assert.match(shellPanelSource, /Math\.min\(area\.width, area\.height\) \/ 900/);
+    assert.match(shellPanelSource, /this\._layout\.tileWidth/);
+});
+
+test('GNOME panel exposes the four direct empty-slot actions', () => {
+    const labelsBlock = shellPanelSource.match(
+        /const PANEL_ACTION_LABELS = Object\.freeze\(\{([\s\S]*?)\}\);/
+    );
+    assert.ok(labelsBlock, 'panel action labels are missing');
+    const entries = [...labelsBlock[1].matchAll(
+        /(application|file|folder|url):\s*'([^']+)'/g
+    )].map(match => [match[1], match[2]]);
+    assert.deepEqual(Object.fromEntries(entries), {
+        application: '启动软件',
+        file: '打开文件',
+        folder: '打开文件夹',
+        url: '打开网址',
+    });
+    assert.match(shellPanelSource, /new PopupMenu\.PopupMenu\(button,/);
+    assert.match(shellPanelSource, /menu\.addAction\(label,/);
+    assert.match(shellPanelSource, /command\.push\('--panel-type', initialType\)/);
+    assert.match(shellPanelSource, /menu\.addAction\('编辑'/);
+    assert.match(shellPanelSource, /menu\.addAction\('删除'/);
+});
+
+test('GNOME folder items prefer a real file manager over an incorrect URI handler', () => {
+    assert.match(shellPanelSource, /const FILE_MANAGER_DESKTOP_IDS/);
+    assert.match(shellPanelSource, /org\.gnome\.Nautilus\.desktop/);
+    assert.match(shellPanelSource, /Gio\.DesktopAppInfo\.new\(desktopId\)/);
+    assert.match(shellPanelSource, /fileManager\.launch\(\[file\], context\)/);
+});
+
+test('GNOME panel reuses its tile tree and refreshes cached site icons', () => {
+    assert.match(shellPanelSource, /if \(this\._dirty \|\| !this\._config\)\s*this\._reload\(\)/);
+    assert.match(shellPanelSource, /GLib\.get_user_cache_dir\(\)/);
+    assert.match(shellPanelSource, /'--panel-fetch-icon'/);
+    assert.match(shellPanelSource, /new Gio\.FileIcon/);
+    assert.doesNotMatch(shellPanelSource, /showAt\(x, y\) \{\s*this\._reload\(\)/);
+});
+
+test('GNOME panel keeps right and X gestures working outside the panel', () => {
+    assert.ok(extensionSource.includes(
+        '_handleVisiblePanelEvent(event, type) {'));
+    assert.ok(extensionSource.includes(
+        'if (this._panel.containsActor(actor))'));
+    assert.ok(extensionSource.includes(
+        'return this._onButtonPress(event, buttonNumber, buttonName);'));
+    assert.ok(extensionSource.includes(
+        'return this._onButtonRelease(event, buttonNumber, buttonName);'));
+});
+
+test('GNOME panel activates a running application instead of spawning a copy', () => {
+    assert.equal(matchesExecutableName('/usr/bin/code', 'code\n'), true);
+    assert.equal(matchesExecutableName('code', 'code'), true);
+    assert.equal(matchesExecutableName('firefox', 'code'), false);
+    assert.equal(matchesExecutableName('  ', 'code'), false);
+    assert.equal(
+        matchesExecutableName('reallylongapplicationname', 'reallylongappli'), true);
+    assert.match(shellPanelSource, /item\.activateIfRunning && this\._activateRunning\(executable\)/);
+    assert.match(shellPanelSource, /_activateRunning\(executable\) \{/);
+    assert.match(shellPanelSource, /GLib\.file_get_contents\(`\/proc\/\$\{pid\}\/comm`\)/);
+    assert.match(shellPanelSource, /matchesExecutableName\(executable,/);
+    assert.match(shellPanelSource, /Main\.activateWindow\(metaWindow,/);
 });
 
 test('defaults keep four gestures and smart Linux clipboard actions', () => {
@@ -153,6 +260,15 @@ test('successful action labels are enabled with a short default fade', () => {
     assert.match(schema, /<key name="fade-duration"[\s\S]*?<default>300<\/default>/);
     assert.match(schema, /<key name="autostart-enabled"[\s\S]*?<default>true<\/default>/);
     assert.match(schema, /<key name="minimize-to-tray"[\s\S]*?<default>true<\/default>/);
+    assert.match(schema, /<key name="middle-panel-enabled"[\s\S]*?<default>true<\/default>/);
+});
+
+test('preferences place the middle quick panel in the trigger-button group', () => {
+    const preferences = readFileSync(new URL('../prefs.js', import.meta.url), 'utf8');
+    assert.match(preferences,
+        /GENERAL_TRIGGER_BUTTONS = Object\.freeze\(\['right', 'middle', 'x1', 'x2'\]\)/);
+    assert.match(preferences,
+        /button === 'middle'[\s\S]*?'middle-panel-enabled'[\s\S]*?buttonsGroup\.add\(row\)/);
 });
 
 test('application identity uses documented precedence and inherits global gestures', () => {
@@ -203,6 +319,43 @@ test('single-direction gestures allow moderate drawing error', () => {
     assert.equal(resolveGesture(config, {}, 'middle', ['up-right', 'up'], {
         origin: {x: 0, y: 0}, end: {x: 60, y: -100},
     }), null);
+});
+
+test('fast multi-stroke paths do not degrade to copy or paste', () => {
+    const config = createDefaultConfig();
+    const fastEnter = {
+        origin: {x: 0, y: 0}, end: {x: 0, y: 120}, pathLength: 320,
+    };
+    assert.equal(resolveGesture(config, {}, 'right', ['down'], fastEnter), null);
+    assert.equal(resolveGesture(
+        config, {}, 'right', ['down-right', 'down'], fastEnter
+    ), null);
+    const fastTopmost = {
+        origin: {x: 0, y: 120}, end: {x: 0, y: 0}, pathLength: 320,
+    };
+    assert.equal(resolveGesture(config, {}, 'right', ['up'], fastTopmost), null);
+    assert.equal(resolveGesture(
+        config, {}, 'right', ['up-right', 'up'], fastTopmost
+    ), null);
+    const straightCopy = {
+        origin: {x: 0, y: 100}, end: {x: 8, y: 0}, pathLength: 104,
+    };
+    assert.equal(resolveGesture(
+        config, {}, 'right', ['up'], straightCopy
+    ).action.id, 'smart-copy');
+});
+
+test('recognizer tracks raw path length across fast corners', () => {
+    const recognizer = new GestureRecognizer({
+        startThreshold: 5, segmentThreshold: 12,
+    });
+    recognizer.begin(0, 0);
+    for (const [x, y] of [[2, 1], [0, 100], [100, 100], [100, 200]])
+        recognizer.addPoint(x, y);
+    const result = recognizer.finish();
+    assert.equal(result.pathLength, 300);
+    assert.deepEqual(result.origin, {x: 0, y: 0});
+    assert.deepEqual(result.end, {x: 100, y: 200});
 });
 
 test('rounded corners match the window above gesture', () => {

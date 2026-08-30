@@ -8,6 +8,7 @@ DEFAULTS = {
     "autostart-enabled": True,
     "minimize-to-tray": True,
     "trigger-buttons": ["right"],
+    "middle-panel-enabled": True,
     "direction-mode": 8,
     "start-threshold": 8,
     "segment-threshold": 12,
@@ -22,6 +23,7 @@ DEFAULTS = {
 
 class Settings(object):
     def __init__(self):
+        self._fallback = dict(DEFAULTS)
         self._settings = None
         self.error = None
         try:
@@ -35,7 +37,14 @@ class Settings(object):
             self._settings = Gio.Settings.new_full(schema, None, None)
         except (ImportError, ValueError, RuntimeError) as error:
             self.error = str(error)
-        self._fallback = dict(DEFAULTS)
+        self._migrate_middle_button()
+
+    def _migrate_middle_button(self):
+        buttons = list(self.get("trigger-buttons"))
+        if "middle" not in buttons:
+            return
+        self.set("middle-panel-enabled", True)
+        self.set("trigger-buttons", [item for item in buttons if item != "middle"])
 
     @property
     def available(self):
@@ -56,6 +65,7 @@ class Settings(object):
         signatures = {
             "enabled": "b", "paused": "b", "autostart-enabled": "b",
             "minimize-to-tray": "b", "trigger-buttons": "as",
+            "middle-panel-enabled": "b",
             "direction-mode": "i", "start-threshold": "i",
             "segment-threshold": "i", "path-color": "s",
             "invalid-path-color": "s", "path-width": "d",

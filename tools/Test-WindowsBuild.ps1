@@ -1,4 +1,4 @@
-param(
+﻿param(
     [switch]$SourceOnly,
     [string]$InstallerPath
 )
@@ -15,31 +15,39 @@ $autoStarterPath = Join-Path $repoRoot 'WGestures.Common\OsSpecific\Windows\Auto
 $installerScriptPath = Join-Path $repoRoot 'packaging\windows\CrossGestures.iss'
 $defaultGesturesPath = Join-Path $repoRoot 'WGestures.App\defaults\gestures.wg2'
 
-[xml]$manifest = Get-Content -LiteralPath $manifestPath -Raw
-$manifestText = Get-Content -LiteralPath $manifestPath -Raw
-$appProjectText = Get-Content -LiteralPath $appProjectPath -Raw
-$commonProjectText = Get-Content -LiteralPath $commonProjectPath -Raw
-$windowsInputProjectText = Get-Content -LiteralPath $windowsInputProjectPath -Raw
-$autoStarterText = Get-Content -LiteralPath $autoStarterPath -Raw
-$installerScriptText = Get-Content -LiteralPath $installerScriptPath -Raw
-$programText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.App\Program.cs') -Raw
-$constantsText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.App\Constants.cs') -Raw
+[xml]$manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8
+$manifestText = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8
+$appProjectText = Get-Content -LiteralPath $appProjectPath -Raw -Encoding UTF8
+$commonProjectText = Get-Content -LiteralPath $commonProjectPath -Raw -Encoding UTF8
+$windowsInputProjectText = Get-Content -LiteralPath $windowsInputProjectPath -Raw -Encoding UTF8
+$autoStarterText = Get-Content -LiteralPath $autoStarterPath -Raw -Encoding UTF8
+$installerScriptText = Get-Content -LiteralPath $installerScriptPath -Raw -Encoding UTF8
+$programText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.App\Program.cs') -Raw -Encoding UTF8
+$constantsText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.App\Constants.cs') -Raw -Encoding UTF8
 $trackerText = Get-Content -LiteralPath `
-    (Join-Path $repoRoot 'WGestures.Core\Impl\Windows\Win32MousePathTracker2.cs') -Raw
+    (Join-Path $repoRoot 'WGestures.Core\Impl\Windows\Win32MousePathTracker2.cs') -Raw -Encoding UTF8
 $parserText = Get-Content -LiteralPath `
-    (Join-Path $repoRoot 'WGestures.Core\GestureParser.cs') -Raw
+    (Join-Path $repoRoot 'WGestures.Core\GestureParser.cs') -Raw -Encoding UTF8
+$gestureIntentText = Get-Content -LiteralPath `
+    (Join-Path $repoRoot 'WGestures.Core\GestureIntent.cs') -Raw -Encoding UTF8
+$windowCommandText = Get-Content -LiteralPath `
+    (Join-Path $repoRoot 'WGestures.Core\Commands\Impl\WindowControlCommand.cs') -Raw -Encoding UTF8
 $hotKeyText = Get-Content -LiteralPath `
-    (Join-Path $repoRoot 'WGestures.Core\Commands\Impl\HotKeyCommand.cs') -Raw
-$pathTrackerText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.Core\IPathTracker.cs') -Raw
+    (Join-Path $repoRoot 'WGestures.Core\Commands\Impl\HotKeyCommand.cs') -Raw -Encoding UTF8
+$pathTrackerText = Get-Content -LiteralPath (Join-Path $repoRoot 'WGestures.Core\IPathTracker.cs') -Raw -Encoding UTF8
 $portableText = Get-Content -LiteralPath `
-    (Join-Path $repoRoot 'WGestures.App\Migrate\PortableConfigService.cs') -Raw
+    (Join-Path $repoRoot 'WGestures.App\Migrate\PortableConfigService.cs') -Raw -Encoding UTF8
 $settingsText = Get-Content -LiteralPath `
-    (Join-Path $repoRoot 'WGestures.App\Gui\Windows\SettingsForm.cs') -Raw
+    (Join-Path $repoRoot 'WGestures.App\Gui\Windows\SettingsForm.cs') -Raw -Encoding UTF8
 $settingsDesignerText = Get-Content -LiteralPath `
-    (Join-Path $repoRoot 'WGestures.App\Gui\Windows\SettingsForm.Designer.cs') -Raw
+    (Join-Path $repoRoot 'WGestures.App\Gui\Windows\SettingsForm.Designer.cs') -Raw -Encoding UTF8
 $canvasViewText = Get-Content -LiteralPath `
-    (Join-Path $repoRoot 'WGestures.View\Impl\Windows\CanvasWindowGestureView.cs') -Raw
-$defaultGestures = Get-Content -LiteralPath $defaultGesturesPath -Raw | ConvertFrom-Json
+    (Join-Path $repoRoot 'WGestures.View\Impl\Windows\CanvasWindowGestureView.cs') -Raw -Encoding UTF8
+$panelConfigText = Get-Content -LiteralPath `
+    (Join-Path $repoRoot 'WGestures.App\QuickPanel\PanelConfig.cs') -Raw -Encoding UTF8
+$panelFormText = Get-Content -LiteralPath `
+    (Join-Path $repoRoot 'WGestures.App\QuickPanel\QuickPanelForm.cs') -Raw -Encoding UTF8
+$defaultGestures = Get-Content -LiteralPath $defaultGesturesPath -Raw -Encoding UTF8 | ConvertFrom-Json
 
 if ($manifestText -match 'uiAccess="true"' -or
     $manifestText -notmatch 'level="requireAdministrator"') {
@@ -66,6 +74,11 @@ if ($commonProjectText -notmatch 'GlobalKeyboardHook\.Win32\.cs' -or
 if ($programText -match 'defaults/gestures\.wg"') {
     throw 'Corrupt gesture recovery still references the removed gestures.wg default.'
 }
+if ($programText -notmatch 'Text = "弹出快捷面板"' -or
+    $programText -notmatch 'quickPanel\.ShowAt\(Cursor\.Position\)' -or
+    $panelFormText -notmatch 'CalculateLayoutScale') {
+    throw 'Windows tray fallback or per-monitor quick-panel scaling is missing.'
+}
 if ($programText -match 'ShowQuickStartGuide|快速入门' -or
     $appProjectText -match 'QuickStartGuide\\' -or
     $installerScriptText -notmatch 'Excludes:.*QuickStartGuide\\\*' -or
@@ -90,6 +103,12 @@ if ($trackerText -notmatch 'UpdateContextAndEventArgs\(true\)' -or
     $hotKeyText -notmatch 'transitionDelayMillis = 25' -or
     $hotKeyText -match 'WindowFromPoint') {
     throw 'Windows shortcuts must keep the mouse-down target and pace key transitions reliably.'
+}
+if ($windowCommandText -notmatch 'Context\.WinId' -or
+    $windowCommandText -notmatch 'SWP_NOACTIVATE' -or
+    $windowCommandText -match 'var cursorWin = Native\.WindowFromPoint' -or
+    $gestureIntentText -match 'SetProcessWorkingSetSize|GC\.Collect') {
+    throw 'Window actions must use the mouse-down target and must not evict the quick-panel working set.'
 }
 if ($hotKeyText -notmatch 'TryGetConsoleClipboardShortcut' -or
     $hotKeyText -notmatch 'VirtualKeyCode\.INSERT' -or
@@ -150,6 +169,27 @@ if ($settingsText -match 'File\.ReadAllText.*UpdateLog' -or
     $settingsDesignerText -notmatch 'linkLabel2\.Visible = false') {
     throw 'The simplified About page must not show the old update log, email or donation panel.'
 }
+if ($panelConfigText -notmatch 'Schema\s*=\s*1' -or
+    $panelConfigText -notmatch 'SlotCount\s*=\s*16' -or
+    $panelConfigText -notmatch 'UriSchemeHttp' -or
+    $panelConfigText -notmatch '\.lnk' -or
+    $panelFormText -notmatch 'PanelVisibilityChanged' -or
+    $panelFormText -notmatch 'GetDpiForMonitor' -or
+    $panelFormText -notmatch 'AddCreateMenuItem' -or
+    $panelFormText -notmatch '"启动软件"' -or
+    $panelFormText -notmatch '"打开文件"' -or
+    $panelFormText -notmatch '"打开文件夹"' -or
+    $panelFormText -notmatch '"打开网址"' -or
+    $panelFormText -notmatch 'RunAfterMenuClosed' -or
+    $panelFormText -notmatch 'QueueIconLoad' -or
+    $panelFormText -notmatch 'ResolveShortcutTarget\(iconTarget\)' -or
+    $programText -notmatch 'quick panel UI burst' -or
+    $trackerText -notmatch 'MiddlePanelRequested' -or
+    $trackerText -notmatch 'PanelInteractionActive' -or
+    $programText -notmatch 'MiddlePanelEnabled' -or
+    $programText -notmatch 'user-data-directory') {
+    throw 'Windows quick panel schema or middle-button arbitration is incomplete.'
+}
 
 if (-not $SourceOnly) {
     $outputDir = Join-Path $repoRoot 'WGestures.App\bin\Release'
@@ -180,7 +220,7 @@ if (-not $SourceOnly) {
 
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo(
         (Join-Path $outputDir 'CrossGestures.exe')).FileVersion
-    if ($version -ne '2.1.7.0') {
+    if ($version -ne '2.1.8.0') {
         throw "Unexpected CrossGestures.exe version: $version"
     }
 

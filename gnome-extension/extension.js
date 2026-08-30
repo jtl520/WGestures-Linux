@@ -15,12 +15,13 @@ import {actionDisplayName} from './core/shortcut.js';
 import {ActionExecutor} from './shell/actions.js';
 import {GestureOverlay} from './shell/overlay.js';
 import {ConfigStore} from './shell/storage.js';
+import {QuickPanel} from './shell/panel.js';
 
 const CLUTTER_BUTTONS = Object.freeze({2: 'middle', 3: 'right', 8: 'x1', 9: 'x2'});
 const EVDEV_BUTTONS = Object.freeze({right: 273, middle: 274, x1: 275, x2: 276});
 
 class WGesturesIndicator extends PanelMenu.Button {
-    constructor(settings, openPreferences) {
+    constructor(settings, openPreferences, showQuickPanel) {
         super(0.0, _('CrossGestures'));
         this._settings = settings;
         this._icon = new St.Icon({icon_name: 'input-mouse-symbolic', style_class: 'system-status-icon'});
@@ -33,6 +34,10 @@ class WGesturesIndicator extends PanelMenu.Button {
         this._pausedItem = new PopupMenu.PopupSwitchMenuItem(_('暂停'), false);
         this._pausedItem.connect('toggled', (_item, state) => settings.set_boolean('paused', state));
         this.menu.addMenuItem(this._pausedItem);
+
+        const panelItem = new PopupMenu.PopupMenuItem(_('弹出快捷面板'));
+        panelItem.connect('activate', showQuickPanel);
+        this.menu.addMenuItem(panelItem);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         const preferencesItem = new PopupMenu.PopupMenuItem(_('设置'));
@@ -54,12 +59,15 @@ class WGesturesIndicator extends PanelMenu.Button {
 export default class WGesturesExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
+        this._migrateMiddleButton();
         this._store = new ConfigStore();
         this._loadConfig();
         this._recognizer = new GestureRecognizer();
         this._session = new GestureSession(this._recognizer);
         this._overlay = new GestureOverlay(this._settings);
         this._replayGuard = new ReplayGuard();
+        this._panelCandidate = null;
+        this._panel = new QuickPanel();
 
         const clutterContext = global.stage.get_context?.() || global.stage.context;
         const backend = clutterContext?.get_backend?.() || Clutter.get_default_backend?.();
@@ -74,27 +82,45 @@ export default class WGesturesExtension extends Extension {
             getVirtualKeyboard: () => this._virtualKeyboard,
         });
 
-        this._indicator = new WGesturesIndicator(this._settings, () => this.openPreferences());
+        this._indicator = new WGesturesIndicator(
+            this._settings,
+            () => this.openPreferences(),
+            () => GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                const [x, y] = global.get_pointer();
+                this._panel?.showAt(x, y);
+                return GLib.SOURCE_REMOVE;
+            })
+        );
         Main.panel.addToStatusArea(this.uuid, this._indicator);
 
         this._signals = [
             [global.stage, global.stage.connect('captured-event', (_actor, event) => this._onCapturedEvent(event))],
             [Main.layoutManager, Main.layoutManager.connect('monitors-changed', () => {
                 this._cancelGesture();
+                this._panel?.close();
                 this._overlay.resize();
             })],
-            [Main.sessionMode, Main.sessionMode.connect('updated', () => this._cancelGesture())],
+            [Main.sessionMode, Main.sessionMode.connect('updated', () => {
+                this._cancelGesture();
+                this._panel?.close();
+            })],
             [this._settings, this._settings.connect('changed::config-revision', () => {
                 this._cancelGesture();
                 this._loadConfig();
             })],
             [this._settings, this._settings.connect('changed::paused', () => {
                 this._cancelGesture();
+                this._panel?.close();
                 this._indicator._sync();
             })],
             [this._settings, this._settings.connect('changed::enabled', () => {
                 this._cancelGesture();
+                this._panel?.close();
                 this._indicator._sync();
+            })],
+            [this._settings, this._settings.connect('changed::middle-panel-enabled', () => {
+                this._panelCandidate = null;
+                this._panel?.close();
             })],
         ];
     }
@@ -105,9 +131,12 @@ export default class WGesturesExtension extends Extension {
             object.disconnect(signalId);
         this._signals = [];
         this._indicator?.destroy();
+        this._panel?.destroy();
         this._overlay?.destroy();
         this._indicator = null;
         this._overlay = null;
+        this._panel = null;
+        this._panelCandidate = null;
         this._executor = null;
         this._virtualPointer = null;
         this._virtualKeyboard = null;
@@ -135,6 +164,28 @@ export default class WGesturesExtension extends Extension {
             if (device === this._virtualPointer || device === this._virtualKeyboard)
                 return Clutter.EVENT_PROPAGATE;
 
+            if (this._panel?.visible)
+                return this._handleVisiblePanelEvent(event, type);
+
+            if (this._panelCandidate) {
+                if (type === Clutter.EventType.MOTION) {
+                    const [x, y] = event.get_coords();
+                    const threshold = this._settings.get_int('start-threshold');
+                    if (!this._panelCandidate.cancelled &&
+                        Math.hypot(x - this._panelCandidate.x, y - this._panelCandidate.y) > threshold) {
+                        this._panelCandidate.cancelled = true;
+                        this._panel.close();
+                    }
+                    return Clutter.EVENT_STOP;
+                }
+                if (type === Clutter.EventType.BUTTON_RELEASE && event.get_button() === 2) {
+                    this._panelCandidate = null;
+                    return Clutter.EVENT_STOP;
+                }
+                if (type === Clutter.EventType.BUTTON_PRESS || type === Clutter.EventType.BUTTON_RELEASE)
+                    return Clutter.EVENT_STOP;
+            }
+
             if (type === Clutter.EventType.KEY_PRESS && this._session.active &&
                 event.get_key_symbol() === Clutter.KEY_Escape) {
                 this._cancelGesture(_('已取消'));
@@ -148,6 +199,16 @@ export default class WGesturesExtension extends Extension {
                 const buttonName = CLUTTER_BUTTONS[buttonNumber];
                 if (!buttonName)
                     return this._session.active ? Clutter.EVENT_STOP : Clutter.EVENT_PROPAGATE;
+                if (buttonNumber === 2 && type === Clutter.EventType.BUTTON_PRESS &&
+                    this._settings.get_boolean('middle-panel-enabled') &&
+                    this._settings.get_boolean('enabled') &&
+                    !this._settings.get_boolean('paused')) {
+                    const [x, y] = event.get_coords();
+                    this._panelCandidate = {x, y, cancelled: false};
+                    this._cancelGesture();
+                    this._panel.toggleAt(x, y);
+                    return Clutter.EVENT_STOP;
+                }
                 if (type === Clutter.EventType.BUTTON_PRESS)
                     return this._onButtonPress(event, buttonNumber, buttonName);
                 return this._onButtonRelease(event, buttonNumber, buttonName);
@@ -164,6 +225,47 @@ export default class WGesturesExtension extends Extension {
             this._cancelGesture(_('发生错误'));
         }
         return Clutter.EVENT_PROPAGATE;
+    }
+
+    _handleVisiblePanelEvent(event, type) {
+        if (type === Clutter.EventType.KEY_PRESS &&
+            event.get_key_symbol() === Clutter.KEY_Escape) {
+            this._panel.close();
+            return Clutter.EVENT_STOP;
+        }
+        if (type !== Clutter.EventType.BUTTON_PRESS && type !== Clutter.EventType.BUTTON_RELEASE)
+            return Clutter.EVENT_PROPAGATE;
+        if (event.get_button() === 2) {
+            if (type === Clutter.EventType.BUTTON_PRESS)
+                this._panel.close();
+            return Clutter.EVENT_STOP;
+        }
+        const actor = event.get_source?.() || global.stage.get_event_actor?.(event) || null;
+        if (this._panel.containsActor(actor))
+            return Clutter.EVENT_PROPAGATE;
+        if (type === Clutter.EventType.BUTTON_PRESS)
+            this._panel.close();
+        const buttonNumber = event.get_button();
+        const buttonName = CLUTTER_BUTTONS[buttonNumber];
+        if (!buttonName) {
+            // Closing the panel must not leave the application underneath with
+            // an unmatched release. Propagate both halves of an outside click.
+            return Clutter.EVENT_PROPAGATE;
+        }
+        // Right/X presses outside the panel keep working as gestures while the
+        // panel is open: route them through the normal gesture path instead of
+        // degrading them to native clicks (matches the Windows backend).
+        if (type === Clutter.EventType.BUTTON_PRESS)
+            return this._onButtonPress(event, buttonNumber, buttonName);
+        return this._onButtonRelease(event, buttonNumber, buttonName);
+    }
+
+    _migrateMiddleButton() {
+        const buttons = this._settings.get_strv('trigger-buttons');
+        if (!buttons.includes('middle'))
+            return;
+        this._settings.set_boolean('middle-panel-enabled', true);
+        this._settings.set_strv('trigger-buttons', buttons.filter(item => item !== 'middle'));
     }
 
     _onButtonPress(event, buttonNumber, buttonName) {
@@ -302,6 +404,7 @@ export default class WGesturesExtension extends Extension {
     }
 
     _cancelGesture(message = null) {
+        this._panelCandidate = null;
         const hadActiveGesture = Boolean(this._session?.active);
         if (hadActiveGesture)
             this._session.cancel();

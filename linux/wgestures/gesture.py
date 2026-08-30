@@ -98,6 +98,7 @@ class GestureRecognizer(object):
         self.origin = None
         self.anchor = None
         self.last_point = None
+        self.path_length = 0.0
         self.directions = []
         self.effective = False
 
@@ -111,9 +112,16 @@ class GestureRecognizer(object):
         if self.origin is None:
             raise RuntimeError("GestureRecognizer.begin() must be called first")
         point = (x, y)
+        previous_point = self.last_point
         self.last_point = point
         if not self.effective and _distance(self.origin, point) < self.start_threshold:
             return None
+        if not self.effective:
+            # Ignore pre-gesture hand jitter; start the measured route at the
+            # original press once movement crosses the activation threshold.
+            self.path_length = _distance(self.origin, point)
+        elif previous_point is not None:
+            self.path_length += _distance(previous_point, point)
         self.effective = True
         if _distance(self.anchor, point) < self.segment_threshold:
             return None
@@ -132,6 +140,7 @@ class GestureRecognizer(object):
             "directions": list(self.directions),
             "origin": self.origin,
             "end": self.last_point,
+            "pathLength": self.path_length,
         }
 
 

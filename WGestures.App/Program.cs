@@ -9,6 +9,7 @@ using System.Threading;
 using System.Windows.Forms;
 using WGestures.App.Gui.Windows;
 using WGestures.App.Migrate;
+using WGestures.App.QuickPanel;
 using WGestures.App.Properties;
 using WGestures.Common;
 using WGestures.Common.Config.Impl;
@@ -41,13 +42,15 @@ namespace WGestures.App
         static NotifyIcon trayIcon;
         static GlobalHotKeyManager hotkeyMgr;
         static bool showSettingsOnStartup;
-        
+        static QuickPanelForm quickPanel;
+
         //for adding hotkey
         static MenuItem menuItem_pause;
 
         [STAThread]
         static void Main(string[] args)
         {
+            ConfigureUserDataOverride(args);
             ConfigureRuntimeTrace(args);
             Debug.Listeners.Add(new DetailedConsoleListener());
             showSettingsOnStartup = Array.Exists(args ?? new string[0],
@@ -68,7 +71,7 @@ namespace WGestures.App
             {
                 //加载配置文件，如果文件不存在或损坏，则加载默认配置文件
                 LoadFailSafeConfigFile();
-                
+
                 if (!skipAutoStart && !string.Equals(Environment.GetEnvironmentVariable(
                     "CROSSGESTURES_SKIP_AUTOSTART"), "1", StringComparison.Ordinal))
                     SyncAutoStartState();
@@ -104,8 +107,20 @@ namespace WGestures.App
 #endif
             finally { Dispose(); }
 
-            
 
+
+        }
+
+        static void ConfigureUserDataOverride(string[] args)
+        {
+            const string prefix = "--user-data-directory=";
+            var argument = Array.Find(args ?? new string[0], item =>
+                item != null && item.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            if (string.IsNullOrWhiteSpace(argument)) return;
+            var path = argument.Substring(prefix.Length).Trim().Trim('"');
+            if (path.Length == 0 || !Path.IsPathRooted(path))
+                throw new ArgumentException("用户数据目录必须是绝对路径。", "args");
+            AppSettings.UserDataDirectoryOverride = Path.GetFullPath(path);
         }
 
         static void ConfigureRuntimeTrace(string[] args)
@@ -240,10 +255,11 @@ namespace WGestures.App
                 config.Set(ConfigKeys.IsFirstRun, false);
                 config.Set(ConfigKeys.AutoCheckForUpdate, true);
                 config.Set(ConfigKeys.AutoStart, true);
-                config.Set(ConfigKeys.PathTrackerTriggerButton, (int)(GestureTriggerButton.Right | GestureTriggerButton.Middle | GestureTriggerButton.X));
-                
+                config.Set(ConfigKeys.PathTrackerTriggerButton, (int)(GestureTriggerButton.Right | GestureTriggerButton.X));
+                config.Set(ConfigKeys.MiddlePanelEnabled, true);
+
                 config.Save();
-            
+
                 Warning360Safe();
             }
         }
@@ -266,7 +282,7 @@ namespace WGestures.App
 
             hotkeyMgr = new GlobalHotKeyManager();
         }
-        
+
         static void LoadFailSafeConfigFile()
         {
             Directory.CreateDirectory(AppSettings.UserDataDirectory);
@@ -279,7 +295,7 @@ namespace WGestures.App
             {
                 File.Copy(string.Format("{0}/defaults/gestures.wg2", Path.GetDirectoryName(Application.ExecutablePath)), AppSettings.GesturesFilePath);
             }
-            
+
             try
             { //如果文件损坏，则替换。
                 config = new PlistConfig(AppSettings.ConfigFilePath);
@@ -292,7 +308,7 @@ namespace WGestures.App
 
                 config = new PlistConfig(AppSettings.ConfigFilePath);
             }
-            
+
             try
             {
                 intentStore = new JsonGestureIntentStore(AppSettings.GesturesFilePath, AppSettings.GesturesFileVersion);
@@ -346,17 +362,35 @@ namespace WGestures.App
             gestureParser = new GestureParser(pathTracker, intentFinder);
 
             gestureView = new CanvasWindowGestureView(gestureParser);
+            quickPanel = new QuickPanelForm();
 
             componentsToDispose.Add(gestureParser);
             componentsToDispose.Add(gestureView);
             componentsToDispose.Add(pathTracker);
             componentsToDispose.Add(hotkeyMgr);
+            componentsToDispose.Add(quickPanel);
 #endregion
 
 #region pathTracker
             pathTracker.DisableInFullscreen = config.Get(ConfigKeys.PathTrackerDisableInFullScreen, true);
             pathTracker.PreferWindowUnderCursorAsTarget = config.Get(ConfigKeys.PathTrackerPreferCursorWindow, false);
-            pathTracker.TriggerButton = (GestureTriggerButton)config.Get(ConfigKeys.PathTrackerTriggerButton, GestureTriggerButton.Right);
+            var configuredButtons = (GestureTriggerButton)config.Get(
+                ConfigKeys.PathTrackerTriggerButton, GestureTriggerButton.Right);
+            var configuredPanel = config.Get<bool?>(ConfigKeys.MiddlePanelEnabled);
+            var panelEnabled = configuredPanel.HasValue
+                ? configuredPanel.Value
+                : (configuredButtons & GestureTriggerButton.Middle) != 0;
+            configuredButtons &= ~GestureTriggerButton.Middle;
+            pathTracker.TriggerButton = configuredButtons;
+            pathTracker.MiddlePanelEnabled = panelEnabled;
+            if (!configuredPanel.HasValue ||
+                (GestureTriggerButton)config.Get(ConfigKeys.PathTrackerTriggerButton,
+                    GestureTriggerButton.Right) != configuredButtons)
+            {
+                config.Set(ConfigKeys.MiddlePanelEnabled, panelEnabled);
+                config.Set(ConfigKeys.PathTrackerTriggerButton, (int)configuredButtons);
+                config.Save();
+            }
             // Match the value shown by the settings UI. Four pixels is small
             // enough for ordinary hand jitter to be mistaken for a gesture,
             // which suppresses the context menu on an otherwise normal click.
@@ -368,7 +402,66 @@ namespace WGestures.App
             pathTracker.RequestPauseResume += paused => menuItem_pause_Click(null,EventArgs.Empty);
             pathTracker.EnableWindowsKeyGesturing = config.Get(ConfigKeys.EnableWindowsKeyGesturing, false);
             pathTracker.RequestShowHideTray += ToggleTrayIconVisibility ;
-            
+            var panelContext = new WindowsFormsSynchronizationContext();
+            // The low-level hook can enqueue releases faster than the UI thread can
+            // activate/deactivate a window. Coalesce a burst by parity so stale
+            // toggles never keep replaying after the user has stopped clicking.
+            var panelToggleLock = new object();
+            var panelToggleCount = 0;
+            var panelTogglePosted = false;
+            var latestPanelPoint = Point.Empty;
+            pathTracker.MiddlePanelRequested += point =>
+            {
+                lock (panelToggleLock)
+                {
+                    panelToggleCount++;
+                    latestPanelPoint = point;
+                    if (panelTogglePosted) return;
+                    panelTogglePosted = true;
+                }
+                panelContext.Post(state =>
+                {
+                    int count;
+                    Point latest;
+                    lock (panelToggleLock)
+                    {
+                        count = panelToggleCount;
+                        latest = latestPanelPoint;
+                        panelToggleCount = 0;
+                        panelTogglePosted = false;
+                    }
+                    Trace.WriteLine("CrossGestures quick panel UI burst: toggles=" + count);
+                    if ((count & 1) != 0) quickPanel.ToggleAt(latest);
+                }, null);
+            };
+            pathTracker.MiddlePanelCloseRequested += () => panelContext.Post(
+                state => quickPanel.ClosePanel(), null);
+            // 面板可见时只有中键专属；右键/X 键仅在指针位于面板表面（且
+            // 不处于编辑/右键菜单状态）时让给面板——编辑对话框悬浮在面板
+            // 上方，输入框里的手势必须照常可用。委托运行在钩子线程，只读
+            // 取 UI 线程发布的状态快照，不做加锁或句柄操作。
+            var panelSurfaceVisible = false;
+            var panelSurfaceBounds = Rectangle.Empty;
+            quickPanel.PanelVisibilityChanged += visible =>
+            {
+                pathTracker.PanelInteractionActive = visible;
+                if (visible) panelSurfaceBounds = quickPanel.Bounds;
+                panelSurfaceVisible = visible;
+            };
+            pathTracker.PanelSurfaceHitTest = point =>
+                quickPanel.MenuActive ||
+                (!quickPanel.Editing &&
+                 panelSurfaceVisible && panelSurfaceBounds.Contains(point));
+            quickPanel.NotifyError = message =>
+            {
+                if (trayIcon != null)
+                    trayIcon.ShowBalloonTip(5000, "CrossGestures 面板", message, ToolTipIcon.Error);
+            };
+            // Allocate the large per-monitor-DPI window and start asynchronous
+            // icon loading before the first physical middle click. Prime is
+            // transparent/off-screen and does not publish panel-visible state.
+            quickPanel.Prime(Cursor.Position);
+
 #endregion
 
 #region gestureView
@@ -385,7 +478,7 @@ namespace WGestures.App
             gestureParser.EnableHotCorners = config.Get(ConfigKeys.GestureParserEnableHotCorners, true);
             gestureParser.Enable8DirGesture = config.Get(ConfigKeys.GestureParserEnable8DirGesture, true);
             gestureParser.EnableRubEdge = config.Get(ConfigKeys.GestureParserEnableRubEdges, true);
-            
+
 #endregion
             //HOt key
             hotkeyMgr.HotKeyPreview += HotkeyMgr_HotKeyPreview;
@@ -398,7 +491,7 @@ namespace WGestures.App
             {
                 Debug.WriteLine(e);
             }
-            
+
             if (pauseHotKey != null && pauseHotKey.Length > 0)
             {
                 var hotkey = GlobalHotKeyManager.HotKey.FromBytes(pauseHotKey);
@@ -412,7 +505,7 @@ namespace WGestures.App
 
                     //ignore for now ?
                 }
-                
+
             }
         }
 
@@ -511,12 +604,12 @@ namespace WGestures.App
         static void ScheduledUpdateCheck(object sender, NotifyIcon tray)
         {
             if (!config.Get<bool>(ConfigKeys.AutoCheckForUpdate)) return;
-            
+
             var checker = new VersionChecker(AppSettings.CheckForUpdateUrl);
             checker.Finished += info =>
             {
                 var whatsNew = info.WhatsNew.Length > 50 ? info.WhatsNew.Substring(0, 50) : info.WhatsNew;
-                
+
                 if (info.Version != Application.ProductVersion)
                 {
                     tray.BalloonTipClicked += (o, args) =>
@@ -532,7 +625,7 @@ namespace WGestures.App
                     {
                         tray.Visible = true;
                     }
-                    
+
                     tray.ShowBalloonTip(1000 * 15, Application.ProductName + "新版本可用!", "版本:" + info.Version + "\n" + whatsNew, ToolTipIcon.Info);
                 }
 
@@ -555,7 +648,7 @@ namespace WGestures.App
 
         [Obsolete]
         static void ToggleTrayIconVisibility()
-        {            
+        {
             //如果图标当前可见， 而config中设置的值是不可见， 则说明是临时显示; 如果不是临时显示， 才需要修改config
             if (!(trayIcon.Visible && !config.Get(ConfigKeys.TrayIconVisible, true)))
             {
@@ -637,6 +730,13 @@ namespace WGestures.App
             menuItem_pause = new MenuItem() { Text = "暂停" };
             menuItem_pause.Click += menuItem_pause_Click;
 
+            var menuItem_panel = new MenuItem() { Text = "弹出快捷面板" };
+            menuItem_panel.Click += delegate
+            {
+                if (quickPanel != null && !quickPanel.IsDisposed)
+                    quickPanel.ShowAt(Cursor.Position);
+            };
+
             var menuItem_settings = new MenuItem() { Text = "设置" };
             menuItem_settings.Click += menuItem_settings_Click;
 
@@ -646,7 +746,9 @@ namespace WGestures.App
                ToggleTrayIconVisibility();
             };*/
 
-            contextMenu1.MenuItems.AddRange(new[] { /*menuItem_toggleTray, */menuItem_pause, new MenuItem("-"), menuItem_settings, new MenuItem("-"), menuItem_exit });
+            contextMenu1.MenuItems.AddRange(new[] { /*menuItem_toggleTray, */menuItem_pause,
+                menuItem_panel, new MenuItem("-"), menuItem_settings,
+                new MenuItem("-"), menuItem_exit });
             notifyIcon.Icon = Resources.trayIcon;
             //notifyIcon.Text = Application.ProductName;
             notifyIcon.ContextMenu = contextMenu1;
@@ -656,7 +758,7 @@ namespace WGestures.App
                 if (args.Button == MouseButtons.Left)
                     ShowSettings();
             };
-            
+
             //todo: move out
             gestureParser.StateChanged += GestureParser_StateChanged;
 
@@ -691,7 +793,7 @@ namespace WGestures.App
         {
             var proc360 = Process.GetProcessesByName("360Safe");
             var proc360Tray = Process.GetProcessesByName("360Tray");
-            
+
             if(proc360.Length + proc360Tray.Length > 0)
             {
                 using (var warn = new Warn360())

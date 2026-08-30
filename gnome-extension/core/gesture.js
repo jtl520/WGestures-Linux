@@ -111,6 +111,7 @@ export class GestureRecognizer {
         this.origin = null;
         this.anchor = null;
         this.lastPoint = null;
+        this.pathLength = 0;
         this.directions = [];
         this.effective = false;
     }
@@ -127,11 +128,16 @@ export class GestureRecognizer {
             throw new Error('GestureRecognizer.begin() must be called first');
 
         const point = {x, y};
+        const previousPoint = this.lastPoint;
         this.lastPoint = point;
 
         if (!this.effective && distance(this.origin, point) < this.startThreshold)
             return null;
 
+        if (!this.effective)
+            this.pathLength = distance(this.origin, point);
+        else if (previousPoint)
+            this.pathLength += distance(previousPoint, point);
         this.effective = true;
         if (distance(this.anchor, point) < this.segmentThreshold)
             return null;
@@ -157,6 +163,7 @@ export class GestureRecognizer {
             directions: [...this.directions],
             origin: this.origin ? {...this.origin} : null,
             end: this.lastPoint ? {...this.lastPoint} : null,
+            pathLength: this.pathLength,
         };
     }
 }

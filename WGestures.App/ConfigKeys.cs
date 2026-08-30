@@ -11,6 +11,7 @@ namespace WGestures.App
         public const string AutoCheckForUpdate = "AutoCheckForUpdate";
 
         public const string PathTrackerTriggerButton = "PathTrackerTriggerButton";
+        public const string MiddlePanelEnabled = "MiddlePanelEnabled";
         public const string PathTrackerInitialValidMove = "PathTrackerInitialValidMove";
         public const string PathTrackerStayTimeout = "PathTrackerStayTimeout";
         public const string PathTrackerStayTimeoutMillis = "PathTrackerStayTimeoutMillis";

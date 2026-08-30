@@ -65,6 +65,11 @@ try {
         "/p:FrameworkPathOverride=$frameworkPath"
     if ($LASTEXITCODE -ne 0) { throw 'Windows application build failed.' }
 
+    & (Join-Path $PSScriptRoot 'Test-WindowsPanelModel.ps1')
+    & (Join-Path $PSScriptRoot 'Test-WindowsWindowActions.ps1') -Configuration $Configuration
+    & (Join-Path $PSScriptRoot 'Test-WindowsPanelDialogs.ps1')
+    & (Join-Path $PSScriptRoot 'Test-WindowsPanelUi.ps1')
+
     if ($Configuration -ne 'Release') {
         & (Join-Path $PSScriptRoot 'Test-WindowsBuild.ps1') -SourceOnly
         Write-Host 'Debug application built; installer generation is only performed for Release.'

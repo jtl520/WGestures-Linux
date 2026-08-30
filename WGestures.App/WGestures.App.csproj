@@ -233,6 +233,17 @@
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Gui\Windows\SettingsFormController.cs" />
+    <Compile Include="QuickPanel\PanelConfig.cs" />
+    <Compile Include="QuickPanel\UrlFavicon.cs" />
+    <Compile Include="QuickPanel\ApplicationPickerDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="QuickPanel\PanelItemDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="QuickPanel\QuickPanelForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -442,7 +453,7 @@ if exist "$(TargetDir)*.pdb" del /q "$(TargetDir)*.pdb"
 if exist "$(TargetDir)*.xml" del /q "$(TargetDir)*.xml"
     </PostBuildEvent>
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

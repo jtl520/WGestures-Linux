@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import copy
+import math
 
 from .gesture import (BUTTONS, DIRECTIONS, direction_error_degrees,
                       gesture_key, simplify_corner_transitions)
@@ -17,6 +18,26 @@ WINDOW_OPERATIONS = (
     "toggle-fullscreen", "toggle-above",
 )
 SINGLE_DIRECTION_TOLERANCE = 35.0
+SINGLE_DIRECTION_MIN_STRAIGHTNESS = 0.80
+
+
+def _single_direction_movement_allowed(gesture, movement):
+    """Keep curved multi-stroke paths from degrading to a straight gesture."""
+    if len(gesture.get("directions", [])) != 1:
+        return True
+    if not isinstance(movement, dict):
+        return True
+    origin = movement.get("origin")
+    end = movement.get("end")
+    path_length = movement.get("pathLength")
+    try:
+        displacement = math.hypot(end[0] - origin[0], end[1] - origin[1])
+        path_length = float(path_length)
+    except (IndexError, KeyError, TypeError, ValueError):
+        return True
+    if path_length <= 0:
+        return True
+    return displacement / path_length >= SINGLE_DIRECTION_MIN_STRAIGHTNESS
 
 
 def _action(action_id, name, action_type, **extra):
@@ -224,8 +245,9 @@ def resolve_gesture(config, identity, button, directions, movement=None):
         if not candidate.get("enabled", True):
             continue
         for gesture in candidate.get("gestures", []):
-            if gesture.get("enabled", True) and gesture_key(
-                    gesture["button"], gesture["directions"]) == key:
+            if (gesture.get("enabled", True) and gesture_key(
+                    gesture["button"], gesture["directions"]) == key and
+                    _single_direction_movement_allowed(gesture, movement)):
                 action = actions.get(gesture["actionId"])
                 if action and action.get("enabled", True):
                     return {"gesture": gesture, "action": action, "profile": candidate}
@@ -237,8 +259,9 @@ def resolve_gesture(config, identity, button, directions, movement=None):
             if not candidate.get("enabled", True):
                 continue
             for gesture in candidate.get("gestures", []):
-                if gesture.get("enabled", True) and gesture_key(
-                        gesture["button"], gesture["directions"]) == simplified_key:
+                if (gesture.get("enabled", True) and gesture_key(
+                        gesture["button"], gesture["directions"]) == simplified_key and
+                        _single_direction_movement_allowed(gesture, movement)):
                     action = actions.get(gesture["actionId"])
                     if action and action.get("enabled", True):
                         return {"gesture": gesture, "action": action,
@@ -258,7 +281,8 @@ def resolve_gesture(config, identity, button, directions, movement=None):
         for gesture in candidate.get("gestures", []):
             gesture_directions = gesture.get("directions", [])
             if (not gesture.get("enabled", True) or gesture.get("button") != button or
-                    len(gesture_directions) != 1):
+                    len(gesture_directions) != 1 or
+                    not _single_direction_movement_allowed(gesture, movement)):
                 continue
             error = direction_error_degrees(gesture_directions[0], dx, dy)
             action = actions.get(gesture.get("actionId"))

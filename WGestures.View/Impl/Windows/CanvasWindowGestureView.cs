@@ -111,6 +111,7 @@ namespace WGestures.View.Impl.Windows
         bool _labelChanged;
         GraphicsPath _labelPath = new GraphicsPath();
         Font _labelFont = new Font("微软雅黑", 32);
+        System.Windows.Forms.Timer _topMostKeepAlive;
 
         bool _isCurrentRecognized;
         bool _recognizeStateChanged;
@@ -131,9 +132,12 @@ namespace WGestures.View.Impl.Windows
             {
                 _canvasWindow = new CanvasWindow()
                 {
-                    //最初的时候放在屏幕以外
+                    //最初的时候放在屏幕以外。
+                    //注意不能设置 IgnoreInput（WS_EX_TRANSPARENT）：同在
+                    //topmost 层时，透明窗口会被不透明窗口（例如被用户置顶
+                    //的应用）压在下面渲染，导致轨迹在这些窗口上不可见。
+                    //分层窗口本身按像素 alpha 做点击穿透，无需该样式。
                     Visible = false,
-                    IgnoreInput = true,
                     NoActivate = true,
                     TopMost = true
                 };
@@ -450,9 +454,33 @@ namespace WGestures.View.Impl.Windows
             }
             _canvasOpacity = 255;
             _canvasWindow.Bounds = _screenBounds;
+            System.Diagnostics.Trace.WriteLine(
+                "CrossGestures canvas BeginView: screenBounds=" + _screenBounds +
+                " applied=" + _canvasWindow.Bounds +
+                " visible=" + _canvasWindow.Visible);
 
+            // 重复赋值 TopMost=true 不会重新抬升 Z 序：用户把目标窗口置顶
+            // （如 Codex）之后，该窗口会排到画布之上，轨迹看起来"失效"。
+            // 先落再抬强制送回最顶层；可见期间还有定时器持续重申置顶，
+            // 压制任何会反复自抬 z 序的窗口。
+            _canvasWindow.TopMost = false;
             _canvasWindow.TopMost = true;
             _canvasWindow.Visible = true;
+            if (_topMostKeepAlive == null)
+            {
+                _topMostKeepAlive = new System.Windows.Forms.Timer { Interval = 150 };
+                _topMostKeepAlive.Tick += delegate
+                {
+                    if (_canvasWindow == null || !_canvasWindow.Visible)
+                    {
+                        _topMostKeepAlive.Stop();
+                        return;
+                    }
+                    _canvasWindow.TopMost = false;
+                    _canvasWindow.TopMost = true;
+                };
+            }
+            _topMostKeepAlive.Start();
 
             if (ShowPath)
             {
@@ -627,6 +655,7 @@ namespace WGestures.View.Impl.Windows
 
         private void StopFadeout()
         {
+            if (_topMostKeepAlive != null) _topMostKeepAlive.Stop();
             lock (_viewSync)
             {
                 if (IsDisposed || _fadeOuTimer == null) return;
@@ -689,11 +718,24 @@ namespace WGestures.View.Impl.Windows
 
             _lastLabelRect = _labelRect;
 
-            _labelPath.Reset();
+            // 手势线程与淡出定时器线程存在资源竞争，任何空引用都不能让
+            // 手势线程死掉（线程一死所有手势失效，进程却仍在运行）。
+            if (_labelPath == null || _labelFont == null)
+            {
+                return;
+            }
             var msgPos = new PointF(_screenBounds.Width / 2, (_screenBounds.Height / 2) + _screenBounds.Width / 8);
-
-            _labelPath.AddString(text, _labelFont.FontFamily, 0, _labelFont.Size * _dpiFactor, msgPos, StringFormat.GenericDefault);
-            _labelRect = _labelPath.GetBounds();
+            try
+            {
+                _labelPath.Reset();
+                _labelPath.AddString(text, _labelFont.FontFamily, 0, _labelFont.Size * _dpiFactor, msgPos, StringFormat.GenericDefault);
+                _labelRect = _labelPath.GetBounds();
+            }
+            catch (Exception error)
+            {
+                Trace.WriteLine("CrossGestures gesture label render failed: " + error.Message);
+                return;
+            }
             msgPos.X -= _labelRect.Width / 2;
 
             _labelPath.Reset();

@@ -53,7 +53,7 @@ namespace WGestures.App.Gui.Windows
         private void DpiFix()
         {
             tabControl.ItemSize = new Size((int)(tabControl.ItemSize.Width * _dpiF), (int)(tabControl.ItemSize.Height * _dpiF));
-      
+
             imglistAppIcons.ImageSize = new Size((int)(imglistAppIcons.ImageSize.Width * _dpiF), (int)(imglistAppIcons.ImageSize.Height * _dpiF));
             dummyImgLstForLstViewHeightFix.ImageSize = new Size(1, (int)(dummyImgLstForLstViewHeightFix.ImageSize.Height * _dpiF));
 
@@ -81,10 +81,7 @@ namespace WGestures.App.Gui.Windows
             {
                 check_gestBtn_Right.Checked = true;
             }
-            if ((gestBtns & GestureTriggerButton.Middle) != 0)
-            {
-                check_gestBtn_Middle.Checked = true;
-            }
+            check_gestBtn_Middle.Checked = Controller.MiddlePanelEnabled;
             if ((gestBtns & GestureTriggerButton.X) != 0)
             {
                 check_gestBtn_X.Checked = true;
@@ -245,7 +242,7 @@ namespace WGestures.App.Gui.Windows
         private void listApps_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
         {
             if (!e.IsSelected) return;
-            
+
             Debug.WriteLine("listApps_ItemSelectionChanged");
 
             //labelAppName.Text = e.Item.Text.Trim();
@@ -254,7 +251,7 @@ namespace WGestures.App.Gui.Windows
             //if (app is GlobalApp) check_gesturingEnabled.Text = "启用全局手势";
             //else check_gesturingEnabled.Text = "在此程序上启用手势";
 
-            
+
             var exeApp = app as ExeApp;
             if (exeApp != null)
             {
@@ -323,8 +320,8 @@ namespace WGestures.App.Gui.Windows
                 }
                 else
                 {
-                    var app = new OrderableExeApp() { ExecutablePath = appPath, Name = frm.AppName, Order = 1}; 
-                    
+                    var app = new OrderableExeApp() { ExecutablePath = appPath, Name = frm.AppName, Order = 1};
+
                     AddAppToList(app);
                     HighlightAppInList(app);
                     Controller.IntentStore.Add(app);
@@ -597,7 +594,7 @@ namespace WGestures.App.Gui.Windows
             //get icon
             using (var thumb = IconHelper.ExtractIconForPath(appPath, new Size((int) (32*_dpiF), (int) (32*_dpiF)), app.IsGesturingEnabled))
             {
-                
+
                 var imgIndex = imglistAppIcons.Images.IndexOfKey(appPath);
                 if (imgIndex < 0)
                 {
@@ -677,7 +674,7 @@ namespace WGestures.App.Gui.Windows
 
             }
         }
-        
+
         private void RemoveSelectedAppFromList()
         {
             if (listApps.SelectedIndices.Count != 1) return;
@@ -753,7 +750,7 @@ namespace WGestures.App.Gui.Windows
         private void ResetListApps()
         {
             listApps.BeginUpdate();
-            
+
             listApps.Items.Clear();
 
             //第0个项目，必须是(全局)
@@ -948,7 +945,7 @@ namespace WGestures.App.Gui.Windows
         private void LoadCommandView(GestureIntent intent)
         {
             var cmdView = Controller.CommandViewFactory.GetCommandView(intent.Command);
-            
+
             if (cmdView != null)
             {
                 //如果目标视图实现了该接口，则注入选中的app
@@ -998,7 +995,7 @@ namespace WGestures.App.Gui.Windows
         #endregion
 
         #region utils
-        
+
         private static ScrollBars GetVisibleScrollbars(Control ctl)
         {
             var wndStyle = Native.GetWindowLong(ctl.Handle, Native.GWL_STYLE);
@@ -1010,7 +1007,7 @@ namespace WGestures.App.Gui.Windows
             else
                 return vsVisible ? ScrollBars.Vertical : ScrollBars.None;
         }
-       
+
         #endregion
 
 
@@ -1057,7 +1054,7 @@ namespace WGestures.App.Gui.Windows
             {
                 LoadHotCornerCommandTypes();
                 LoadHotCornerCommands();
-               
+
             }
         }
 
@@ -1248,6 +1245,11 @@ namespace WGestures.App.Gui.Windows
             var checkbox = sender as CheckBox;
 
             var tag = (GestureTriggerButton)int.Parse((string)checkbox.Tag);
+            if (tag == GestureTriggerButton.Middle)
+            {
+                Controller.MiddlePanelEnabled = checkbox.Checked;
+                return;
+            }
             if (checkbox.Checked)
             {
                 gestBtns |= tag;
@@ -1344,7 +1346,7 @@ namespace WGestures.App.Gui.Windows
 
         private void combo_hotcornerCmdTypes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (combo_hotcornerCmdTypes.SelectedItem == null) return; 
+            if (combo_hotcornerCmdTypes.SelectedItem == null) return;
 
             var cornerBtn = (from btn in _hotCornerRadioBtns where btn.Checked select btn).Single();
             var corner = int.Parse((string) cornerBtn.Tag);
@@ -1360,7 +1362,7 @@ namespace WGestures.App.Gui.Windows
             {
                 cmd = currentCmd;
             }
-            
+
             Controller.IntentStore.HotCornerCommands[corner] = cmd;
             LoadHotCornerCmdView(cmd);
             cornerBtn.Text = cmd.Description();

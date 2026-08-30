@@ -55,9 +55,9 @@ namespace WGestures.App.Gui.Windows
             this.flowAlert.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
-            // 
+            //
             // flowLayoutPanel4
-            // 
+            //
             this.flowLayoutPanel4.AutoSize = true;
             this.flowLayoutPanel4.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.flowLayoutPanel4.BackColor = System.Drawing.Color.WhiteSmoke;
@@ -71,9 +71,9 @@ namespace WGestures.App.Gui.Windows
             this.flowLayoutPanel4.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
             this.flowLayoutPanel4.Size = new System.Drawing.Size(364, 42);
             this.flowLayoutPanel4.TabIndex = 6;
-            // 
+            //
             // btnCancel
-            // 
+            //
             this.btnCancel.Location = new System.Drawing.Point(278, 8);
             this.btnCancel.Margin = new System.Windows.Forms.Padding(2, 2, 9, 2);
             this.btnCancel.Name = "btnCancel";
@@ -82,9 +82,9 @@ namespace WGestures.App.Gui.Windows
             this.btnCancel.Text = "取消";
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
-            // 
+            //
             // btnOk
-            // 
+            //
             this.btnOk.Enabled = false;
             this.btnOk.Location = new System.Drawing.Point(195, 8);
             this.btnOk.Margin = new System.Windows.Forms.Padding(2);
@@ -94,9 +94,9 @@ namespace WGestures.App.Gui.Windows
             this.btnOk.Text = "保存";
             this.btnOk.UseVisualStyleBackColor = true;
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
-            // 
+            //
             // label1
-            // 
+            //
             this.label1.Location = new System.Drawing.Point(2, 0);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
@@ -104,9 +104,9 @@ namespace WGestures.App.Gui.Windows
             this.label1.TabIndex = 7;
             this.label1.Text = "手势名称";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
+            //
             // tb_gestureName
-            // 
+            //
             this.tb_gestureName.Location = new System.Drawing.Point(66, 2);
             this.tb_gestureName.Margin = new System.Windows.Forms.Padding(2);
             this.tb_gestureName.MaxLength = 32;
@@ -115,9 +115,9 @@ namespace WGestures.App.Gui.Windows
             this.tb_gestureName.TabIndex = 8;
             this.tb_gestureName.TextChanged += new System.EventHandler(this.tb_gestureName_TextChanged);
             this.tb_gestureName.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tb_gestureName_KeyDown);
-            // 
+            //
             // flowLayoutPanel1
-            // 
+            //
             this.flowLayoutPanel1.Controls.Add(this.label1);
             this.flowLayoutPanel1.Controls.Add(this.tb_gestureName);
             this.flowLayoutPanel1.Location = new System.Drawing.Point(5, 109);
@@ -125,9 +125,9 @@ namespace WGestures.App.Gui.Windows
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(346, 49);
             this.flowLayoutPanel1.TabIndex = 9;
-            // 
+            //
             // lb_capturing
-            // 
+            //
             this.lb_capturing.BackColor = System.Drawing.Color.Transparent;
             this.lb_capturing.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.lb_capturing.Font = new System.Drawing.Font("SimSun", 14.25F);
@@ -138,9 +138,9 @@ namespace WGestures.App.Gui.Windows
             this.lb_capturing.TabIndex = 10;
             this.lb_capturing.Text = "请用鼠标画出手势";
             this.lb_capturing.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
+            //
             // lb_mnemonic
-            // 
+            //
             this.lb_mnemonic.Font = new System.Drawing.Font("SimSun", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.lb_mnemonic.ForeColor = System.Drawing.Color.DeepSkyBlue;
             this.lb_mnemonic.Location = new System.Drawing.Point(7, 59);
@@ -150,9 +150,9 @@ namespace WGestures.App.Gui.Windows
             this.lb_mnemonic.TabIndex = 11;
             this.lb_mnemonic.Text = " ...";
             this.lb_mnemonic.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
+            //
             // flowLayoutPanel2
-            // 
+            //
             this.flowLayoutPanel2.AutoSize = true;
             this.flowLayoutPanel2.BackColor = System.Drawing.Color.White;
             this.flowLayoutPanel2.Controls.Add(this.lb_capturing);
@@ -169,9 +169,9 @@ namespace WGestures.App.Gui.Windows
             this.flowLayoutPanel2.Padding = new System.Windows.Forms.Padding(5);
             this.flowLayoutPanel2.Size = new System.Drawing.Size(364, 270);
             this.flowLayoutPanel2.TabIndex = 13;
-            // 
+            //
             // lineFlowLayout1
-            // 
+            //
             this.lineFlowLayout1.ForeColor = System.Drawing.Color.SkyBlue;
             this.lineFlowLayout1.Location = new System.Drawing.Point(7, 41);
             this.lineFlowLayout1.Margin = new System.Windows.Forms.Padding(2);
@@ -179,9 +179,9 @@ namespace WGestures.App.Gui.Windows
             this.lineFlowLayout1.Size = new System.Drawing.Size(344, 16);
             this.lineFlowLayout1.TabIndex = 12;
             this.lineFlowLayout1.Vertical = false;
-            // 
+            //
             // label2
-            // 
+            //
             this.label2.Font = new System.Drawing.Font("Microsoft YaHei", 9F);
             this.label2.ForeColor = System.Drawing.Color.Gray;
             this.label2.Location = new System.Drawing.Point(7, 158);
@@ -189,11 +189,11 @@ namespace WGestures.App.Gui.Windows
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(344, 63);
             this.label2.TabIndex = 13;
-            this.label2.Text = "* 你可以使用鼠标 右键 / 中键 / X键 绘制手势\r\n* 仅允许上下左右四种方向的组合，而非任意形状\r\n* 当你绘制手势的时候，可点按其他鼠标键或滚轮“修饰”" +
+            this.label2.Text = "* 你可以使用鼠标 右键 / X键 绘制手势；中键专用于快捷面板\r\n* 仅允许上下左右四种方向的组合，而非任意形状\r\n* 当你绘制手势的时候，可点按其他鼠标键或滚轮“修饰”" +
     "它";
-            // 
+            //
             // flowAlert
-            // 
+            //
             this.flowAlert.AutoSize = true;
             this.flowAlert.Controls.Add(this.pictureBox1);
             this.flowAlert.Controls.Add(this.lb_errMsg);
@@ -202,9 +202,9 @@ namespace WGestures.App.Gui.Windows
             this.flowAlert.Size = new System.Drawing.Size(243, 21);
             this.flowAlert.TabIndex = 14;
             this.flowAlert.Visible = false;
-            // 
+            //
             // pictureBox1
-            // 
+            //
             this.pictureBox1.Image = global::WGestures.App.Properties.Resources.Alert;
             this.pictureBox1.Location = new System.Drawing.Point(3, 3);
             this.pictureBox1.Name = "pictureBox1";
@@ -212,9 +212,9 @@ namespace WGestures.App.Gui.Windows
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 6;
             this.pictureBox1.TabStop = false;
-            // 
+            //
             // lb_errMsg
-            // 
+            //
             this.lb_errMsg.AutoSize = true;
             this.lb_errMsg.ForeColor = System.Drawing.Color.DarkOrange;
             this.lb_errMsg.Location = new System.Drawing.Point(25, 3);
@@ -224,9 +224,9 @@ namespace WGestures.App.Gui.Windows
             this.lb_errMsg.TabIndex = 7;
             this.lb_errMsg.Text = "相同手势已存在， 点击保存会将其替代";
             this.lb_errMsg.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
+            //
             // EditGestureForm
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.AutoSize = true;

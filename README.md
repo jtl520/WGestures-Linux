@@ -10,6 +10,35 @@ Linux 与 Windows 构建彼此独立，并由各自的 CI 工作流验证。
 两端设置界面都可导入、导出 `.cgestures` 跨平台配置；通用手势可直接迁移，
 平台专属动作会明确报告并安全跳过。
 
+Windows、GNOME 46 Wayland 和 GTK3/X11 都提供独立的 4×4 中键快捷面板。
+在“常规”设置中启用“中键面板”后，短按中键会在鼠标附近显示 16 个格子；
+格子可启动软件、打开文件、文件夹或 HTTP/HTTPS 网址。空格右键直接提供这四种
+新建动作，已有格子右键可编辑或删除；Windows 和 GTK3/X11 面板支持把文件、
+文件夹或 .desktop 启动器拖到空格子创建条目（网址链接拖入会成为网址格子），
+GNOME Wayland 面板暂不支持拖放。悬停格子会显示编辑对话框里填写的
+“功能/用途说明”，未填写时显示动作类型和目标。软件格子勾选“如果程序已运行，
+激活已打开的窗口”后，三个平台都会优先激活已打开的窗口而不是重复启动。
+Linux 的“启动软件”还支持没有 `.desktop` 项的程序：在“选择软件”中点
+“选择可执行文件…”会自动填写绝对路径和工作目录；也可以手填 `./studio.sh`
+并把 Android Studio 的 `bin` 目录填入“工作目录”。启动器不会经过 shell，参数
+单独填写在“参数”栏；脚本必须先具有执行权限（`chmod +x 文件名`）。
+“以管理员身份运行”在 Windows 使用 UAC，在 Linux 使用 `pkexec` 并弹出系统
+认证窗口；认证成功后才会以管理员/root 权限启动。
+面板打开时右键和 X1/X2 手势照常可用（三个平台一致），只有面板表面上的
+按键让给格子交互；编辑对话框的输入框中手势同样照常可用。网址格子的图标
+会自动向目标网站请求 `favicon.ico`（直连、3 秒超时、本地缓存；目标站拒绝
+图标客户端时再使用 Google favicon 兼容接口，全部失败才回退通用图标）。面板因截图工具等全屏覆盖层吞掉失焦通知而
+无法收回时，失焦数秒后会被看门狗自动收起。
+三个后端都会复用未变化的格子控件/Actor；Windows 还会合并短时间内积压的
+中键切换请求，在按下时立即响应，并在后台解析程序和快捷方式图标；高 DPI
+窗口会在启动阶段于虚拟桌面外预建，首次及连续唤出均不再重复构建整块面板。
+再次中键、Esc、点击面板外或执行动作会关闭
+面板。启用期间中键不再参与
+手势；关闭开关后中键完全交还系统，右键和 X1/X2 手势保持不变。
+4×4 面板会按鼠标所在显示器的可用区域自动缩放：小屏缩小、大屏适度放大，
+并设置上下限防止极端尺寸。Windows 托盘、Linux/X11 托盘和 GNOME 顶栏菜单
+都提供“弹出快捷面板”，中键无法被捕获时仍可从后台菜单打开。
+
 ## 支持范围
 
 | 系统 | 桌面会话 | 后端 | 支持级别 |
@@ -37,7 +66,7 @@ Windows 8.1 已结束系统安全支持，而且 GitHub Actions 没有对应 Run
 下载并运行：
 
 ```text
-CrossGestures-2.1.7.0-Windows-Setup.exe
+CrossGestures-2.1.8.0-Windows-Setup.exe
 ```
 
 安装器会请求一次管理员权限并安装到 Program Files，以保证手势覆盖 Codex、管理员
@@ -51,7 +80,7 @@ Windows 11 可能把托盘图标放入隐藏区域；也可以从开始菜单打
 ### Windows
 
 先从托盘菜单退出 CrossGestures，然后在“设置 → 应用 → 已安装的应用”中搜索
-完整名称 `CrossGestures version 2.1.7.0` 并卸载。如果 Windows 应用列表尚未刷新，
+完整名称 `CrossGestures version 2.1.8.0` 并卸载。如果 Windows 应用列表尚未刷新，
 可直接运行 Program Files 安装目录中的卸载器：
 
 ```powershell
@@ -94,12 +123,12 @@ echo "$XDG_CURRENT_DESKTOP / $XDG_SESSION_TYPE"
 ### 2. 下载并安装
 
 从 [GitHub Releases](https://github.com/jtl520/WGestures-Linux/releases/latest)
-下载 `wgestures_2.1.7ubuntu1_all.deb`，保存到“下载”目录，然后运行：
+下载 `wgestures_2.1.8_all.deb`，保存到“下载”目录，然后运行：
 
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.7ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.8_all.deb
 ```
 
 必须使用 `apt install ./文件名.deb`，文件名前的 `./` 不能省略。APT 会自动安装
@@ -157,7 +186,7 @@ wgestures --settings
 从仓库的 **Releases** 页面下载：
 
 ```text
-wgestures_2.1.7ubuntu1_all.deb
+wgestures_2.1.8_all.deb
 ```
 
 联网安装时依赖会由 APT 自动解决：
@@ -165,7 +194,7 @@ wgestures_2.1.7ubuntu1_all.deb
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.7ubuntu1_all.deb
+sudo apt install ./wgestures_2.1.8_all.deb
 wgestures --diagnose
 ```
 
@@ -198,12 +227,15 @@ wgestures --diagnose --json
 ```
 
 用户配置保存在 `$XDG_CONFIG_HOME/wgestures/gestures-v1.json`。安装、升级或
-卸载 `.deb` 均不会删除用户配置。
+卸载 `.deb` 均不会删除用户配置。快捷面板另存为
+`$XDG_CONFIG_HOME/wgestures/panel-v1.json`；Windows 对应文件位于当前版本的
+`%LOCALAPPDATA%\YingDev.com\WGestures\...\panel-v1.json`。两端面板配置首版
+互相独立，不随 `.cgestures` 导入导出。
 
 ## Windows / Linux 配置互传
 
 在任一平台的“导入与恢复”或导出入口选择 `.cgestures`。可直接互传的内容包括
-普通方向手势、右/中/X1/X2 触发键、快捷键、复制/粘贴、常用窗口控制、网址、
+普通方向手势、右键和 X1/X2 触发键、快捷键、复制/粘贴、常用窗口控制、网址、
 暂停和空动作。Linux Shell 命令、Desktop ID、Windows CMD/Lua/文本输入、Windows
 文件路径及修饰/滚轮手势没有可靠的跨平台等价项，因此不会被悄悄转换；导入或
 导出完成后会显示兼容数量和跳过原因。Windows 的 `.cgestures` 只导出“手势”页

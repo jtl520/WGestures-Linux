@@ -61,7 +61,7 @@ namespace WGestures.App.Gui.Windows
 
             SupportedCommands.Add(NamedAttribute.GetNameOf(typeof(PauseWGesturesCommand)), typeof(PauseWGesturesCommand));
             SupportedCommands.Add(NamedAttribute.GetNameOf(typeof(ChangeAudioVolumeCommand)), typeof(ChangeAudioVolumeCommand));
-            
+
             CommandViewFactory.Register<OpenFileCommand, OpenFileCommandView>();
             CommandViewFactory.Register<DoNothingCommand, GeneralNoParameterCommandView>();
             CommandViewFactory.Register<HotKeyCommand, HotKeyCommandView>();
@@ -76,7 +76,7 @@ namespace WGestures.App.Gui.Windows
             CommandViewFactory.Register<ChangeAudioVolumeCommand, GeneralNoParameterCommandView>();
             #endregion
 
-            #region Hotcorner 
+            #region Hotcorner
             SupportedHotCornerCommands.Add(NamedAttribute.GetNameOf(typeof(DoNothingCommand)), typeof(DoNothingCommand));
             SupportedHotCornerCommands.Add(NamedAttribute.GetNameOf(typeof(HotKeyCommand)), typeof(HotKeyCommand));
             SupportedHotCornerCommands.Add(NamedAttribute.GetNameOf(typeof(CmdCommand)), typeof(CmdCommand));
@@ -91,7 +91,7 @@ namespace WGestures.App.Gui.Windows
 
 
         #region tab1 Config Items
-        
+
         public IConfig Config { get { return _config; } }
 
         public GlobalHotKeyManager.HotKey? PauseResumeHotkey
@@ -144,7 +144,7 @@ namespace WGestures.App.Gui.Windows
                 }
                 catch (Exception)
                 {
-#if DEBUG                    
+#if DEBUG
                     throw;
 #endif
                 }
@@ -309,11 +309,11 @@ namespace WGestures.App.Gui.Windows
 
         public bool PathTrackerPreferCursorWindow
         {
-            get 
+            get
             {
                 return _pathTracker.PreferWindowUnderCursorAsTarget;
             }
-            set 
+            set
             {
                 if (value == PathTrackerPreferCursorWindow) return;
                 _pathTracker.PreferWindowUnderCursorAsTarget = value;
@@ -439,6 +439,18 @@ namespace WGestures.App.Gui.Windows
             MigrateService.ExportTo(filePath);
         }
 
+        public bool MiddlePanelEnabled
+        {
+            get { return _pathTracker.MiddlePanelEnabled; }
+            set
+            {
+                if (value == _pathTracker.MiddlePanelEnabled) return;
+                _pathTracker.MiddlePanelEnabled = value;
+                _config.Set(ConfigKeys.MiddlePanelEnabled, value);
+                OnPropertyChanged("MiddlePanelEnabled");
+            }
+        }
+
         internal PortableConfigReport ExportPortableTo(string filePath, AbstractApp sourceApp)
         {
             return MigrateService.ExportPortableTo(filePath, sourceApp);
@@ -471,7 +483,7 @@ namespace WGestures.App.Gui.Windows
         {
             AutoStart = _config.Get<bool>(ConfigKeys.AutoStart, AutoStart);
             AutoCheckForUpdate = _config.Get<bool>(ConfigKeys.AutoCheckForUpdate, AutoCheckForUpdate);
-            
+
             //PathTrackerGestureButton = _config.Get<int>(ConfigKeys.PathTrackerGestureButton);
             PathTrackerInitialValidMove = _config.Get<int>(ConfigKeys.PathTrackerInitialValidMove, PathTrackerInitialValidMove);
             PathTrackerInitialStayTimeout = _config.Get<bool>(ConfigKeys.PathTrackerInitialStayTimeout, PathTrackerInitialStayTimeout);

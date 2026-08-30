@@ -17,6 +17,7 @@ namespace WGestures.Core.Impl.Windows
 
         public bool IsDisposed { get; private set; }
         private IntPtr _hookId;
+        private int _moveTraceCounter;
         private IntPtr _kbdHookId;
         private uint _hookThreadNativeId;
         private Thread _hookThread;
@@ -71,7 +72,7 @@ namespace WGestures.Core.Impl.Windows
         public event MouseHookEventHandler MouseHookEvent;
         public event KeyboardHookEventHandler KeyboardHookEvent;
         public event Func<Native.MSG,bool> GotMessage;
-        
+
 
         public MouseKeyboardHook()
         {
@@ -141,7 +142,7 @@ namespace WGestures.Core.Impl.Windows
                                 }
                                 _install();
                                 break;
-                                
+
                             case (uint)User32.WM.WM_CLOSE:
                                 @continue = false;
                                 _uinstall();
@@ -154,7 +155,7 @@ namespace WGestures.Core.Impl.Windows
                             @continue = GotMessage(msg);
                         }
                         else @continue = true;
-                        
+
 
                     } while (@continue);
 
@@ -212,6 +213,15 @@ namespace WGestures.Core.Impl.Windows
                 args.Msg == MouseMsg.WM_XBUTTONDOWN || args.Msg == MouseMsg.WM_XBUTTONUP)
             {
                 Trace.WriteLine("CrossGestures mouse hook: " + args.Msg + " at " + args.X + "," + args.Y);
+            }
+            else if (args.Msg == MouseMsg.WM_MOUSEMOVE)
+            {
+                // 移动事件限流记录，用于诊断"手势轨迹丢失"类问题。
+                if (++_moveTraceCounter >= 10)
+                {
+                    _moveTraceCounter = 0;
+                    Trace.WriteLine("CrossGestures mouse hook: WM_MOUSEMOVE at " + args.X + "," + args.Y);
+                }
             }
 
             try
@@ -282,8 +292,8 @@ namespace WGestures.Core.Impl.Windows
         }
 
         #region dispose
-            //If the method is invoked from the finalizer (disposing is false), 
-            //other objects should not be accessed. 
+            //If the method is invoked from the finalizer (disposing is false),
+            //other objects should not be accessed.
             //The reason is that objects are finalized in an unpredictable order and so they,
             //or any of their dependencies, might already have been finalized.
         protected virtual void Dispose(bool disposing)

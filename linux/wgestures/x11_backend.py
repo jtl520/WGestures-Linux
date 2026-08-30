@@ -23,13 +23,15 @@ from .storage import ConfigStore, runtime_directory, runtime_status_path
 from .tray import X11TrayIcon
 from .x11_actions import X11ActionExecutor
 from .x11_overlay import GestureOverlay
+from .panel_ui import QuickPanel, prewarm_application_records_async
 
 
 LOG = logging.getLogger("wgestures.x11")
-BUTTON_NUMBERS = {"right": 3, "middle": 2, "x1": 8, "x2": 9}
+BUTTON_NUMBERS = {"left": 1, "right": 3, "middle": 2, "x1": 8, "x2": 9}
 BUTTON_NAMES = dict((number, name) for name, number in BUTTON_NUMBERS.items())
-REPLAY_SETTLE_MS = 12
+REPLAY_SETTLE_MS = 30
 REPLAY_HOLD_MS = 24
+REPLAY_REGRAB_DELAY_MS = 4
 
 
 class X11Backend(object):
@@ -71,8 +73,13 @@ class X11Backend(object):
         self.overlay = GestureOverlay(
             self.settings, self._cancel_for_monitor_change,
             self._record_frame_latency)
+        self.panel = QuickPanel(self._panel_closed)
+        # 后台预热应用记录缓存：开机后第一次弹出面板不再扫描全部 desktop。
+        prewarm_application_records_async()
+        self._panel_candidate = None
         try:
-            self.tray = X11TrayIcon(self.settings, Gtk.main_quit)
+            self.tray = X11TrayIcon(
+                self.settings, Gtk.main_quit, self._show_panel_from_tray)
         except Exception as tray_error:
             LOG.warning("无法创建系统托盘图标，后台手势仍可使用：%s", tray_error)
             self.tray = None
@@ -81,6 +88,7 @@ class X11Backend(object):
         self._io_watch = None
         self._drain_source = None
         self._replay_source = None
+        self._restore_grabs_source = None
         self._config_monitor = None
         self._dbus_subscriptions = []
         self._cleaned = False
@@ -101,11 +109,16 @@ class X11Backend(object):
     def _connect_settings(self):
         for key in (
                 "enabled", "paused", "trigger-buttons", "direction-mode",
-                "start-threshold", "segment-threshold", "config-revision"):
+                "start-threshold", "segment-threshold", "config-revision",
+                "middle-panel-enabled"):
             self.settings.connect(key, self._settings_changed)
 
     def _settings_changed(self):
+        if getattr(self, "_restore_grabs_source", None):
+            GLib.source_remove(self._restore_grabs_source)
+            self._restore_grabs_source = None
         self.cancel("设置已更新")
+        self.panel.close_panel()
         self._configure_recognizer()
         self.config = self.store.load()["config"]
         self._ungrab_all()
@@ -160,6 +173,7 @@ class X11Backend(object):
         except (IndexError, TypeError):
             active = True
         if active:
+            self.panel.close_panel()
             self.cancel("会话已锁定")
 
     def _prepare_for_sleep(self, _connection, _sender, _path, _interface,
@@ -169,9 +183,11 @@ class X11Backend(object):
         except (IndexError, TypeError):
             sleeping = True
         if sleeping:
+            self.panel.close_panel()
             self.cancel("系统准备休眠")
 
     def _cancel_for_monitor_change(self):
+        self.panel.close_panel()
         self.cancel("显示器配置已变化")
 
     def _lock_modifier_masks(self):
@@ -199,6 +215,16 @@ class X11Backend(object):
             masks.update([value | lock_mask for value in list(masks)])
         return sorted(masks)
 
+    def _grab_button_names(self):
+        # 面板打开时手势按钮同样保持抓取：面板之外的右键/X 键手势照常
+        # 识别，面板表面上的按键由事件处理单独转发给格子。仅面板可见时
+        # 临时抓取左键，用于可靠识别桌面/其他窗口上的外部点击。
+        names = (list(self.settings.get("trigger-buttons")) +
+                 (["middle"] if self.settings.get("middle-panel-enabled") else []))
+        if self.panel.get_visible():
+            names.append("left")
+        return list(dict.fromkeys(names))
+
     def _grab_configured(self):
         if not self.settings.get("enabled") or self.settings.get("paused"):
             return
@@ -208,14 +234,20 @@ class X11Backend(object):
             errors.append(protocol_error)
 
         event_mask = X.ButtonPressMask | X.ButtonReleaseMask | X.PointerMotionMask
-        for name in self.settings.get("trigger-buttons"):
+        names = self._grab_button_names()
+        for name in names:
             button = BUTTON_NUMBERS.get(name)
             if not button:
                 continue
+            # 手势按钮用同步抓取：按下先冻结指针，由事件处理决定回放给
+            # 面板格子（ReplayPointer）还是解冻继续手势（AsyncPointer）。
+            # 中键始终被本程序消费，用异步抓取即可。
+            pointer_mode = (X.GrabModeAsync if name == "middle"
+                            else X.GrabModeSync)
             for modifiers in self._lock_modifier_masks():
                 self.root.grab_button(
                     button, modifiers, False, event_mask,
-                    X.GrabModeAsync, X.GrabModeAsync, X.NONE, X.NONE,
+                    pointer_mode, X.GrabModeAsync, X.NONE, X.NONE,
                     onerror=on_error)
                 self._grabbed.append((button, modifiers))
         self.display.sync()
@@ -223,7 +255,7 @@ class X11Backend(object):
             self._ungrab_all()
             details = ", ".join(str(item) for item in errors[:3])
             raise RuntimeError("鼠标按钮已被其他程序占用：{0}".format(details))
-        LOG.info("已抓取按钮：%s", ", ".join(self.settings.get("trigger-buttons")))
+        LOG.info("已抓取按钮：%s", ", ".join(names))
 
     def _ungrab_all(self):
         for button, modifiers in self._grabbed:
@@ -318,10 +350,60 @@ class X11Backend(object):
                   event.detail, getattr(event, "time", None),
                   getattr(event, "serial", None), getattr(event, "state", None))
         if self.session.active is not None:
+            self._allow_pointer(X.AsyncPointer, event)
             return
         name = BUTTON_NAMES.get(event.detail)
         if not name:
+            self._allow_pointer(X.AsyncPointer, event)
             return
+        if name == "left" and self.panel.get_visible():
+            editing = getattr(self.panel, "editing", False)
+            inside = editing or self._pointer_inside_panel(event)
+            # ReplayPointer preserves the real press/release sequence, so an
+            # outside desktop click still selects/focuses its original target
+            # and an inside click still reaches the GTK tile or modal editor.
+            self._allow_pointer(X.ReplayPointer, event)
+            if not inside:
+                self.panel.close_panel()
+            return
+        if name == "middle" and self.settings.get("middle-panel-enabled"):
+            if getattr(self.panel, "editing", False):
+                # Modal editors own the visible window stack. Consuming middle
+                # here prevents an even-numbered toggle burst from calling
+                # show_at()/present() and raising the grid above its chooser.
+                self._allow_pointer(X.AsyncPointer, event)
+                self._panel_candidate = None
+                return
+            if self.panel.get_visible():
+                self.panel.close_panel()
+                self._panel_candidate = None
+                return
+            if not self.settings.get("enabled") or self.settings.get("paused"):
+                self._replay_click(event.detail)
+                return
+            self._panel_candidate = {
+                "x": float(event.root_x), "y": float(event.root_y),
+                "cancelled": False,
+            }
+            # The panel owns middle while enabled. Show on press so the user's
+            # click-hold time is not added to perceived latency; motion beyond
+            # the threshold closes it again and preserves drag cancellation.
+            self._ungrab_all()
+            self.panel.show_at(event.root_x, event.root_y)
+            self._grab_configured()
+            return
+        if (self.panel.get_visible() and
+                not getattr(self.panel, "editing", False) and
+                name != "middle" and
+                self._pointer_inside_panel(event)):
+            # 面板表面上的右键/X 键属于格子交互：ReplayPointer 把这一按
+            # 原样交给格子（事件状态与真实点击完全一致）；面板之外这些
+            # 按钮解冻后继续走正常手势识别。
+            LOG.debug("panel surface press button=%s at=(%s,%s)", event.detail,
+                      event.root_x, event.root_y)
+            self._allow_pointer(X.ReplayPointer, event)
+            return
+        self._allow_pointer(X.AsyncPointer, event)
         if not self.settings.get("enabled") or self.settings.get("paused"):
             self._replay_click(event.detail)
             return
@@ -339,7 +421,29 @@ class X11Backend(object):
             self._grab_keyboard()
             self.overlay.begin(event.root_x, event.root_y)
 
+    def _pointer_inside_panel(self, event):
+        window = self.panel.get_window()
+        if window is None:
+            LOG.debug("panel surface probe: no gdk window")
+            return False
+        x, y, width, height = window.get_geometry()
+        inside = (x <= event.root_x < x + width and
+                  y <= event.root_y < y + height)
+        LOG.debug("panel surface probe: inside=%s geometry=(%s,%s,%s,%s) "
+                  "pointer=(%s,%s)", inside, x, y, width, height,
+                  event.root_x, event.root_y)
+        return inside
+
     def _motion(self, event):
+        if self._panel_candidate is not None:
+            dx = float(event.root_x) - self._panel_candidate["x"]
+            dy = float(event.root_y) - self._panel_candidate["y"]
+            threshold = float(self.settings.get("start-threshold"))
+            if (not self._panel_candidate["cancelled"] and
+                    dx * dx + dy * dy > threshold * threshold):
+                self._panel_candidate["cancelled"] = True
+                self.panel.close_panel()
+            return
         if self.session.active is None:
             return
         started = time.monotonic()
@@ -359,6 +463,9 @@ class X11Backend(object):
         LOG.debug("captured release button=%s time=%s serial=%s state=%s",
                   event.detail, getattr(event, "time", None),
                   getattr(event, "serial", None), getattr(event, "state", None))
+        if event.detail == BUTTON_NUMBERS["middle"] and self._panel_candidate is not None:
+            self._panel_candidate = None
+            return
         released = self.session.release(event.detail)
         if not released.get("handled"):
             return
@@ -390,6 +497,15 @@ class X11Backend(object):
             LOG.exception("执行动作失败：%s", action_error)
             self.overlay.complete(False, "动作失败")
 
+    def _allow_pointer(self, mode, event):
+        # 同步抓取按下后指针处于冻结状态，必须显式放行。
+        try:
+            self.display.allow_events(
+                mode, getattr(event, "time", None) or X.CurrentTime)
+            self.display.flush()
+        except error.XError:
+            pass
+
     def _replay_click(self, button):
         # A passive button grab becomes an active pointer grab for the current
         # physical click. Release it and remove the passive rules now, but inject
@@ -401,6 +517,9 @@ class X11Backend(object):
             pass
         self._ungrab_all()
         LOG.debug("scheduling replay click button=%s", button)
+        if getattr(self, "_restore_grabs_source", None):
+            GLib.source_remove(self._restore_grabs_source)
+            self._restore_grabs_source = None
         if self._replay_source:
             GLib.source_remove(self._replay_source)
         self._replay_source = GLib.timeout_add(
@@ -415,10 +534,26 @@ class X11Backend(object):
         xtest.fake_input(
             self.inject_display, X.ButtonRelease, button, time=REPLAY_HOLD_MS)
         self.inject_display.sync()
-        self._grab_configured()
+        # Do not restore the passive grabs in the same event-loop turn. Some X
+        # servers deliver XTEST events to other clients after Sync returns; an
+        # immediate re-grab can then capture our own replay and start a loop.
+        self._restore_grabs_source = GLib.timeout_add(
+            REPLAY_REGRAB_DELAY_MS, self._restore_grabs_after_replay)
+        return GLib.SOURCE_REMOVE
+
+    def _restore_grabs_after_replay(self):
+        self._restore_grabs_source = None
+        if self._cleaned:
+            return GLib.SOURCE_REMOVE
+        try:
+            self._grab_configured()
+        except RuntimeError as grab_error:
+            LOG.error("回放点击后无法恢复鼠标按钮抓取：%s", grab_error)
+            self._write_status("error", str(grab_error))
         return GLib.SOURCE_REMOVE
 
     def cancel(self, message=None):
+        self._panel_candidate = None
         had_active = self.session.cancel()
         if had_active:
             LOG.info(message or "手势已取消")
@@ -429,6 +564,33 @@ class X11Backend(object):
                 pass
         self._ungrab_keyboard()
         self.overlay.cancel()
+
+    def _panel_closed(self):
+        if self._cleaned:
+            return
+        self._ungrab_all()
+        try:
+            self._grab_configured()
+        except RuntimeError as grab_error:
+            LOG.error("关闭面板后无法恢复鼠标按钮抓取：%s", grab_error)
+
+    def _show_panel_from_tray(self):
+        # Run after the indicator menu has closed, then center the panel at
+        # the current pointer. This remains available even if the middle
+        # button is unavailable or the gesture engine is paused.
+        GLib.idle_add(self._show_panel_from_tray_idle)
+
+    def _show_panel_from_tray_idle(self):
+        if self._cleaned:
+            return GLib.SOURCE_REMOVE
+        try:
+            pointer = self.root.query_pointer()
+            self._ungrab_all()
+            self.panel.show_at(pointer.root_x, pointer.root_y)
+            self._grab_configured()
+        except Exception as panel_error:
+            LOG.error("无法从托盘弹出快捷面板：%s", panel_error)
+        return GLib.SOURCE_REMOVE
 
     def _property_text(self, window, name):
         if window is None:
@@ -560,12 +722,16 @@ class X11Backend(object):
             if self._replay_source:
                 GLib.source_remove(self._replay_source)
                 self._replay_source = None
+            if getattr(self, "_restore_grabs_source", None):
+                GLib.source_remove(self._restore_grabs_source)
+                self._restore_grabs_source = None
             if self._config_monitor:
                 self._config_monitor.cancel()
             for connection, subscription in self._dbus_subscriptions:
                 connection.signal_unsubscribe(subscription)
             if self.tray:
                 self.tray.destroy()
+            self.panel.destroy()
             self.overlay.destroy()
             self._write_metrics()
             self._remove_status()

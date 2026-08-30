@@ -19,7 +19,11 @@
     </key>
     <key name="trigger-buttons" type="as">
       <default>['right']</default>
-      <summary>Mouse buttons that may start a gesture</summary>
+      <summary>Right and X buttons that may start a gesture</summary>
+    </key>
+    <key name="middle-panel-enabled" type="b">
+      <default>true</default>
+      <summary>Reserve the middle mouse button for the quick panel</summary>
     </key>
     <key name="direction-mode" type="i">
       <range min="4" max="8"/>

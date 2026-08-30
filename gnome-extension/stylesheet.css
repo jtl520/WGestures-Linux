@@ -9,3 +9,41 @@
   font-weight: bold;
   padding: 7px 11px;
 }
+
+.wgestures-quick-panel {
+  spacing: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  background-color: rgba(32, 36, 44, 0.96);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.wgestures-quick-panel-row {
+  spacing: 8px;
+}
+
+.wgestures-quick-panel-tile {
+  width: 104px;
+  height: 92px;
+  padding: 8px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.10);
+}
+
+.wgestures-quick-panel-tile:hover,
+.wgestures-quick-panel-tile:focus {
+  background-color: rgba(255, 255, 255, 0.20);
+}
+
+.wgestures-quick-panel-tile-content {
+  spacing: 6px;
+}
+
+.wgestures-quick-panel-label {
+  width: 84px;
+  text-align: center;
+}
+
+.wgestures-quick-panel-empty-icon {
+  opacity: 0.35;
+}

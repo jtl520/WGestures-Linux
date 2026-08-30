@@ -1,14 +1,17 @@
 name: Publish Linux and Windows release
 
-run-name: Publish ${{ inputs.tag }}
+run-name: Publish ${{ inputs.tag || github.ref_name }}
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
         description: Existing Git tag to publish
         required: true
-        default: v2.1.7
+        default: v2.1.8
 
 permissions:
   contents: write
@@ -20,7 +23,7 @@ jobs:
       - name: Check out tagged source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ inputs.tag || github.ref_name }}
 
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v2
@@ -102,7 +105,7 @@ jobs:
       - name: Check out tagged source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ inputs.tag || github.ref_name }}
 
       - name: Install build dependencies
         run: |
@@ -134,7 +137,7 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           package="$(find .. -maxdepth 1 -name 'wgestures_*_all.deb' -print -quit)"
           package_name="$(basename "$package")"
@@ -143,10 +146,10 @@ jobs:
           windows_name="$(basename "$windows_package")"
           windows_sha256="$(sha256sum "$windows_package" | cut -d ' ' -f 1)"
           notes="$(printf '%s\n\n%s\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s\n%s\n\n%s' \
-            'CrossGestures v2.1.7 Windows 右键响应优化版，并同步提供 Ubuntu/Debian 安装包。' \
-            '- Windows 普通右键起始移动阈值由 4 像素提高到 10 像素，降低手部轻微抖动被误判为手势的概率' \
-            '- Windows 合并尚未处理的连续鼠标移动消息，避免高回报率鼠标让右键抬起长期排在旧坐标之后' \
-            '- Ubuntu 的 GNOME Wayland 与 X11 输入逻辑保持不变，继续沿用现有右键回放和压力恢复机制' \
+            'CrossGestures v2.1.8 跨平台快捷面板与手势可靠性更新。' \
+            '- Windows、Ubuntu GNOME 和 Debian/X11 新增中键 4×4 快捷面板，支持软件、文件、文件夹、网址、图标、拖放和托盘备用入口' \
+            '- 优化连续中键唤出的响应与稳定性；固定格子等宽等高，长名称自动省略且不再撑开面板' \
+            '- 修复窗口置顶手势、Linux 快速 Enter/置顶误识别、相对路径程序启动、图标解析和文件夹误开 Catfish' \
             "Linux 安装：\`sudo apt install ./$package_name\`" \
             'Linux 首次运行：`wgestures --diagnose`，然后执行 `wgestures --enable`；卸载：`wgestures --disable && sudo apt purge wgestures`。' \
             "Windows 安装：运行 \`$windows_name\` 并同意一次 UAC（需要 .NET Framework 4.8）；卸载：运行 \`%ProgramFiles%\\CrossGestures\\unins000.exe\`。" \

@@ -10,6 +10,8 @@ namespace WGestures.App
 {
     internal static class AppSettings
     {
+        public static string UserDataDirectoryOverride { get; set; }
+
         public static string CheckForUpdateUrl
         {
             get
@@ -36,6 +38,12 @@ namespace WGestures.App
             // make existing Windows gesture and application profiles disappear.
             get
             {
+                if (!string.IsNullOrWhiteSpace(UserDataDirectoryOverride))
+                    return System.IO.Path.GetFullPath(UserDataDirectoryOverride);
+                var overridePath = Environment.GetEnvironmentVariable(
+                    "CROSSGESTURES_USER_DATA_DIRECTORY");
+                if (!string.IsNullOrWhiteSpace(overridePath))
+                    return System.IO.Path.GetFullPath(overridePath);
                 return System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "YingDev.com", "WGestures", Application.ProductVersion);
@@ -54,6 +62,11 @@ namespace WGestures.App
             get { return UserDataDirectory + @"\gestures.wg2"; }
         }
 
+        public static string PanelConfigFilePath
+        {
+            get { return UserDataDirectory + @"\panel-v1.json"; }
+        }
+
         public static string DefaultGesturesFilePath
         {
             get { return Application.StartupPath + @"\defaults\gestures.wg2"; }
@@ -69,6 +82,6 @@ namespace WGestures.App
         {
             get { return "3"; }
         }
-        
+
     }
 }

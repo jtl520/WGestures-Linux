@@ -12,6 +12,38 @@ from .settings import Settings
 UUID = "wgestures@yingdev.com"
 
 
+def _detach_background_gui_stdio():
+    """Keep a background-launched GTK window out of terminal job control.
+
+    ``wgestures --settings &`` is a common way to open the preferences from
+    a root Kali terminal.  GTK and its image helpers inherit that terminal;
+    if any helper reads it, the shell stops the entire background process
+    group with SIGTTIN and the already drawn window appears frozen.  Desktop
+    launchers have no controlling terminal, and foreground terminal launches
+    keep their streams unchanged.
+    """
+    try:
+        stdin_fd = sys.stdin.fileno()
+        if (not os.isatty(stdin_fd) or not hasattr(os, "tcgetpgrp") or
+                os.tcgetpgrp(stdin_fd) == os.getpgrp()):
+            return False
+    except (AttributeError, OSError, ValueError):
+        return False
+
+    descriptors = (
+        (stdin_fd, os.O_RDONLY),
+        (sys.stdout.fileno(), os.O_WRONLY),
+        (sys.stderr.fileno(), os.O_WRONLY),
+    )
+    for descriptor, flags in descriptors:
+        null_fd = os.open(os.devnull, flags)
+        try:
+            os.dup2(null_fd, descriptor)
+        finally:
+            os.close(null_fd)
+    return True
+
+
 def _run_quiet(command):
     try:
         return subprocess.call(command) == 0
@@ -98,14 +130,38 @@ def build_parser():
     group.add_argument("--resume", action="store_true", help="恢复")
     group.add_argument("--status", action="store_true", help="显示状态")
     group.add_argument("--diagnose", action="store_true", help="运行环境诊断")
+    group.add_argument("--panel-edit", type=int, metavar="INDEX", help=argparse.SUPPRESS)
+    group.add_argument("--panel-fetch-icon", metavar="URL", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--panel-type", choices=("application", "file", "folder", "url"),
+        help=argparse.SUPPRESS)
     parser.add_argument("--json", action="store_true", help="诊断输出 JSON")
     return parser
 
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
+    opens_settings = args.settings or not any((
+        args.daemon, args.enable, args.disable, args.pause, args.resume,
+        args.status, args.diagnose, args.panel_edit is not None,
+        args.panel_fetch_icon is not None))
+    if opens_settings:
+        _detach_background_gui_stdio()
     if args.daemon:
         return _daemon()
+    if args.panel_edit is not None:
+        try:
+            from .panel_ui import edit_panel_slot
+            return edit_panel_slot(args.panel_edit, initial_type=args.panel_type)
+        except (ImportError, ValueError) as error:
+            print("无法编辑面板格子：{0}".format(error), file=sys.stderr)
+            return 4
+    if args.panel_fetch_icon is not None:
+        try:
+            from .panel_ui import fetch_favicon
+            return 0 if fetch_favicon(args.panel_fetch_icon) else 4
+        except (ImportError, ValueError):
+            return 4
     diagnostics = collect_diagnostics()
     settings = Settings()
     if args.enable:

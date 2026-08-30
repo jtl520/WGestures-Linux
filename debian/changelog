@@ -1,3 +1,173 @@
+wgestures (2.1.8) noble; urgency=high
+
+  * Add the cross-platform middle-button 4x4 quick-launch panel with atomic
+    storage, application/file/folder/URL actions, icons, drag and drop, and
+    responsive fixed-size tiles.
+  * Reduce repeated middle-panel latency and keep right/X-button gestures
+    available while the panel or its editors are open.
+  * Fix GTK panel focus dismissal, modal editor stacking, relative executable
+    launch validation, adjacent executable icons, and transactional rebuilds.
+  * Open folders with the desktop's real file manager instead of an incorrect
+    inode/directory handler such as Catfish.
+  * Improve fast multi-stroke recognition so Enter and window-above gestures
+    do not degrade to clipboard copy or paste.
+  * Restore reliable Windows topmost toggling and improve quick-panel icons,
+    responsive layout, tray fallback access, and repeated invocation latency.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 20:15:00 +0800
+
+wgestures (2.1.7ubuntu16) noble; urgency=high
+
+  * Open quick-panel folder items with the desktop's real file manager instead
+    of trusting a potentially incorrect inode/directory URI association.
+  * Prefer Thunar, Nautilus, Dolphin, Nemo, Caja, or PCManFM according to the
+    active desktop, with the generic URI launcher retained as a final fallback.
+  * Apply the same file-manager preference to the GNOME Shell panel backend.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 19:55:00 +0800
+
+wgestures (2.1.7ubuntu15) noble; urgency=high
+
+  * Keep every GTK quick-panel tile at the same responsive width and height;
+    long application names can no longer stretch an individual grid column.
+  * Ellipsize long tile labels inside their fixed allocation and expose the
+    complete name and launch target through the tile tooltip.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 19:30:00 +0800
+
+wgestures (2.1.7ubuntu14) noble; urgency=high
+
+  * Treat ./relative and absolute executable targets as files during icon
+    lookup instead of passing them to Gio.DesktopAppInfo as launcher IDs.
+  * Load adjacent executable icons such as Android Studio's studio.svg/png.
+  * Build the complete replacement 4x4 grid before swapping it onscreen so
+    any individual tile failure can never leave an empty black panel.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 18:15:00 +0800
+
+wgestures (2.1.7ubuntu13) noble; urgency=high
+
+  * Track raw gesture path length on GTK/X11 and GNOME Shell so recognition
+    can distinguish straight copy/paste strokes from fast multi-stroke paths.
+  * Prevent curved Enter and window-above gestures from degrading to the
+    single up/down clipboard fallback when intermediate samples are sparse.
+  * Ignore pre-activation pointer jitter when measuring gesture straightness.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 17:48:00 +0800
+
+wgestures (2.1.7ubuntu12) noble; urgency=high
+
+  * Validate executable targets before saving and report the fully resolved
+    missing path for relative programs.
+  * Restore the missing default-label import that caused every panel editor
+    Save action with an empty display name to abort before writing the file.
+  * Remove the large explanatory paragraph from panel item dialogs while
+    retaining concise field labels and tooltips.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 17:18:00 +0800
+
+wgestures (2.1.7ubuntu9) noble; urgency=high
+
+  * Explain application targets, arguments, working directories and pkexec
+    administrator launches directly in the panel item editor.
+  * Scale the 4x4 quick panel to each monitor's logical work area so it stays
+    usable on small displays and appropriately sized on large displays.
+  * Add an always-available “Show quick panel” fallback to the X11 tray and
+    GNOME indicator menus for systems whose middle button cannot be captured.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 16:55:00 +0800
+
+wgestures (2.1.7ubuntu7) noble; urgency=high
+
+  * Allow quick-panel application tiles to launch absolute executable paths,
+    commands on PATH, and ./relative programs resolved from a working folder.
+  * Add an executable-file picker that fills both the program path and working
+    directory, with clear missing-file and execute-permission errors.
+  * Keep GTK/X11 and GNOME Shell launch semantics aligned without using a shell.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 16:20:00 +0800
+
+wgestures (2.1.7ubuntu6) noble; urgency=high
+
+  * Temporarily capture the left button while the GTK/X11 quick panel is
+    visible so a desktop or other-window click always closes the grid.
+  * Replay both inside and outside left clicks to their original target,
+    preserving tile activation, desktop selection and window focus without
+    leaking the temporary global grab after the panel closes.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 14:10:00 +0800
+
+wgestures (2.1.7ubuntu5) noble; urgency=high
+
+  * Keep the GTK/X11 4x4 grid lowered while its modal tile-editor and
+    application/file chooser chain is active, without changing the panel's
+    low-latency input and drag/drop window type.
+  * Prevent popup-menu deactivation from closing the grid during the editor
+    transition while still closing it on a genuine outside click.
+  * Consume middle-button toggles while the modal editor chain is open so a
+    repeated middle click cannot raise the grid over the software chooser.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 14:30:00 +0800
+
+wgestures (2.1.7ubuntu4) noble; urgency=high
+
+  * Put “Middle (4x4 panel)” directly in the trigger-button selector on GTK/X11
+    and GNOME preferences. Selecting it enables the quick panel; clearing it
+    returns the middle button to the system.
+  * Remove the redundant standalone middle-panel switch from GTK preferences.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 13:45:00 +0800
+
+wgestures (2.1.7ubuntu3) noble; urgency=high
+
+  * Enable the 4x4 middle-button quick panel by default for every Linux user,
+    including root desktop sessions, matching the Windows out-of-box behavior.
+  * Detach settings-window standard streams when it is launched as a terminal
+    background job, preventing SIGTTIN job control from freezing the GTK UI.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 13:10:00 +0800
+
+wgestures (2.1.7ubuntu2) noble; urgency=high
+
+  * Add the 4x4 middle-button quick panel on GNOME 46 Wayland and GTK3/X11.
+  * Show four direct actions when an empty tile is right-clicked: launch an
+    application, open a file, open a folder, or open an HTTP/HTTPS URL.
+  * Keep configured-tile edit/delete actions and preserve existing right/X
+    button gesture behavior while the panel is closed.
+  * Honor "activate if running" on application tiles for the first time on
+    GNOME Wayland and GTK3/X11 by matching /proc comm and raising the open
+    window instead of spawning a duplicate.
+  * Show each tile's description (or its type and target) as a tooltip.
+  * Accept drag and drop on GTK3/X11 panel tiles: files, folders, .desktop
+    launchers and web links dropped on an empty tile create matching entries
+    and multiple drops fill consecutive free slots without overwriting.
+  * Keep right and X button gestures working outside the open panel on GNOME
+    Wayland and GTK3/X11; only presses on the panel surface are handed to the
+    tiles (replayed natively so tile menus still work).
+  * Cache installed-application records and tile icons so repeated panel
+    opens no longer rescan every desktop file.
+  * Let right and X button gestures keep working inside the slot editor's
+    input fields on X11, fetch URL tile icons directly from the target site
+    (cached under $XDG_CACHE_HOME/wgestures/favicons), and add a focus
+    watchdog that closes the panel when an overlay swallows focus-out.
+  * Warm the installed-application cache at daemon startup, skip panel
+    config re-reads while the file is unchanged, and require the quick
+    panel to have actually taken focus before the focus watchdog may
+    close it (no more pop-up-then-vanish when focus is denied).
+  * Reuse the GTK and GNOME tile trees on repeated opens, resolve application
+    icons by Desktop ID, and let GNOME read URL favicons downloaded by the
+    external wgestures helper instead of networking inside the compositor.
+  * Keep the Xvfb acceptance result authoritative when a transient gvfs FUSE
+    mount is still winding down during temporary-directory cleanup.
+  * Fall back to Google's favicon compatibility endpoint when a target site
+    rejects direct favicon clients (for example with HTTP 403), while keeping
+    all network I/O in the external helper rather than GNOME Shell.
+  * Toggle the quick panel on middle-button press on X11 and GNOME Wayland,
+    reverting it if motion crosses the drag threshold, to match Windows and
+    remove click-hold time from perceived latency.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Sun, 30 Aug 2026 02:05:00 +0800
+
 wgestures (2.1.7ubuntu1) noble; urgency=high
 
   * Increase the Windows gesture-start movement threshold from four to ten

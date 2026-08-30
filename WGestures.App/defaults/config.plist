@@ -11,7 +11,9 @@
     <key>AutoStart</key>
     <true />
     <key>PathTrackerTriggerButton</key>
-    <integer>15</integer>
+    <integer>13</integer>
+    <key>MiddlePanelEnabled</key>
+    <true />
     <key>PathTrackerInitialValidMove</key>
     <integer>10</integer>
     <key>PathTrackerStayTimeout</key>

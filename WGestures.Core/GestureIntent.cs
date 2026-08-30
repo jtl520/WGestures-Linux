@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
-using WGestures.Common.OsSpecific.Windows;
 using WGestures.Core.Commands;
 
 namespace WGestures.Core
@@ -50,7 +48,7 @@ namespace WGestures.Core
             {
                 shouldInit.Init();
             }
-            
+
             //在独立线程中运行
             //new Thread似乎反应快一点，ThreadPool似乎有延迟
             //ThreadPool.QueueUserWorkItem((s) =>
@@ -60,10 +58,10 @@ namespace WGestures.Core
                 {
                     context.ActivateTargetWindow();
                     Command.Execute();
-                    using (var proc = Process.GetCurrentProcess())
-                    {
-                        Native.SetProcessWorkingSetSize(proc.Handle, -1, -1);
-                    }
+                    // Do not trim the process working set after every gesture.
+                    // That pages out the persistent quick-panel controls and icon
+                    // cache, so the next middle-button popup stalls while Windows
+                    // faults them back in.  The runtime/GC already manages memory.
                 }
                 catch (Exception)
                 {

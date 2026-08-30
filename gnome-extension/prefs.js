@@ -12,6 +12,8 @@ import {displayAccelerator, normalizeAccelerator} from './core/shortcut.js';
 import {ConfigStore} from './shell/storage.js';
 
 const BUTTON_LABELS = Object.freeze({right: '右键', middle: '中键', x1: 'X1', x2: 'X2'});
+const GESTURE_BUTTONS = Object.freeze(['right', 'x1', 'x2']);
+const GENERAL_TRIGGER_BUTTONS = Object.freeze(['right', 'middle', 'x1', 'x2']);
 const ACTION_LABELS = Object.freeze({
     ShortcutAction: '快捷键',
     CopyAction: '智能复制（自动适配终端）',
@@ -142,8 +144,12 @@ class GestureEditor {
         this._name = new Gtk.Entry({text: this._gesture?.name || ''});
         content.append(inputRow(_('名称'), this._name));
 
-        this._button = stringDropDown(BUTTONS.map(item => BUTTON_LABELS[item]),
-            Math.max(0, BUTTONS.indexOf(this._gesture?.button || 'right')));
+        this._buttonChoices = this._gesture?.button === 'middle'
+            ? ['middle', ...GESTURE_BUTTONS]
+            : [...GESTURE_BUTTONS];
+        this._button = stringDropDown(this._buttonChoices.map(item =>
+            item === 'middle' ? _('中键（已停用）') : BUTTON_LABELS[item]),
+        Math.max(0, this._buttonChoices.indexOf(this._gesture?.button || 'right')));
         content.append(inputRow(_('触发按钮'), this._button));
 
         this._directions = new Gtk.Entry({
@@ -261,7 +267,7 @@ class GestureEditor {
             this._owner._toast(_('方向无效，请使用 up、up-right、right、down-right、down、down-left、left、up-left'));
             return;
         }
-        const button = BUTTONS[this._button.selected];
+        const button = this._buttonChoices[this._button.selected];
         const key = gestureKey(button, directions);
         const conflict = this._profile.gestures.find(item =>
             item !== this._gesture && profileGestureKey(item) === key
@@ -338,6 +344,7 @@ export default class WGesturesPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         this._window = window;
         this._settings = this.getSettings();
+        this._migrateMiddleButton();
         this._store = new ConfigStore();
         const loaded = this._store.load();
         this._config = loaded.config;
@@ -391,8 +398,18 @@ export default class WGesturesPreferences extends ExtensionPreferences {
 
         const buttonsGroup = new Adw.PreferencesGroup({title: _('触发按钮')});
         page.add(buttonsGroup);
-        for (const button of BUTTONS) {
-            const row = new Adw.SwitchRow({title: BUTTON_LABELS[button]});
+        for (const button of GENERAL_TRIGGER_BUTTONS) {
+            const row = new Adw.SwitchRow({
+                title: button === 'middle' ? _('中键（4×4 面板）') : BUTTON_LABELS[button],
+                subtitle: button === 'middle' ? _('选中后，中键按下立即弹出面板') : '',
+            });
+            if (button === 'middle') {
+                this._settings.bind(
+                    'middle-panel-enabled', row, 'active', Gio.SettingsBindFlags.DEFAULT
+                );
+                buttonsGroup.add(row);
+                continue;
+            }
             row.active = this._settings.get_strv('trigger-buttons').includes(button);
             row.connect('notify::active', () => {
                 const current = new Set(this._settings.get_strv('trigger-buttons'));
@@ -404,7 +421,7 @@ export default class WGesturesPreferences extends ExtensionPreferences {
                     row.active = true;
                     return;
                 }
-                this._settings.set_strv('trigger-buttons', BUTTONS.filter(item => current.has(item)));
+                this._settings.set_strv('trigger-buttons', GESTURE_BUTTONS.filter(item => current.has(item)));
             });
             buttonsGroup.add(row);
         }
@@ -444,6 +461,16 @@ export default class WGesturesPreferences extends ExtensionPreferences {
         const showName = new Adw.SwitchRow({title: _('显示命令名称')});
         this._settings.bind('show-command-name', showName, 'active', Gio.SettingsBindFlags.DEFAULT);
         appearance.add(showName);
+    }
+
+    _migrateMiddleButton() {
+        const buttons = this._settings.get_strv('trigger-buttons');
+        if (!buttons.includes('middle'))
+            return;
+        this._settings.set_boolean('middle-panel-enabled', true);
+        this._settings.set_strv(
+            'trigger-buttons', buttons.filter(item => item !== 'middle')
+        );
     }
 
     _spinRow(title, key, min, max, step, isDouble = false) {

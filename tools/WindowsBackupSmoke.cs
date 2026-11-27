@@ -85,7 +85,8 @@ internal static class WindowsBackupSmoke
             var defaultStore = defaults.GetType().GetProperty("GestureIntentStore").GetValue(defaults, null);
             var portableType = assembly.GetType("WGestures.App.Migrate.PortableConfigService", true);
             var portablePath = Path.ChangeExtension(outputPath, ".cgestures");
-            Invoke(portableType, "Export", portablePath, defaultStore);
+            var defaultGlobal = defaultStore.GetType().GetProperty("GlobalApp").GetValue(defaultStore, null);
+            Invoke(portableType, "Export", portablePath, defaultGlobal);
             var portableText = File.ReadAllText(portablePath);
             if (!portableText.Contains("\"portableFormat\": \"crossgestures-portable\""))
                 throw new InvalidDataException("Portable export is missing its format marker.");

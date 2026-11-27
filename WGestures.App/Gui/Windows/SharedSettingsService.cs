@@ -66,8 +66,8 @@ namespace WGestures.App.Gui.Windows
                 ["middle-panel-enabled"] = c.MiddlePanelEnabled,
                 ["direction-mode"] = c.GestureParserEnable8DirGesture ? 8 : 4,
                 ["start-threshold"] = c.PathTrackerInitialValidMove,
-                ["path-color"] = ColorTranslator.ToHtml(c.GestureViewMainPathColor),
-                ["invalid-path-color"] = ColorTranslator.ToHtml(c.GestureViewAlternativePathColor),
+                ["path-color"] = ToHex(c.GestureViewMainPathColor),
+                ["invalid-path-color"] = ToHex(c.GestureViewAlternativePathColor),
                 ["path-width"] = c.GesturePathWidth,
                 ["fade-duration"] = c.GestureFadeDuration,
                 ["show-command-name"] = c.GestureViewShowCommandName,
@@ -139,6 +139,11 @@ namespace WGestures.App.Gui.Windows
             return snapshot;
         }
 
+        private static string ToHex(Color color)
+        {
+            return string.Format("#{0:X2}{1:X2}{2:X2}", color.R, color.G, color.B);
+        }
+
         private static bool Boolean(JToken value)
         {
             if (value == null || value.Type != JTokenType.Boolean) throw new ArgumentException("开关值无效。");
@@ -174,8 +179,11 @@ namespace WGestures.App.Gui.Windows
                     var values = value as JArray;
                     if (values == null || values.Any(v => v.Type != JTokenType.String || !Buttons.ContainsKey((string)v)) || values.Distinct(new JTokenEqualityComparer()).Count() != values.Count)
                         throw new ArgumentException("触发按钮无效。");
+                    if (values.Count == 0 && !c.MiddlePanelEnabled) throw new ArgumentException("请至少保留一个手势按钮或中键面板。");
                     c.PathTrackerTriggerButton = values.Aggregate(GestureTriggerButton.None, (current, v) => current | Buttons[(string)v]); break;
-                case "middle-panel-enabled": c.MiddlePanelEnabled = Boolean(value); break;
+                case "middle-panel-enabled":
+                    if (!Boolean(value) && c.PathTrackerTriggerButton == GestureTriggerButton.None) throw new ArgumentException("请至少保留一个手势按钮或中键面板。");
+                    c.MiddlePanelEnabled = Boolean(value); break;
                 case "direction-mode": var mode = Number(value, 4, 8); if (mode != 4 && mode != 8) throw new ArgumentException("仅支持四方向或八方向。"); c.GestureParserEnable8DirGesture = mode == 8; break;
                 case "start-threshold": c.PathTrackerInitialValidMove = (int)Number(value, 2, 100); break;
                 case "path-color": c.GestureViewMainPathColor = ColorValue(value); break;

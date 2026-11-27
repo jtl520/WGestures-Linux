@@ -282,4 +282,15 @@ document.addEventListener('keydown',event=>{
     if(event.key==='Escape'){event.preventDefault();closeDialog();}
     if(event.key==='Tab'){const nodes=Array.from($('#modal').querySelectorAll('button:not(:disabled),input,select,textarea,[tabindex="0"]')).filter(n=>n.offsetParent!==null);const first=nodes[0],last=nodes[nodes.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}
 });
-rpc('snapshot').then(value=>{setState(value);render();}).catch(error=>{$('#content').replaceChildren(el('div',{class:'empty',text:error.message}));$('#runtime-status').textContent='设置连接失败';});
+rpc('snapshot').then(async value=>{await document.fonts.ready;setState(value);render();}).catch(error=>{$('#content').replaceChildren(el('div',{class:'empty',text:error.message}));$('#runtime-status').textContent='设置连接失败';});
+
+window.addEventListener('focus', async () => {
+    if (!state || busy || !$('#modal').hidden) return;
+    const previous = state.revision;
+    try {
+        const latest = await rpc('snapshot');
+        if (!busy && $('#modal').hidden && state.revision === previous && latest.revision !== previous) {
+            setState(latest); render();
+        }
+    } catch (error) { toast(error.message); }
+});

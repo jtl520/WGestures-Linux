@@ -100,6 +100,9 @@ class SettingsService(object):
         elif key == "trigger-buttons":
             if not isinstance(value, list) or len(set(value)) != len(value) or any(b not in ("right", "x1", "x2") for b in value):
                 raise ValueError("触发按钮无效。")
+        if ((key == "trigger-buttons" and not value and not self.settings.get("middle-panel-enabled")) or
+                (key == "middle-panel-enabled" and not value and not self.settings.get("trigger-buttons"))):
+            raise ValueError("请至少保留一个手势按钮或中键面板。")
         if key == "autostart-enabled":
             set_session_autostart(value)
         self.settings.set(key, value)

@@ -51,6 +51,17 @@ jobs:
           ./tools/Ensure-WebView2.ps1
           ./tools/Test-WindowsSharedSettings.ps1
 
+      - name: Test native mouse gestures
+        shell: pwsh
+        run: |
+          $env:CROSSGESTURES_USER_DATA_DIRECTORY = Join-Path $env:RUNNER_TEMP 'CrossGesturesRuntime'
+          $env:CROSSGESTURES_SKIP_AUTOSTART = '1'
+          ./tools/Test-WindowsRuntime.ps1 -AppPath "$PWD\WGestures.App\bin\Release\CrossGestures.exe"
+
+      - name: Test native quick panel
+        shell: pwsh
+        run: ./tools/Test-WindowsPanelRuntime.ps1 -AppPath "$PWD\WGestures.App\bin\Release\CrossGestures.exe"
+
       - name: Upload settings verification
         if: always()
         uses: actions/upload-artifact@v4
@@ -59,6 +70,8 @@ jobs:
           path: |
             build/windows-settings/*.png
             build/windows-settings/result.json
+            build/windows-runtime/summary.json
+            build/windows-panel-runtime/summary.json
           if-no-files-found: ignore
 
       - name: Build EXE installer

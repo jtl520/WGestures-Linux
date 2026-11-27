@@ -25,7 +25,7 @@ if ($Mode -eq 'Harness') {
     }
 
     $form = New-Object Windows.Forms.Form
-    $form.Text = 'CrossGestures Acceptance Harness'
+    $form.Text = 'CrossGestures Acceptance Harness ' + $PID
     $form.StartPosition = 'Manual'
     $form.Location = New-Object Drawing.Point(300, 180)
     $form.Size = New-Object Drawing.Size(720, 480)
@@ -92,6 +92,9 @@ public static class CrossGesturesAcceptanceNative
     [DllImport("user32.dll")]
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern IntPtr FindWindow(string className, string windowName);
+
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
@@ -117,8 +120,10 @@ function Clear-Events {
 
 function Set-HarnessForeground([Diagnostics.Process]$Harness) {
     $Harness.Refresh()
-    [CrossGesturesAcceptanceNative]::ShowWindow($Harness.MainWindowHandle, 9) | Out-Null
-    [CrossGesturesAcceptanceNative]::SetForegroundWindow($Harness.MainWindowHandle) | Out-Null
+    $handle = [CrossGesturesAcceptanceNative]::FindWindow($null, ('CrossGestures Acceptance Harness ' + $Harness.Id))
+    if ($handle -eq [IntPtr]::Zero) { throw 'The acceptance form is no longer available.' }
+    [CrossGesturesAcceptanceNative]::ShowWindow($handle, 9) | Out-Null
+    [CrossGesturesAcceptanceNative]::SetForegroundWindow($handle) | Out-Null
     Start-Sleep -Milliseconds 300
 }
 
@@ -199,11 +204,12 @@ try {
     do {
         Start-Sleep -Milliseconds 100
         $harnessProcess.Refresh()
-    } while ($harnessProcess.MainWindowHandle -eq 0 -and [DateTime]::UtcNow -lt $deadline)
-    if ($harnessProcess.MainWindowHandle -eq 0) { throw 'Acceptance harness window did not open.' }
+        $harnessHandle = [CrossGesturesAcceptanceNative]::FindWindow($null, ('CrossGestures Acceptance Harness ' + $harnessProcess.Id))
+    } while (($harnessHandle -eq [IntPtr]::Zero -or @(Read-Events | Where-Object { $_.type -eq 'shown' }).Count -eq 0) -and [DateTime]::UtcNow -lt $deadline)
+    if ($harnessHandle -eq [IntPtr]::Zero) { throw 'Acceptance harness window did not open.' }
 
     $rect = New-Object CrossGesturesAcceptanceNative+RECT
-    if (-not [CrossGesturesAcceptanceNative]::GetWindowRect($harnessProcess.MainWindowHandle, [ref]$rect)) {
+    if (-not [CrossGesturesAcceptanceNative]::GetWindowRect($harnessHandle, [ref]$rect)) {
         throw 'Unable to query acceptance harness bounds.'
     }
     $centerX = [int](($rect.Left + $rect.Right) / 2)
@@ -214,17 +220,19 @@ try {
     Send-RightClick $centerX $centerY
     Start-Sleep -Milliseconds 800
     $shortClickPassed = Test-RightClickPair
+    @(Read-Events) | ConvertTo-Json | Set-Content (Join-Path $OutputDirectory 'short-click-events.json')
 
     Set-HarnessForeground $harnessProcess
     Clear-Events
     $rightPoints = @()
     for ($index = 0; $index -le 10; $index++) {
-        $rightPoints += ,([int[]]@(($centerX + ($index * 14)), $centerY))
+        $rightPoints += ,([int[]]@($centerX, ($centerY - ($index * 14))))
     }
     Send-RightGesture $rightPoints
     Start-Sleep -Milliseconds 900
     $rightEvents = Read-Events
-    $shortcutPassed = @($rightEvents | Where-Object { $_.type -eq 'key-down' -and $_.key -eq 'Right' -and $_.alt }).Count -ge 1
+    @($rightEvents) | ConvertTo-Json | Set-Content (Join-Path $OutputDirectory 'shortcut-events.json')
+    $shortcutPassed = @($rightEvents | Where-Object { $_.type -eq 'key-down' -and $_.key -eq 'C' -and $_.control }).Count -ge 1
     $validGestureNoClickLeak = @($rightEvents | Where-Object { $_.type -in @('mouse-down', 'mouse-up') }).Count -eq 0
 
     Set-HarnessForeground $harnessProcess

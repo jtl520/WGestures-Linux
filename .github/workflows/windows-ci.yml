@@ -70,8 +70,10 @@ jobs:
           path: |
             build/windows-settings/*.png
             build/windows-settings/result.json
-            build/windows-runtime/summary.json
-            build/windows-panel-runtime/summary.json
+            build/windows-runtime/*.json
+            build/windows-runtime/*.log
+            build/windows-panel-runtime/*.json
+            build/windows-panel-runtime/*.log
           if-no-files-found: ignore
 
       - name: Build EXE installer

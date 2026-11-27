@@ -627,6 +627,8 @@ def main():
     menu_top = getattr(menu_translated, "dst_y",
                        getattr(menu_translated, "y", 0))
     # 打开网址（第四项，无子对话框）。
+    # Releasing the menu button may create the dialog immediately.
+    before_editor = _mapped_root_windows(root)
     item_y = int(menu_top + menu_geometry.height * 3.5 / 4.0)
     _move(connection, int(menu_left + menu_geometry.width / 2), item_y)
     xtest.fake_input(connection, X.ButtonRelease, 3)
@@ -634,7 +636,6 @@ def main():
     time.sleep(0.2)
     _click(connection, 1)
 
-    before_editor = _mapped_root_windows(root)
     editor = {"window": None}
 
     def editor_opened():

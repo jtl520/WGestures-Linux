@@ -246,7 +246,9 @@ try {
     Start-Sleep -Milliseconds 900
     $rightEvents = Read-Events
     @($rightEvents) | ConvertTo-Json | Set-Content (Join-Path $OutputDirectory 'shortcut-events.json')
-    $shortcutPassed = @($rightEvents | Where-Object { $_.type -eq 'key-down' -and $_.key -eq 'C' -and $_.control }).Count -ge 1
+    # This WinForms target is hosted by powershell.exe, whose smart-copy action
+    # deliberately uses Ctrl+Insert to avoid sending the console interrupt Ctrl+C.
+    $shortcutPassed = @($rightEvents | Where-Object { $_.type -eq 'key-down' -and $_.key -eq 'Insert' -and $_.control }).Count -ge 1
     $validGestureNoClickLeak = @($rightEvents | Where-Object { $_.type -in @('mouse-down', 'mouse-up') }).Count -eq 0
 
     Set-HarnessForeground $harnessProcess

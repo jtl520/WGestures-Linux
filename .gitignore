@@ -176,6 +176,8 @@ coverage.xml
 dist/
 debian/.debhelper/
 debian/files
+debian/debhelper-build-stamp
+debian/*.substvars
 debian/wgestures/
 *.buildinfo
 *.changes

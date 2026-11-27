@@ -67,7 +67,14 @@ DISPLAY=":$(cat "$display_number_file")"
 export DISPLAY
 
 dbus-run-session -- sh -c '
-    xfwm4 --replace --compositor=off >"$OUTPUT_DIR/xfwm4.log" 2>&1 &
+    if command -v xfwm4 >/dev/null 2>&1; then
+        xfwm4 --replace --compositor=off >"$OUTPUT_DIR/window-manager.log" 2>&1 &
+    elif command -v openbox >/dev/null 2>&1; then
+        openbox --sm-disable >"$OUTPUT_DIR/window-manager.log" 2>&1 &
+    else
+        echo "An X11 test window manager (xfwm4 or openbox) is required." >&2
+        exit 4
+    fi
     window_manager_pid=$!
     trap "kill -TERM $window_manager_pid 2>/dev/null || true" EXIT HUP INT TERM
     sleep 2

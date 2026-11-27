@@ -1,8 +1,8 @@
 # CrossGestures Windows 安装与开发说明
 
 本仓库重新启用了原版 Windows C# 后端，并与 Ubuntu、Kali 等 Linux 后端并行维护。
-Windows 与 Linux 使用各自原生的输入后端和设置界面，不是在 Windows 上运行 Linux
-程序，也不要求 WSL。
+Windows 与 Linux 使用各自原生的输入后端。2.2.0 在 Windows 10/11 和 Ubuntu 上
+共用主设置界面；平台专有高级设置保留原生编辑器。Windows 版本不要求 WSL。
 
 ## 支持范围
 
@@ -23,7 +23,7 @@ Windows 与 Linux 使用各自原生的输入后端和设置界面，不是在 W
 从 GitHub Releases 下载：
 
 ```text
-CrossGestures-2.1.8.0-Windows-Setup.exe
+CrossGestures-2.2.1.0-Windows-Setup.exe
 ```
 
 双击安装并同意一次 Windows UAC 提示。安装器会安装到：
@@ -52,7 +52,7 @@ Windows 公开构建没有原作者的 UIAccess 私钥证书，因此使用管�
 ## 卸载
 
 在“设置 → 应用 → 已安装的应用”中搜索完整名称
-`CrossGestures version 2.1.8.0`。如果应用列表没有及时刷新，可直接运行：
+`CrossGestures version 2.2.1.0`。如果应用列表没有及时刷新，可直接运行：
 
 ```powershell
 Stop-Process -Name CrossGestures -Force -ErrorAction SilentlyContinue
@@ -139,7 +139,7 @@ Desktop ID、Windows 文件路径和修饰/滚轮手势会在兼容性报告中�
 产物位于：
 
 ```text
-build\windows\CrossGestures-2.1.8.0-Windows-Setup.exe
+build\windows\CrossGestures-2.2.1.0-Windows-Setup.exe
 ```
 
 原 `WGInstall` WixSharp/MSI 工程仍作为历史参考保留，但默认解决方案构建不再执行
@@ -147,7 +147,18 @@ build\windows\CrossGestures-2.1.8.0-Windows-Setup.exe
 
 ## 发布前实机验收
 
-每个声称支持的 Windows 版本至少检查：
+在已登录的交互桌面上，可使用安装后的程序执行自动验收：
+
+```powershell
+./tools/Test-WindowsRuntime.ps1 -AppPath "C:\Program Files\CrossGestures\CrossGestures.exe"
+./tools/Test-WindowsPanelRuntime.ps1 -AppPath "C:\Program Files\CrossGestures\CrossGestures.exe" -RequireVisibleTrail
+```
+
+运行前退出已有 CrossGestures；脚本使用独立测试配置。测试期间不要操作鼠标和
+键盘。`-RequireVisibleTrail` 要求实际截到置顶窗口上方的手势轨迹；无交互桌面的
+CI 仅记录这项诊断结果。截图与 JSON 结果保存在 `build/` 对应测试目录。
+
+每个声称支持的 Windows 版本还应检查：
 
 1. 安装、升级和卸载成功，卸载后用户配置仍保留；
 2. 首次运行、托盘图标和开始菜单“设置”入口正常；

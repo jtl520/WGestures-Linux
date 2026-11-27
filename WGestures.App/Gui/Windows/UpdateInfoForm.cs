@@ -17,6 +17,7 @@ namespace WGestures.App.Gui.Windows
         public UpdateInfoForm(string gotoUrl, VersionInfo versionInfo)
         {
             InitializeComponent();
+            Icon = WGestures.App.Properties.Resources.icon;
 
             _gotoUrl = gotoUrl;
             lb_newVersion.Text = versionInfo.Version;

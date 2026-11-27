@@ -1,11 +1,11 @@
 param(
     [string]$AppPath = "$PSScriptRoot\..\WGestures.App\bin\Debug\CrossGestures.exe",
-    [string]$OutputDirectory = "$PSScriptRoot\..\build\windows-panel-runtime"
+    [string]$OutputDirectory = "$PSScriptRoot\..\build\windows-panel-runtime",
+    [switch]$RequireVisibleTrail
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-Write-Host 'RUNTIME-SCRIPT-VERSION-2 topmost-gate-present'
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type @'
@@ -23,6 +23,11 @@ using System.Runtime.InteropServices;
 public static class CrossGesturesPanelNative
 {
     public delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
+    [DllImport("user32.dll")] public static extern IntPtr GetDC(IntPtr window);
+    [DllImport("user32.dll")] public static extern int ReleaseDC(IntPtr window, IntPtr dc);
+    [DllImport("gdi32.dll", SetLastError = true)] public static extern bool BitBlt(IntPtr target, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, uint operation);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr FindWindow(string className, string windowName);
+    public static IntPtr FindHarnessWindow(int processId) { return FindWindow(null, "CrossGestures Acceptance Harness " + processId); }
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left, Top, Right, Bottom; }
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
@@ -59,6 +64,25 @@ function Get-WindowRectangle([IntPtr]$Window) {
     return [Drawing.Rectangle]::FromLTRB($rect.Left, $rect.Top, $rect.Right, $rect.Bottom)
 }
 
+function Capture-DesktopRectangle([Drawing.Rectangle]$Rectangle) {
+    $bitmap = New-Object Drawing.Bitmap $Rectangle.Width, $Rectangle.Height
+    $graphics = [Drawing.Graphics]::FromImage($bitmap)
+    $source = [CrossGesturesPanelNative]::GetDC([IntPtr]::Zero)
+    $target = $graphics.GetHdc()
+    try {
+        # SRCCOPY | CAPTUREBLT includes the separate layered gesture canvas.
+        if (-not [CrossGesturesPanelNative]::BitBlt($target, 0, 0, $Rectangle.Width, $Rectangle.Height,
+                $source, $Rectangle.X, $Rectangle.Y, 0x40CC0020)) {
+            throw 'Unable to capture the layered desktop surface.'
+        }
+    } finally {
+        $graphics.ReleaseHdc($target)
+        $graphics.Dispose()
+        [CrossGesturesPanelNative]::ReleaseDC([IntPtr]::Zero, $source) | Out-Null
+    }
+    return $bitmap
+}
+
 function Send-MiddleClick([int]$X, [int]$Y) {
     Send-AbsoluteMouseMove $X $Y
     Start-Sleep -Milliseconds 50
@@ -77,8 +101,8 @@ function Send-AbsoluteMouseMove([int]$X, [int]$Y) {
 
 function Set-HarnessForeground([Diagnostics.Process]$Harness) {
     $Harness.Refresh()
-    [CrossGesturesPanelNative]::ShowWindow($Harness.MainWindowHandle, 9) | Out-Null
-    [CrossGesturesPanelNative]::SetForegroundWindow($Harness.MainWindowHandle) | Out-Null
+    [CrossGesturesPanelNative]::ShowWindow(([CrossGesturesPanelNative]::FindHarnessWindow($Harness.Id)), 9) | Out-Null
+    [CrossGesturesPanelNative]::SetForegroundWindow(([CrossGesturesPanelNative]::FindHarnessWindow($Harness.Id))) | Out-Null
     Start-Sleep -Milliseconds 300
 }
 
@@ -149,9 +173,9 @@ try {
     do {
         Start-Sleep -Milliseconds 100
         $harness.Refresh()
-    } while ($harness.MainWindowHandle -eq 0 -and [DateTime]::UtcNow -lt $deadline)
-    if ($harness.MainWindowHandle -eq 0) { throw 'Acceptance harness did not open.' }
-    $harnessRect = Get-WindowRectangle $harness.MainWindowHandle
+    } while ((([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)) -eq 0 -or @(Read-HarnessEvents $eventLog | Where-Object { $_.type -eq 'shown' }).Count -eq 0) -and [DateTime]::UtcNow -lt $deadline)
+    if (([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)) -eq 0) { throw 'Acceptance harness did not open.' }
+    $harnessRect = Get-WindowRectangle ([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id))
     $centerX = [int](($harnessRect.Left + $harnessRect.Right) / 2)
     $centerY = [int](($harnessRect.Top + $harnessRect.Bottom) / 2)
 
@@ -278,52 +302,68 @@ try {
     # must still paint above it; this is exactly what failed when users
     # toggled always-on-top on their editor windows.
     $trailVisibleAboveTopmost = $false
+    $trailDiagnostic = [ordered]@{ stage = 'start'; error = $null }
     try {
         Clear-HarnessEvents $eventLog
         Set-HarnessForeground $harness
-        [CrossGesturesPanelNative]::SetWindowPos($harness.MainWindowHandle,
+        [CrossGesturesPanelNative]::SetWindowPos(([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)),
             [IntPtr](-1), 0, 0, 0, 0, 0x0001 -bor 0x0002) | Out-Null
         Start-Sleep -Milliseconds 300
-        $harnessRect2 = Get-WindowRectangle $harness.MainWindowHandle
+        $harnessRect2 = Get-WindowRectangle ([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id))
         $cursorX = [int](($harnessRect2.Left + $harnessRect2.Right) / 2)
         $cursorY = [int](($harnessRect2.Top + $harnessRect2.Bottom) / 2)
         $probeRect = New-Object Drawing.Rectangle ($cursorX - 50), ($cursorY - 50), 100, 100
-        $baseline = New-Object Drawing.Bitmap $probeRect.Width, $probeRect.Height
-        $g = [Drawing.Graphics]::FromImage($baseline)
-        $g.CopyFromScreen($probeRect.Location, [Drawing.Point]::Empty, $probeRect.Size)
-        $g.Dispose()
+        $trailDiagnostic.stage = 'baseline'
+        $baseline = Capture-DesktopRectangle $probeRect
         Send-AbsoluteMouseMove $cursorX $cursorY
         [CrossGesturesPanelNative]::mouse_event(0x0008, 0, 0, 0, [UIntPtr]::Zero)
         Start-Sleep -Milliseconds 60
-        foreach ($offset in 4, 8, 12) {
+        foreach ($offset in 8, 16, 24, 32, 40) {
             Send-AbsoluteMouseMove ($cursorX + $offset) ($cursorY - $offset)
         }
         Start-Sleep -Milliseconds 150
-        $during = New-Object Drawing.Bitmap $probeRect.Width, $probeRect.Height
-        $g = [Drawing.Graphics]::FromImage($during)
-        $g.CopyFromScreen($probeRect.Location, [Drawing.Point]::Empty, $probeRect.Size)
-        $g.Dispose()
+        $trailDiagnostic.stage = 'during'
+        $trailDiagnostic.windows = @(Get-VisibleWindows $app.Id | ForEach-Object { (Get-WindowRectangle $_).ToString() })
+        # The compositor can present a layered window after the input callback.
+        # Wait for pixels instead of assuming one fixed screenshot delay is enough.
+        $during = $null
+        $changed = 0
+        $captureWait = [Diagnostics.Stopwatch]::StartNew()
+        do {
+            if ($during) { $during.Dispose() }
+            $during = Capture-DesktopRectangle $probeRect
+            $changed = 0
+            for ($py = 0; $py -lt $probeRect.Height; $py += 2) {
+                for ($px = 0; $px -lt $probeRect.Width; $px += 2) {
+                    $a = $baseline.GetPixel($px, $py)
+                    $b = $during.GetPixel($px, $py)
+                    if ([Math]::Abs($a.R - $b.R) + [Math]::Abs($a.G - $b.G) +
+                        [Math]::Abs($a.B - $b.B) -gt 40) { $changed++ }
+                }
+            }
+            if ($changed -gt 20) { break }
+            Start-Sleep -Milliseconds 100
+        } while ($captureWait.ElapsedMilliseconds -lt 5000)
+        $trailDiagnostic.captureWaitMs = $captureWait.ElapsedMilliseconds
         [CrossGesturesPanelNative]::mouse_event(0x0010, 0, 0, 0, [UIntPtr]::Zero)
         Start-Sleep -Milliseconds 300
-        $changed = 0
-        for ($py = 0; $py -lt $probeRect.Height; $py += 2) {
-            for ($px = 0; $px -lt $probeRect.Width; $px += 2) {
-                $a = $baseline.GetPixel($px, $py)
-                $b = $during.GetPixel($px, $py)
-                if ([Math]::Abs($a.R - $b.R) + [Math]::Abs($a.G - $b.G) +
-                    [Math]::Abs($a.B - $b.B) -gt 40) { $changed++ }
-            }
-        }
+        $baseline.Save((Join-Path $OutputDirectory 'trail-before.png'))
+        $during.Save((Join-Path $OutputDirectory 'trail-during.png'))
         $baseline.Dispose()
         $during.Dispose()
+        $trailDiagnostic.changedPixels = $changed
+        $trailDiagnostic.stage = 'complete'
         $trailVisibleAboveTopmost = $changed -gt 20
-        [CrossGesturesPanelNative]::SetWindowPos($harness.MainWindowHandle,
+        [CrossGesturesPanelNative]::SetWindowPos(([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)),
             [IntPtr](-2), 0, 0, 0, 0, 0x0001 -bor 0x0002) | Out-Null
     } catch {
-        [CrossGesturesPanelNative]::SetWindowPos($harness.MainWindowHandle,
+        [CrossGesturesPanelNative]::mouse_event(0x0010, 0, 0, 0, [UIntPtr]::Zero)
+        $trailDiagnostic.error = $_.Exception.ToString()
+        [CrossGesturesPanelNative]::SetWindowPos(([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)),
             [IntPtr](-2), 0, 0, 0, 0, 0x0001 -bor 0x0002) | Out-Null
     }
 
+    $trailDiagnostic | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $OutputDirectory 'trail-diagnostic.json') -Encoding UTF8
     Stop-Process -Id $app.Id -Force
     $app.WaitForExit()
     $app = $null
@@ -357,14 +397,14 @@ try {
         panelStayedWithinMonitorWorkAreas = $monitorBoundsPassed
         monitorsTested = $monitorsTested
         disabledRestoresNativeMiddle = $disabledRestoresNativeMiddle
-        # 诊断项：沙箱会话里画布初始化受环境干扰（400x300 默认矩形），
-        # 数值供分析、不作为门禁；真实置顶场景由用户实测确认。
+        # Headless CI records this diagnostic. Interactive desktop acceptance
+        # uses -RequireVisibleTrail to require the layered trail screenshot.
         trailVisibleAboveTopmost = $trailVisibleAboveTopmost
         screenshot = $screenshotPath
     }
     $summary.passed = @($summary.Keys | Where-Object {
         $_ -ne 'screenshot' -and $_ -ne 'passed' -and $_ -ne 'panelShowLatenciesMs' -and
-        $_ -ne 'trailVisibleAboveTopmost' -and -not $summary[$_]
+        ($_ -ne 'trailVisibleAboveTopmost' -or $RequireVisibleTrail) -and -not $summary[$_]
     }).Count -eq 0
     $summary | ConvertTo-Json | Set-Content -LiteralPath $summaryPath -Encoding UTF8
     $summary | ConvertTo-Json

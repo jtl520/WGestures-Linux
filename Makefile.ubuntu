@@ -7,6 +7,7 @@ check:
 	python3 tools/check-python.py
 	node --check gnome-extension/extension.js
 	node --check gnome-extension/prefs.js
+	node --check settings-ui/app.js
 	glib-compile-schemas --strict --dry-run gnome-extension/schemas
 
 test: test-python test-js
@@ -21,7 +22,7 @@ extension-zip: check test
 	rm -rf build
 	mkdir -p $(BUILD_DIR)
 	cp LICENSE gnome-extension/metadata.json gnome-extension/extension.js gnome-extension/prefs.js gnome-extension/stylesheet.css $(BUILD_DIR)/
-	cp -r gnome-extension/core gnome-extension/shell gnome-extension/defaults gnome-extension/schemas $(BUILD_DIR)/
+	cp -r gnome-extension/core gnome-extension/shell gnome-extension/defaults gnome-extension/schemas gnome-extension/icons $(BUILD_DIR)/
 	glib-compile-schemas $(BUILD_DIR)/schemas
 	cd $(BUILD_DIR) && zip -9r ../$(UUID).zip .
 

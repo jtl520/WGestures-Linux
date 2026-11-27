@@ -8,6 +8,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+from .branding import register_icons, tray_icon_name
 
 class X11TrayIcon(object):
     """X11 tray menu with AppIndicator and Gtk.StatusIcon fallbacks."""
@@ -20,6 +21,7 @@ class X11TrayIcon(object):
         self._indicator_module = None
         self.status_icon = None
         self._syncing = False
+        self._icon_theme_path = register_icons()
         self.menu = Gtk.Menu()
 
         self.status_item = Gtk.MenuItem.new_with_label("CrossGestures")
@@ -66,14 +68,15 @@ class X11TrayIcon(object):
             except (ImportError, ValueError):
                 return False
         self.indicator = module.Indicator.new(
-            "wgestures", "input-mouse", module.IndicatorCategory.APPLICATION_STATUS)
+            "wgestures", tray_icon_name(True, False), module.IndicatorCategory.APPLICATION_STATUS)
+        self.indicator.set_icon_theme_path(self._icon_theme_path)
         self._indicator_module = module
         self.indicator.set_status(module.IndicatorStatus.ACTIVE)
         self.indicator.set_menu(self.menu)
         return True
 
     def _create_status_icon(self):
-        self.status_icon = Gtk.StatusIcon.new_from_icon_name("input-mouse")
+        self.status_icon = Gtk.StatusIcon.new_from_icon_name(tray_icon_name(True, False))
         self.status_icon.set_title("CrossGestures")
         self.status_icon.set_tooltip_text("CrossGestures 鼠标手势")
         self.status_icon.connect("activate", self._open_settings)
@@ -110,6 +113,12 @@ class X11TrayIcon(object):
         else:
             status = "状态：运行中"
         self.status_item.set_label(status)
+        icon_name = tray_icon_name(enabled, paused)
+        if self.indicator is not None:
+            self.indicator.set_icon_full(icon_name, "CrossGestures " + status)
+        if self.status_icon is not None:
+            self.status_icon.set_from_icon_name(icon_name)
+            self.status_icon.set_tooltip_text("CrossGestures " + status)
         self._syncing = False
 
     @staticmethod

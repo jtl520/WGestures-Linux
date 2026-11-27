@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="6 10 54 50"><g xmlns="http://www.w3.org/2000/svg" id="gesture" fill="#2e3436">
+    <circle cx="15" cy="46" r="5" />
+    <path d="M16 44 L26.5 31.5 Q28.4 29.2 31.4 29.6 L36.8 30.2 Q40.5 30.6 42.7 27.5 L48.5 20" fill="none" stroke="#2e3436" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M41.8 18.1 L53.9 14.2 Q54.9 13.9 54.6 15 L51.6 27.1 Q51.4 28.1 50.6 27.4 L41.5 19.5 Q40.7 18.7 41.8 18.1 Z" />
+  </g>
+<path fill="#2e3436" fill-rule="evenodd" d="M58 49a9.5 9.5 0 1 1-19 0a9.5 9.5 0 1 1 19 0z M44 44h3v10h-3z M50 44h3v10h-3z"/></svg>

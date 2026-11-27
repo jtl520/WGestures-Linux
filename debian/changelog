@@ -1,3 +1,19 @@
+wgestures (2.2.1) noble; urgency=medium
+
+  * Unify application, launcher, settings and tray icons across Linux and Windows.
+  * Add symbolic running, paused and disabled tray states and Windows theme support.
+  * Match the GTK settings window to its desktop launcher.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Fri, 27 Nov 2026 17:00:00 +0800
+
+wgestures (2.2.0) noble; urgency=medium
+
+  * Share the Ubuntu-style settings UI with Windows using bundled local assets.
+  * Add transactional gesture/application editing and explicit import previews.
+  * Keep existing native editors available for platform-specific advanced actions.
+
+ -- CrossGestures Contributors <Ying@YingDev.com>  Fri, 27 Nov 2026 16:00:00 +0800
+
 wgestures (2.1.8) noble; urgency=high
 
   * Add the cross-platform middle-button 4x4 quick-launch panel with atomic

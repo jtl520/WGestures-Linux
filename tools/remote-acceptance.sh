@@ -170,6 +170,17 @@ with open(os.path.join(config_directory, "mimeapps.list"), "w") as stream:
                       "x-scheme-handler/http", "x-scheme-handler/https"):
         stream.write("{0}={1};\n".format(mime_type, uri_desktop_id))
 
+# Folder actions deliberately bypass MIME handlers and invoke a real file manager.
+# Provide a launcher fixture in this isolated test PATH so its invocation can be
+# observed just like the file/URL handlers above.
+launcher_bin = os.path.join(os.environ["XDG_CONFIG_HOME"], "test-bin")
+os.makedirs(launcher_bin, exist_ok=True)
+for command in ("nautilus", "thunar", "Thunar", "dolphin", "nemo", "caja", "pcmanfm", "pcmanfm-qt"):
+    launcher = os.path.join(launcher_bin, command)
+    with open(launcher, "w") as stream:
+        stream.write('#!/bin/sh\nexec /bin/sh "{0}" "$@"\n'.format(uri_handler))
+    os.chmod(launcher, 0o755)
+
 config = create_default_config()
 config["actions"].extend([
     {"id": "test-forward", "name": "Forward", "type": "ShortcutAction",
@@ -221,6 +232,7 @@ panel["slots"][3] = {"id": "acceptance-url", "label": "Example",
                      "type": "url", "target": "https://example.com"}
 PanelStore().save(panel, create_backup=False)
 PY
+export PATH="$XDG_CONFIG_HOME/test-bin:$PATH"
 
 # Folder panel items deliberately bypass a potentially wrong
 # inode/directory association and launch a real file-manager command. Put a

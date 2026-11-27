@@ -15,6 +15,7 @@ namespace WGestures.App.Gui.Windows
         public ErrorForm()
         {
             InitializeComponent();
+            Icon = WGestures.App.Properties.Resources.icon;
 
 
             /*tb_Detail.MouseEnter += (sender, args) =>

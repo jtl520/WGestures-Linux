@@ -46,7 +46,7 @@ def set_session_autostart(enabled):
         "Name=CrossGestures Session Backend",
         "Exec=wgestures --daemon",
         "TryExec=wgestures",
-        "Icon=input-mouse",
+        "Icon=crossgestures",
         "Terminal=false",
         "NoDisplay=true",
         "Hidden={0}".format("false" if enabled else "true"),

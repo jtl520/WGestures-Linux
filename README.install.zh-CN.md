@@ -1,12 +1,13 @@
 # CrossGestures Linux 安装说明
 
-本文适用于 CrossGestures 当前构建的 `wgestures_2.1.8_all.deb`。
+本文适用于 CrossGestures 当前构建的 `wgestures_2.2.1_all.deb`。
 
 ## 1. 支持的桌面会话
 
 | 系统 | 需要使用的会话 | 后端 |
 | --- | --- | --- |
 | Ubuntu 24.04 | GNOME 46 / Wayland | GNOME Shell 扩展 |
+| Ubuntu 24.04 | GNOME / Xorg | X11 后台进程 |
 | Ubuntu 18.04 | GNOME / Xorg | X11 后台进程 |
 | Kali Xfce | X11 | X11 后台进程 |
 | 其他 Debian 系桌面 | X11 | 尽力兼容 |
@@ -17,8 +18,8 @@
 echo "$XDG_CURRENT_DESKTOP / $XDG_SESSION_TYPE"
 ```
 
-Ubuntu 24.04 应看到 `GNOME` 和 `wayland`。Ubuntu 18.04、Kali Xfce
-应看到 `x11`。KDE Wayland、非 GNOME 46 的 GNOME Wayland 以及其他
+Ubuntu 24.04 的 GNOME 会话可以是 `wayland` 或 `x11`；程序会选择对应后端。
+Ubuntu 18.04、Kali Xfce 应看到 `x11`。KDE Wayland、非 GNOME 46 的 GNOME Wayland 以及其他
 Wayland 合成器目前不支持；请在登录界面选择 X11/Xorg 会话。
 
 ## 2. 安装前是否需要手动安装依赖
@@ -42,7 +43,7 @@ Ubuntu 24.04 桌面版已有 GNOME Shell，无需另外安装桌面环境。
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.8_all.deb
+sudo apt install ./wgestures_2.2.1_all.deb
 ```
 
 本地文件名前面的 `./` 不能省略。安装后先运行诊断：
@@ -184,7 +185,7 @@ sudo apt install python3 python3-xlib python3-gi python3-cairo python3-gi-cairo 
 # 可选但推荐：为桌面安装原生 AppIndicator 托盘支持（二选一）
 sudo apt install gir1.2-appindicator3-0.1 || \
   sudo apt install gir1.2-ayatanaappindicator3-0.1
-sudo apt install ./wgestures_2.1.8_all.deb
+sudo apt install ./wgestures_2.2.1_all.deb
 ```
 
 完全离线时，除了 CrossGestures 的 `.deb`，还必须准备目标发行版和版本对应的上述
@@ -275,5 +276,5 @@ fcitx5-configtool
 在 Linux 上计算 SHA-256，并与发布方在包外提供的校验值比较：
 
 ```sh
-sha256sum wgestures_2.1.8_all.deb
+sha256sum wgestures_2.2.1_all.deb
 ```

@@ -10,6 +10,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, Gio, GLib, Gtk
 
 from .autostart import session_autostart_enabled, set_session_autostart
+from .branding import set_window_icon
 from .config import ACTION_TYPES, WINDOW_OPERATIONS, create_default_config
 from .gesture import BUTTONS, DIRECTIONS, GestureRecognizer, gesture_key
 from .portable import export_portable_config, import_config
@@ -246,6 +247,7 @@ class PreferencesWindow(Gtk.ApplicationWindow):
     def __init__(self, application):
         Gtk.ApplicationWindow.__init__(
             self, application=application, title="CrossGestures 设置")
+        set_window_icon(self)
         self.set_default_size(760, 680)
         self.settings = Settings()
         self._updating_autostart = False

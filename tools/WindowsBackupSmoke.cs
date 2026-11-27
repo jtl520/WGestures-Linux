@@ -3,9 +3,6 @@ using System.Collections;
 using System.IO;
 using System.Reflection;
 
-[assembly: AssemblyVersion("2.1.8.0")]
-[assembly: AssemblyFileVersion("2.1.8.0")]
-
 internal static class WindowsBackupSmoke
 {
     private static string applicationDirectory;
@@ -51,9 +48,16 @@ internal static class WindowsBackupSmoke
                 return File.Exists(dependency) ? Assembly.LoadFrom(dependency) : null;
             };
 
+            var outputPath = Path.GetFullPath(args[1]);
+            // A clean installation has no personal config yet. Never depend on
+            // an old test assembly version or read the signed-in user's files.
+            var data = Path.Combine(Path.GetDirectoryName(outputPath), "backup-fixture");
+            Directory.CreateDirectory(data);
+            Environment.SetEnvironmentVariable("CROSSGESTURES_USER_DATA_DIRECTORY", data);
+            foreach (var name in new[] { "config.plist", "gestures.wg2" })
+                File.Copy(Path.Combine(applicationDirectory, "defaults", name), Path.Combine(data, name), true);
             var assembly = Assembly.LoadFrom(applicationPath);
             var migrateService = assembly.GetType("WGestures.App.Migrate.MigrateService", true);
-            var outputPath = Path.GetFullPath(args[1]);
 
             Invoke(migrateService, "ExportTo", outputPath);
             if (!File.Exists(outputPath) || new FileInfo(outputPath).Length == 0)
@@ -81,7 +85,8 @@ internal static class WindowsBackupSmoke
             var defaultStore = defaults.GetType().GetProperty("GestureIntentStore").GetValue(defaults, null);
             var portableType = assembly.GetType("WGestures.App.Migrate.PortableConfigService", true);
             var portablePath = Path.ChangeExtension(outputPath, ".cgestures");
-            Invoke(portableType, "Export", portablePath, defaultStore);
+            var defaultGlobal = defaultStore.GetType().GetProperty("GlobalApp").GetValue(defaultStore, null);
+            Invoke(portableType, "Export", portablePath, defaultGlobal);
             var portableText = File.ReadAllText(portablePath);
             if (!portableText.Contains("\"portableFormat\": \"crossgestures-portable\""))
                 throw new InvalidDataException("Portable export is missing its format marker.");

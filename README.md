@@ -1,5 +1,17 @@
 # CrossGestures — Linux 与 Windows
 
+2.2.1 将桌面、任务栏／Dock、设置页及托盘统一为橙色转折轨迹图标。
+托盘提供深浅色单色版和暂停标记，两个平台共用同一图形母版。
+
+2.2.0 的默认设置窗口在 Ubuntu/X11、Ubuntu/GNOME Wayland 和 Windows 10/11
+共用 `settings-ui/` 中的本地 HTML、CSS、JavaScript。页面沿用 Ubuntu 的常规、
+手势、应用配置、导入与恢复结构；常用手势和应用配置在同一界面编辑。
+Linux 使用 WebKitGTK，Windows 使用 WebView2。Windows 安装器在缺少 WebView2
+时联网安装运行时；Windows 7/8.1 和缺少网页运行时的环境保留原生兼容设置。
+Windows 的 Lua、CMD、热角、滚轮修饰动作及 `.wgb` 完整备份仍从“更多 Windows
+设置”进入原编辑器；不会因打开新界面而转换或删除这些配置。
+
+
 CrossGestures 是面向 Windows、Ubuntu、Kali 和其他 Debian 系桌面的全局鼠标手势软件。
 Linux 版本采用双后端：GNOME Shell 扩展负责 Ubuntu 24.04 Wayland，
 Python/GTK3 常驻进程负责 Ubuntu 18.04、Kali Xfce 及其他 X11 桌面。
@@ -66,7 +78,7 @@ Windows 8.1 已结束系统安全支持，而且 GitHub Actions 没有对应 Run
 下载并运行：
 
 ```text
-CrossGestures-2.1.8.0-Windows-Setup.exe
+CrossGestures-2.2.1.0-Windows-Setup.exe
 ```
 
 安装器会请求一次管理员权限并安装到 Program Files，以保证手势覆盖 Codex、管理员
@@ -80,7 +92,7 @@ Windows 11 可能把托盘图标放入隐藏区域；也可以从开始菜单打
 ### Windows
 
 先从托盘菜单退出 CrossGestures，然后在“设置 → 应用 → 已安装的应用”中搜索
-完整名称 `CrossGestures version 2.1.8.0` 并卸载。如果 Windows 应用列表尚未刷新，
+完整名称 `CrossGestures version 2.2.1.0` 并卸载。如果 Windows 应用列表尚未刷新，
 可直接运行 Program Files 安装目录中的卸载器：
 
 ```powershell
@@ -123,12 +135,12 @@ echo "$XDG_CURRENT_DESKTOP / $XDG_SESSION_TYPE"
 ### 2. 下载并安装
 
 从 [GitHub Releases](https://github.com/jtl520/WGestures-Linux/releases/latest)
-下载 `wgestures_2.1.8_all.deb`，保存到“下载”目录，然后运行：
+下载 `wgestures_2.2.1_all.deb`，保存到“下载”目录，然后运行：
 
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.8_all.deb
+sudo apt install ./wgestures_2.2.1_all.deb
 ```
 
 必须使用 `apt install ./文件名.deb`，文件名前的 `./` 不能省略。APT 会自动安装
@@ -186,7 +198,7 @@ wgestures --settings
 从仓库的 **Releases** 页面下载：
 
 ```text
-wgestures_2.1.8_all.deb
+wgestures_2.2.1_all.deb
 ```
 
 联网安装时依赖会由 APT 自动解决：
@@ -194,7 +206,7 @@ wgestures_2.1.8_all.deb
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.1.8_all.deb
+sudo apt install ./wgestures_2.2.1_all.deb
 wgestures --diagnose
 ```
 
@@ -243,8 +255,9 @@ wgestures --diagnose --json
 
 ## 源码结构
 
-- `gnome-extension/`：GNOME Shell 46 Wayland 扩展和 Libadwaita 设置页。
-- `linux/`：兼容 Python 3.6 的 X11 后端、GTK3 设置页及单元测试。
+- `settings-ui/`：两端共用的设置页面、样式、脚本与字体。
+- `gnome-extension/`：GNOME Shell 46 Wayland 扩展和原生兼容设置页。
+- `linux/`：兼容 Python 3.6 的 X11 后端、WebKitGTK 设置宿主、原生兼容页及测试。
 - `packaging/`、`debian/`：命令入口、自动启动、man page 和 Debian 打包。
 - `tests/fixtures/`：JavaScript/Python 双后端共用的一致性测试向量。
 - `tools/`：Kali、Ubuntu X11 与 GNOME Wayland 验收工具。
@@ -273,15 +286,20 @@ Windows Release 和 EXE 安装器：
 
 ## 当前验证状态
 
-- Python 核心与 X11 测试：33/33 通过（Kali 原生依赖环境）。
-- GNOME JavaScript 核心测试：23/23 通过。
-- GSettings schema、Debian 构建和 `lintian` 检查通过。
-- Kali 2026.2 Xfce/X11：完整手势、动作、性能、安装升级卸载验收通过。
-- Windows Release 工程和 EXE 安装器已在 Windows NT build 26200 完成真实编译；
-  x64 安全钩子、真实低级鼠标输入、Esc 取消、压力恢复、单实例和跨平台配置往返
-  均通过本机自动验收。
-- Ubuntu 24.04 GNOME Wayland 和 Ubuntu 18.04 GNOME/Xorg：仍建议在目标机器上
-  按 `README.ubuntu.md` 的验收清单完成实机确认。
+- Python 核心与 X11 测试：90/90；GNOME JavaScript 核心测试：35/35。
+- Ubuntu 24.04 GNOME/X11：已从 2.1.8 安装升级到 2.2.0，原有手势、面板配置和
+  GSettings 设置逐项比对保持一致。安装后的设置窗口可读取原配置。
+- Ubuntu 已安装版本通过原生鼠标测试：快捷键、窗口操作、命令、程序启动、暂停、
+  Esc 取消、中键面板四类条目、拖放、面板/编辑器内手势及 1000 次移动压力恢复。
+- WebKitGTK 共享界面：9 项检查通过；Windows WebView2：10 项配置桥接检查和
+  5 项界面检查通过，包括字体加载、编辑保存、小数轨迹宽度持久化和导入去重。
+- Windows Server 2022 CI：Release 构建、安装包生成、原生鼠标手势和中键面板
+  自动验收通过。
+- Windows 10 22H2 VMware：安装包已安装到本地账户，安装后共享界面、原生鼠标
+  手势、1000 次移动压力恢复及中键面板验收通过。Windows 备份恢复、导出到
+  Ubuntu 后再导回 Windows 的便携配置往返测试通过。
+- 本轮尚未在 GNOME Wayland、Windows 7/8.1 和 Ubuntu 18.04 上运行实机验收。
+  中键快捷面板保留各平台原生实现；统一的是常用设置和手势编辑界面。
 
 ## 许可证与来源
 

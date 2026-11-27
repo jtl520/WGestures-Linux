@@ -82,6 +82,11 @@ namespace WGestures.App.Migrate
             }
 
 
+            // Panel data is versioned alongside gestures. Preserve it on upgrade too.
+            var previousPanel = Path.Combine(recent, "panel-v1.json");
+            if (File.Exists(previousPanel) && !File.Exists(AppSettings.PanelConfigFilePath))
+                File.Copy(previousPanel, AppSettings.PanelConfigFilePath, false);
+
             return new ConfigAndGestures(config, gestures);
 
         }

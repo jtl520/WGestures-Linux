@@ -243,6 +243,14 @@ namespace WGestures.App.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
+        internal static System.Drawing.Icon trayIcon_light {
+            get { return (System.Drawing.Icon)ResourceManager.GetObject("trayIcon_light", resourceCulture); }
+        }
+
+        internal static System.Drawing.Icon trayIcon_bw_light {
+            get { return (System.Drawing.Icon)ResourceManager.GetObject("trayIcon_bw_light", resourceCulture); }
+        }
+
         internal static System.Drawing.Icon trayIcon {
             get {
                 object obj = ResourceManager.GetObject("trayIcon", resourceCulture);

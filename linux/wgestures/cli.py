@@ -101,18 +101,15 @@ def _daemon():
 
 
 def _settings(diagnostics):
-    if diagnostics["backend"] == "gnome46-wayland":
-        try:
-            return subprocess.call(["gnome-extensions", "prefs", UUID])
-        except OSError:
-            print("GNOME Shell 尚未发现扩展，先打开兼容设置界面；请注销并重新登录后再启用扩展。",
-                  file=sys.stderr)
     try:
         settings = Settings()
         if not settings.available:
             print("GSettings 不可用：{0}".format(settings.error), file=sys.stderr)
             return 4
-        from .prefs import run_preferences
+        try:
+            from .webprefs import run_preferences
+        except (ImportError, ValueError):
+            from .prefs import run_preferences
         return run_preferences()
     except ImportError as error:
         print("设置界面缺少 GTK3/PyGObject：{0}".format(error), file=sys.stderr)

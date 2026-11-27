@@ -86,7 +86,8 @@ namespace WGestures.App.Gui.Windows
             HotCornerCommandViewFactory.Register<CmdCommand, CmdCommandView>();
             #endregion
 
-            _form = new SettingsForm(this);
+            _form = SharedSettingsForm.IsAvailable()
+                ? (Form)new SharedSettingsForm(this) : new SettingsForm(this);
         }
 
 
@@ -251,7 +252,7 @@ namespace WGestures.App.Gui.Windows
             get { return _pathTracker.InitialStayTimeoutMillis; }
             set
             {
-                if (value == PathTrackerStayTimeoutMillis) return;
+                if (value == PathTrackerInitalStayTimeoutMillis) return;
 
                 _pathTracker.InitialStayTimeoutMillis = value;
                 _config.Set(ConfigKeys.PathTrackerInitialStayTimoutMillis, value);
@@ -434,6 +435,23 @@ namespace WGestures.App.Gui.Windows
 
         #region migrate methods
 
+        public float GesturePathWidth
+        {
+            get { return _gestureView.PathWidth; }
+            set { _gestureView.PathWidth = value; _config.Set("GesturePathWidth", (double)value); }
+        }
+
+        public int GestureFadeDuration
+        {
+            get { return _gestureView.ViewFadeOut ? _gestureView.FadeDuration : 0; }
+            set
+            {
+                _gestureView.FadeDuration = value;
+                GestureViewFadeOut = value > 0;
+                _config.Set("GestureFadeDuration", value);
+            }
+        }
+
         internal void ExportTo(string filePath)
         {
             MigrateService.ExportTo(filePath);
@@ -582,6 +600,7 @@ namespace WGestures.App.Gui.Windows
 
         public void BringToFront()
         {
+            _form.Show();
             _form.WindowState = FormWindowState.Normal;
             _form.Activate();
             _form.BringToFront();

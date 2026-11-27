@@ -40,6 +40,7 @@ namespace WGestures.App
         static Win32GestrueIntentFinder intentFinder;
 
         static NotifyIcon trayIcon;
+        static WindowsFormsSynchronizationContext trayContext;
         static GlobalHotKeyManager hotkeyMgr;
         static bool showSettingsOnStartup;
         static QuickPanelForm quickPanel;
@@ -465,6 +466,8 @@ namespace WGestures.App
 #endregion
 
 #region gestureView
+            gestureView.PathWidth = (float)config.Get("GesturePathWidth", (double)gestureView.PathWidth);
+            gestureView.FadeDuration = config.Get("GestureFadeDuration", 300);
             gestureView.ShowPath = config.Get(ConfigKeys.GestureViewShowPath, true);
             gestureView.ShowCommandName = config.Get(ConfigKeys.GestureViewShowCommandName, true);
             gestureView.ViewFadeOut = config.Get(ConfigKeys.GestureViewFadeOut, true);
@@ -535,7 +538,10 @@ namespace WGestures.App
 
         static void ShowTrayIcon()
         {
+            trayContext = new WindowsFormsSynchronizationContext();
+            componentsToDispose.Add(trayContext);
             trayIcon = CreateNotifyIcon();
+            Microsoft.Win32.SystemEvents.UserPreferenceChanged += TrayThemeChanged;
             EventHandler handleBalloon = (sender, args) =>
             {
                 var timer = new Timer { Interval = 1000 };
@@ -595,6 +601,7 @@ namespace WGestures.App
             gestureParser.Stop();
             Application.ExitThread();
             trayIcon.Dispose();
+            trayIcon = null;
         }
 
 
@@ -749,7 +756,7 @@ namespace WGestures.App
             contextMenu1.MenuItems.AddRange(new[] { /*menuItem_toggleTray, */menuItem_pause,
                 menuItem_panel, new MenuItem("-"), menuItem_settings,
                 new MenuItem("-"), menuItem_exit });
-            notifyIcon.Icon = Resources.trayIcon;
+            notifyIcon.Icon = GetTrayIcon(gestureParser.IsPaused);
             //notifyIcon.Text = Application.ProductName;
             notifyIcon.ContextMenu = contextMenu1;
             notifyIcon.Visible = true;
@@ -771,6 +778,30 @@ namespace WGestures.App
             UpdateTray();
         }
 
+        private static void TrayThemeChanged(object sender, Microsoft.Win32.UserPreferenceChangedEventArgs args)
+        {
+            var context = trayContext;
+            if (context != null) context.Post(_ => UpdateTray(), null);
+        }
+
+        private static Icon GetTrayIcon(bool paused)
+        {
+            // SystemUsesLightTheme controls the taskbar, independently of the
+            // application's theme. Older Windows versions default to dark bars.
+            var lightBackground = false;
+            try
+            {
+                lightBackground = Convert.ToInt32(Microsoft.Win32.Registry.GetValue(
+                    @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+                    "SystemUsesLightTheme", 0)) != 0;
+            }
+            catch (Exception) { }
+            if (SystemInformation.HighContrast)
+                lightBackground = SystemColors.Window.GetBrightness() > 0.5f;
+            if (paused) return lightBackground ? Resources.trayIcon_bw : Resources.trayIcon_bw_light;
+            return lightBackground ? Resources.trayIcon : Resources.trayIcon_light;
+        }
+
         private static void UpdateTray()
         {
             if (trayIcon == null) return;
@@ -780,13 +811,12 @@ namespace WGestures.App
             if (gestureParser.IsPaused)
             {
                 menuItem_pause.Text = "继续 " + hotKeyStr;
-                trayIcon.Icon = Resources.trayIcon_bw;
             }
             else
             {
                 menuItem_pause.Text = "暂停 " + hotKeyStr;
-                trayIcon.Icon = Resources.trayIcon;
             }
+            trayIcon.Icon = GetTrayIcon(gestureParser.IsPaused);
         }
 
         static void Warning360Safe()
@@ -807,6 +837,8 @@ namespace WGestures.App
         {
             try
             {
+                Microsoft.Win32.SystemEvents.UserPreferenceChanged -= TrayThemeChanged;
+                trayContext = null;
                 foreach (var disposable in componentsToDispose)
                 {
                     if (disposable != null) disposable.Dispose();

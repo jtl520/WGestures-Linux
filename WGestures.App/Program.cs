@@ -465,7 +465,7 @@ namespace WGestures.App
 #endregion
 
 #region gestureView
-            gestureView.PathWidth = config.Get("GesturePathWidth", gestureView.PathWidth);
+            gestureView.PathWidth = (float)config.Get("GesturePathWidth", (double)gestureView.PathWidth);
             gestureView.FadeDuration = config.Get("GestureFadeDuration", 300);
             gestureView.ShowPath = config.Get(ConfigKeys.GestureViewShowPath, true);
             gestureView.ShowCommandName = config.Get(ConfigKeys.GestureViewShowCommandName, true);

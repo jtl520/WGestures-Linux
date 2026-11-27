@@ -26,7 +26,7 @@ internal static class WindowsSharedSettingsSmoke
     private static object Call(string name, params object[] args)
     {
         try { return serviceType.GetMethod(name).Invoke(service, args); }
-        catch (TargetInvocationException error) { throw error.InnerException; }
+        catch (TargetInvocationException error) { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error.InnerException).Throw(); throw; }
     }
     private static JObject Snapshot() { return (JObject)Call("Snapshot"); }
     private static JObject Change(string method, JObject parameters)
@@ -64,6 +64,7 @@ internal static class WindowsSharedSettingsSmoke
             Check(((JArray)Snapshot()["profiles"][0]["gestures"]).Count == 4, "Default gestures missing");
             Change("setting", new JObject { { "key", "path-width" }, { "value", 6.5 } });
             Check(view.PathWidth == 6.5f, "Trail width did not reach native renderer");
+            Check(new PlistConfig(configPath).Get<double>("GesturePathWidth") == 6.5, "Fractional trail width was not persisted");
             Change("setting", new JObject { { "key", "fade-duration" }, { "value", 650 } });
             Check(view.FadeDuration == 650, "Fade duration did not reach native renderer");
             // Regression: the old setter compared against StayTimeoutMillis (500).

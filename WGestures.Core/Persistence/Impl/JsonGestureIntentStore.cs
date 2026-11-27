@@ -150,14 +150,17 @@ namespace WGestures.Core.Persistence.Impl
 
         private void Serialize()
         {
-            using (var fs = new StreamWriter(jsonPath))
+            var temporary = jsonPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
             {
+                using (var fs = new StreamWriter(temporary))
                 using (var writer = new JsonTextWriter(fs))
-                {
-                 
-                    ser.Serialize(writer,new SerializeWrapper(){Apps = Apps, FileVersion = FileVersion, Global = GlobalApp, HotCornerCommands = HotCornerCommands});
-                }
+                    ser.Serialize(writer, new SerializeWrapper { Apps = Apps, FileVersion = FileVersion,
+                        Global = GlobalApp, HotCornerCommands = HotCornerCommands });
+                if (File.Exists(jsonPath)) File.Replace(temporary, jsonPath, jsonPath + ".bak");
+                else File.Move(temporary, jsonPath);
             }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
 
             //todo: 完全在独立domain中加载json.net?
             /*var serializeDomain = AppDomain.CreateDomain("jsonDeserialize");

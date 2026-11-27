@@ -238,7 +238,7 @@ function editGesture(gesture) {
         if(actionInput)actionBox.appendChild(field(type.value==='ShortcutAction'?'快捷键':type.value==='WindowAction'?'窗口动作':type.value==='LaunchAction'?'目标':'内容',actionInput));
     }
     type.addEventListener('change',actionFields);actionFields();
-    showDialog(gesture?'编辑手势':'添加手势',[field('名称',name),field('触发按钮',trigger),field('方向',result),draw,tools,field('动作类型',type),actionBox],async()=>{
+    showDialog(gesture?'编辑手势':'添加手势',[field('名称',name),field('触发按钮',trigger),field('方向',result),el('div',{class:'secondary-text',text:'左键绘制手势，或点击方向按钮。'}),draw,tools,field('动作类型',type),actionBox],async()=>{
         if(!directionValues.length)throw new Error('请选择或绘制手势方向。');
         const action={type:type.value};if(actionInput){const key=type.value==='ShortcutAction'?'accelerator':type.value==='WindowAction'?'operation':type.value==='LaunchAction'?'target':'command';action[key]=actionInput.value;}
         await mutate('gestureSave',{profileId,id:gesture?gesture.id:null,name:name.value.trim(),button:trigger.value,directions:directionValues,action});

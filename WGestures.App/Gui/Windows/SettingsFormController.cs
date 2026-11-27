@@ -438,7 +438,7 @@ namespace WGestures.App.Gui.Windows
         public float GesturePathWidth
         {
             get { return _gestureView.PathWidth; }
-            set { _gestureView.PathWidth = value; _config.Set("GesturePathWidth", value); }
+            set { _gestureView.PathWidth = value; _config.Set("GesturePathWidth", (double)value); }
         }
 
         public int GestureFadeDuration

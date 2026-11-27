@@ -72,7 +72,14 @@ namespace WGestures.Common.Config.Impl
         {
             if (PlistPath == null)
                 throw new InvalidOperationException("未指定需要保存到的plist文件路径(PlistPath属性)");
-            Plist.writeXml(Dict, PlistPath);
+            var temporary = PlistPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                Plist.writeXml(Dict, temporary);
+                if (File.Exists(PlistPath)) File.Replace(temporary, PlistPath, PlistPath + ".bak");
+                else File.Move(temporary, PlistPath);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
 
     }

@@ -376,7 +376,7 @@ namespace WGestures.Common.Config
 			}
 			else if (value is float || value is double)
 			{
-				writer.WriteElementString("real", ((double)value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo));
+				writer.WriteElementString("real", Convert.ToDouble(value).ToString(System.Globalization.NumberFormatInfo.InvariantInfo));
 			}
 			else if (value is DateTime)
 			{
@@ -541,7 +541,7 @@ namespace WGestures.Common.Config
 				return value;
 
 			case "System.Double":
-				value = writeBinaryDouble((double)obj);
+				value = writeBinaryDouble(Convert.ToDouble(obj));
 				return value;
 
 			case "System.Int32":

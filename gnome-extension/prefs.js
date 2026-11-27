@@ -342,6 +342,18 @@ class GestureEditor {
 
 export default class WGesturesPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
+        // Packaged installs use the same local UI on Wayland, X11 and Windows.
+        // Standalone extension installs retain the native preferences below.
+        if (GLib.find_program_in_path('wgestures')) {
+            try {
+                Gio.Subprocess.new(['wgestures', '--settings'], Gio.SubprocessFlags.NONE);
+                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                    window.close();
+                    return GLib.SOURCE_REMOVE;
+                });
+                return;
+            } catch (_) { /* Fall back to extension-only preferences. */ }
+        }
         this._window = window;
         this._settings = this.getSettings();
         this._migrateMiddleButton();

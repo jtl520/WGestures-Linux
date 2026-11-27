@@ -71,6 +71,7 @@ jobs:
             build/windows-settings/*.png
             build/windows-settings/result.json
             build/windows-runtime/*.json
+            build/windows-runtime/*.jsonl
             build/windows-runtime/*.log
             build/windows-panel-runtime/*.json
             build/windows-panel-runtime/*.log

@@ -40,7 +40,7 @@ if ($Mode -eq 'Harness') {
     $form.Add_Shown({
         $form.Activate()
         $form.Focus()
-        Write-HarnessEvent 'shown' @{}
+        Write-HarnessEvent 'shown' @{ handle = $form.Handle.ToInt64(); processId = $PID }
     })
     $form.Add_MouseDown({
         param($sender, $eventArgs)
@@ -198,15 +198,23 @@ try {
     $windowsPowerShell = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
     $harnessProcess = Start-Process -FilePath $windowsPowerShell -ArgumentList @(
         '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath,
-        '-Mode', 'Harness', '-EventLog', $EventLog) -PassThru
+        '-Mode', 'Harness', '-EventLog', $EventLog) -PassThru `
+        -RedirectStandardOutput (Join-Path $OutputDirectory 'harness-stdout.log') `
+        -RedirectStandardError (Join-Path $OutputDirectory 'harness-stderr.log')
 
     $deadline = [DateTime]::UtcNow.AddSeconds(10)
     do {
         Start-Sleep -Milliseconds 100
         $harnessProcess.Refresh()
+        if ($harnessProcess.HasExited) {
+            throw ('Acceptance harness exited: ' + (Get-Content (Join-Path $OutputDirectory 'harness-stderr.log') -Raw))
+        }
         $harnessHandle = [CrossGesturesAcceptanceNative]::FindWindow($null, ('CrossGestures Acceptance Harness ' + $harnessProcess.Id))
     } while (($harnessHandle -eq [IntPtr]::Zero -or @(Read-Events | Where-Object { $_.type -eq 'shown' }).Count -eq 0) -and [DateTime]::UtcNow -lt $deadline)
-    if ($harnessHandle -eq [IntPtr]::Zero) { throw 'Acceptance harness window did not open.' }
+    if ($harnessHandle -eq [IntPtr]::Zero) {
+        throw ('Acceptance harness window did not open. Events: ' + (Get-Content $EventLog -Raw) +
+            ' Error: ' + (Get-Content (Join-Path $OutputDirectory 'harness-stderr.log') -Raw))
+    }
 
     $rect = New-Object CrossGesturesAcceptanceNative+RECT
     if (-not [CrossGesturesAcceptanceNative]::GetWindowRect($harnessHandle, [ref]$rect)) {

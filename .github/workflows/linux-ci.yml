@@ -23,12 +23,23 @@ jobs:
           sudo apt-get install -y \
             build-essential debhelper libglib2.0-bin lintian nodejs npm \
             python3 python3-cairo python3-gi python3-gi-cairo python3-xlib \
-            gir1.2-gtk-3.0 zip
+            gir1.2-gtk-3.0 gir1.2-webkit2-4.1 xvfb xauth fonts-noto-cjk zip
 
       - name: Run checks and tests
         run: |
           make -f Makefile.ubuntu check
           make -f Makefile.ubuntu test
+
+      - name: Test shared settings and native bridge
+        run: xvfb-run -a python3 tools/test-settings-webkit.py --output-dir build/settings-verification
+
+      - name: Upload settings verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-settings-verification
+          path: build/settings-verification/
+          if-no-files-found: ignore
 
       - name: Build Debian package
         run: |

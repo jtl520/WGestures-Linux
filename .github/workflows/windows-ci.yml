@@ -45,6 +45,22 @@ jobs:
         shell: pwsh
         run: ./tools/Test-WindowsBuild.ps1
 
+      - name: Test shared settings and native bridge
+        shell: pwsh
+        run: |
+          ./tools/Ensure-WebView2.ps1
+          ./tools/Test-WindowsSharedSettings.ps1
+
+      - name: Upload settings verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-settings-verification
+          path: |
+            build/windows-settings/*.png
+            build/windows-settings/result.json
+          if-no-files-found: ignore
+
       - name: Build EXE installer
         shell: pwsh
         run: |

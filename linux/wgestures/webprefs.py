@@ -10,6 +10,8 @@ import tempfile
 
 import gi
 gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_foreign("cairo")
 try:
     gi.require_version("WebKit2", "4.1")
 except ValueError:
@@ -22,7 +24,7 @@ from .settings_service import SettingsService
 def ui_directory():
     package = os.path.dirname(os.path.abspath(__file__))
     for candidate in (os.path.join(package, "..", "settings-ui"),
-                      os.path.join(package, "..", "..", "..", "settings-ui")):
+                      os.path.join(package, "..", "..", "settings-ui")):
         if os.path.isfile(os.path.join(candidate, "index.html")):
             return os.path.realpath(candidate)
     raise RuntimeError("未找到共享设置界面，请重新安装 CrossGestures。")

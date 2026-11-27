@@ -65,7 +65,7 @@ class SettingsService(object):
                 if gesture["action"]["type"] == "ShortcutAction":
                     gesture["action"]["accelerator"] = display_accelerator(gesture["action"]["accelerator"])
                 gesture["editable"] = gesture["button"] != "middle"
-        return {"platform": "Ubuntu / Linux", "version": "2.2.0", "revision": self._revision(config),
+        return {"platform": "Ubuntu / Linux", "version": "2.2.1", "revision": self._revision(config),
                 "settings": self._values(), "profiles": profiles,
                 "capabilities": {"actions": list(ACTION_TYPES), "operations": list(WINDOW_OPERATIONS),
                                  "matchers": list(MATCHERS), "reorder": True, "legacy": True}}

@@ -44,6 +44,7 @@ internal static class WindowsSharedSettingsSmoke
         Environment.SetEnvironmentVariable("CROSSGESTURES_USER_DATA_DIRECTORY", data);
         Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
         var app = Assembly.LoadFrom(Path.Combine(Application.StartupPath, "CrossGestures.exe"));
+        VerifyBrandingResources(app);
         var configPath = Path.Combine(data, "config.plist");
         var gesturesPath = Path.Combine(data, "gestures.wg2");
         File.Copy(Path.Combine(Application.StartupPath, "defaults", "config.plist"), configPath, true);
@@ -122,6 +123,7 @@ internal static class WindowsSharedSettingsSmoke
             await web.CoreWebView2.ExecuteScriptAsync("document.fonts.ready.then(()=>window.__fontsReady=true);'waiting'");
             for (int i = 0; i < 100 && await web.CoreWebView2.ExecuteScriptAsync("window.__fontsReady === true") != "true"; i++) await Task.Delay(50);
             Check(await web.CoreWebView2.ExecuteScriptAsync("Array.from(document.fonts).some(f=>f.family.includes('CrossGestures UI') && f.status==='loaded')") == "true", "Bundled UI font did not load");
+            Check(await web.CoreWebView2.ExecuteScriptAsync("(()=>{const icon=document.querySelector('img.brand-icon');return !!icon && icon.complete && icon.naturalWidth>0;})()") == "true", "Shared application icon did not load");
             await Capture(web, "windows-general.png");
             await web.CoreWebView2.ExecuteScriptAsync("document.querySelector('[data-page=gestures]').click()");
             await Task.Delay(250);
@@ -148,7 +150,7 @@ internal static class WindowsSharedSettingsSmoke
             await Task.Delay(200); await Capture(web, "windows-edit-gesture.png");
             await web.CoreWebView2.ExecuteScriptAsync("closeDialog();document.querySelector('[data-page=general]').click()");
             form.ClientSize = new Size(660, 600); await Task.Delay(300); await Capture(web, "windows-narrow.png");
-            File.WriteAllText(Path.Combine(output, "result.json"), "{\"adapterChecks\":10,\"uiChecks\":5,\"ok\":true}");
+            File.WriteAllText(Path.Combine(output, "result.json"), "{\"adapterChecks\":10,\"uiChecks\":6,\"brandingResources\":6,\"ok\":true}");
             Console.WriteLine("Windows WebView2: rendering, create, delete and dialog checks passed."); result = 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); }
@@ -158,5 +160,39 @@ internal static class WindowsSharedSettingsSmoke
     {
         using (var stream = File.Create(Path.Combine(output, name)))
             await web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, stream);
+    }
+
+    private static void VerifyBrandingResources(Assembly app)
+    {
+        var manager = new System.Resources.ResourceManager("WGestures.App.Properties.Resources", app);
+        var names = new[] { "icon", "icon_bw", "trayIcon", "trayIcon_bw", "trayIcon_light", "trayIcon_bw_light" };
+        using (var sheet = new Bitmap(600, 140))
+        using (var graphics = Graphics.FromImage(sheet))
+        {
+            graphics.Clear(Color.FromArgb(247, 245, 241));
+            for (var i = 0; i < names.Length; i++)
+            {
+                var icon = manager.GetObject(names[i]) as Icon;
+                Check(icon != null, "Missing icon resource: " + names[i]);
+                foreach (var size in new[] { 16, 24, 32, 48, 64 })
+                using (var frame = new Icon(icon, size, size))
+                using (var bitmap = frame.ToBitmap())
+                {
+                    bool visible = false;
+                    for (var y = 0; y < bitmap.Height && !visible; y++)
+                        for (var x = 0; x < bitmap.Width && !visible; x++)
+                            visible = bitmap.GetPixel(x, y).A > 0;
+                    Check(visible, "Empty or invalid ICO frame: " + names[i] + " " + size);
+                }
+                if (i >= 4) graphics.FillRectangle(Brushes.DarkSlateGray, i * 100, 0, 100, 140);
+                using (var frame = new Icon(icon, 32, 32))
+                    graphics.DrawIcon(frame, new Rectangle(i * 100 + 34, 30, 32, 32));
+                using (var frame = new Icon(icon, 16, 16))
+                    graphics.DrawIcon(frame, new Rectangle(i * 100 + 42, 90, 16, 16));
+            }
+            sheet.Save(Path.Combine(output, "windows-icons.png"), System.Drawing.Imaging.ImageFormat.Png);
+        }
+        manager.ReleaseAllResources();
+        Console.WriteLine("Windows branding: 6 resources decoded at 5 sizes.");
     }
 }

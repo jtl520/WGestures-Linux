@@ -419,6 +419,8 @@
     <None Include="Resources\menuBtn.png" />
     <None Include="Resources\menuBtn_down.png" />
     <None Include="Resources\trayIcon.ico" />
+    <None Include="Resources\trayIcon_light.ico" />
+    <None Include="Resources\trayIcon_bw_light.ico" />
     <None Include="Resources\trayIcon_bw.ico" />
     <None Include="Resources\forbidden.png" />
     <None Include="Resources\alipay.png" />

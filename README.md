@@ -1,5 +1,8 @@
 # CrossGestures — Linux 与 Windows
 
+2.2.1 将桌面、任务栏／Dock、设置页及托盘统一为橙色转折轨迹图标。
+托盘提供深浅色单色版和暂停标记，两个平台共用同一图形母版。
+
 2.2.0 的默认设置窗口在 Ubuntu/X11、Ubuntu/GNOME Wayland 和 Windows 10/11
 共用 `settings-ui/` 中的本地 HTML、CSS、JavaScript。页面沿用 Ubuntu 的常规、
 手势、应用配置、导入与恢复结构；常用手势和应用配置在同一界面编辑。
@@ -75,7 +78,7 @@ Windows 8.1 已结束系统安全支持，而且 GitHub Actions 没有对应 Run
 下载并运行：
 
 ```text
-CrossGestures-2.2.0.0-Windows-Setup.exe
+CrossGestures-2.2.1.0-Windows-Setup.exe
 ```
 
 安装器会请求一次管理员权限并安装到 Program Files，以保证手势覆盖 Codex、管理员
@@ -89,7 +92,7 @@ Windows 11 可能把托盘图标放入隐藏区域；也可以从开始菜单打
 ### Windows
 
 先从托盘菜单退出 CrossGestures，然后在“设置 → 应用 → 已安装的应用”中搜索
-完整名称 `CrossGestures version 2.2.0.0` 并卸载。如果 Windows 应用列表尚未刷新，
+完整名称 `CrossGestures version 2.2.1.0` 并卸载。如果 Windows 应用列表尚未刷新，
 可直接运行 Program Files 安装目录中的卸载器：
 
 ```powershell
@@ -132,12 +135,12 @@ echo "$XDG_CURRENT_DESKTOP / $XDG_SESSION_TYPE"
 ### 2. 下载并安装
 
 从 [GitHub Releases](https://github.com/jtl520/WGestures-Linux/releases/latest)
-下载 `wgestures_2.2.0_all.deb`，保存到“下载”目录，然后运行：
+下载 `wgestures_2.2.1_all.deb`，保存到“下载”目录，然后运行：
 
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.2.0_all.deb
+sudo apt install ./wgestures_2.2.1_all.deb
 ```
 
 必须使用 `apt install ./文件名.deb`，文件名前的 `./` 不能省略。APT 会自动安装
@@ -195,7 +198,7 @@ wgestures --settings
 从仓库的 **Releases** 页面下载：
 
 ```text
-wgestures_2.2.0_all.deb
+wgestures_2.2.1_all.deb
 ```
 
 联网安装时依赖会由 APT 自动解决：
@@ -203,7 +206,7 @@ wgestures_2.2.0_all.deb
 ```sh
 cd ~/Downloads
 sudo apt update
-sudo apt install ./wgestures_2.2.0_all.deb
+sudo apt install ./wgestures_2.2.1_all.deb
 wgestures --diagnose
 ```
 

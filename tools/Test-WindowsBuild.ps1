@@ -208,7 +208,9 @@ if (-not $SourceOnly) {
         'NLua.dll',
         'KeraLua.dll',
         'defaults\config.plist',
-        'defaults\gestures.wg2'
+        'defaults\gestures.wg2',
+        'settings-ui\index.html',
+        'settings-ui\crossgestures.svg'
     )
 
     foreach ($relativePath in $requiredFiles) {
@@ -220,7 +222,7 @@ if (-not $SourceOnly) {
 
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo(
         (Join-Path $outputDir 'CrossGestures.exe')).FileVersion
-    if ($version -ne '2.2.0.0') {
+    if ($version -ne '2.2.1.0') {
         throw "Unexpected CrossGestures.exe version: $version"
     }
 

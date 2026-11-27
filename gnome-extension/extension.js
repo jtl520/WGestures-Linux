@@ -22,10 +22,13 @@ const CLUTTER_BUTTONS = Object.freeze({2: 'middle', 3: 'right', 8: 'x1', 9: 'x2'
 const EVDEV_BUTTONS = Object.freeze({right: 273, middle: 274, x1: 275, x2: 276});
 
 class WGesturesIndicator extends PanelMenu.Button {
-    constructor(settings, openPreferences, showQuickPanel) {
+    constructor(settings, openPreferences, showQuickPanel, iconDirectory) {
         super(0.0, _('CrossGestures'));
         this._settings = settings;
-        this._icon = new St.Icon({icon_name: 'input-mouse-symbolic', style_class: 'system-status-icon'});
+        this._icons = Object.fromEntries(['', '-paused', '-disabled'].map(suffix => [
+            suffix, new Gio.FileIcon({file: iconDirectory.get_child(`crossgestures-tray${suffix}-symbolic.svg`)}),
+        ]));
+        this._icon = new St.Icon({gicon: this._icons[''], style_class: 'system-status-icon'});
         this.add_child(this._icon);
 
         this._enabledItem = new PopupMenu.PopupSwitchMenuItem(_('启用鼠标手势'), true);
@@ -52,7 +55,7 @@ class WGesturesIndicator extends PanelMenu.Button {
         const paused = this._settings.get_boolean('paused');
         this._enabledItem.setToggleState(enabled);
         this._pausedItem.setToggleState(paused);
-        this._icon.icon_name = enabled && !paused ? 'input-mouse-symbolic' : 'media-playback-pause-symbolic';
+        this._icon.gicon = this._icons[!enabled ? '-disabled' : paused ? '-paused' : ''];
         this.toggle_style_class_name('wgestures-indicator-paused', !enabled || paused);
     }
 }
@@ -93,7 +96,8 @@ export default class WGesturesExtension extends Extension {
                 const [x, y] = global.get_pointer();
                 this._panel?.showAt(x, y);
                 return GLib.SOURCE_REMOVE;
-            })
+            }),
+            this.dir.get_child('icons')
         );
         Main.panel.addToStatusArea(this.uuid, this._indicator);
 

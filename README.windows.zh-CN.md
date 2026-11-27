@@ -23,7 +23,7 @@ Windows 与 Linux 使用各自原生的输入后端。2.2.0 在 Windows 10/11 �
 从 GitHub Releases 下载：
 
 ```text
-CrossGestures-2.2.0.0-Windows-Setup.exe
+CrossGestures-2.2.1.0-Windows-Setup.exe
 ```
 
 双击安装并同意一次 Windows UAC 提示。安装器会安装到：
@@ -52,7 +52,7 @@ Windows 公开构建没有原作者的 UIAccess 私钥证书，因此使用管�
 ## 卸载
 
 在“设置 → 应用 → 已安装的应用”中搜索完整名称
-`CrossGestures version 2.2.0.0`。如果应用列表没有及时刷新，可直接运行：
+`CrossGestures version 2.2.1.0`。如果应用列表没有及时刷新，可直接运行：
 
 ```powershell
 Stop-Process -Name CrossGestures -Force -ErrorAction SilentlyContinue
@@ -139,7 +139,7 @@ Desktop ID、Windows 文件路径和修饰/滚轮手势会在兼容性报告中�
 产物位于：
 
 ```text
-build\windows\CrossGestures-2.2.0.0-Windows-Setup.exe
+build\windows\CrossGestures-2.2.1.0-Windows-Setup.exe
 ```
 
 原 `WGInstall` WixSharp/MSI 工程仍作为历史参考保留，但默认解决方案构建不再执行

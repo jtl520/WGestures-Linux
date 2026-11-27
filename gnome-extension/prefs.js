@@ -71,7 +71,7 @@ function setSessionAutostart(enabled) {
         'Name=CrossGestures Session Backend',
         'Exec=wgestures --daemon',
         'TryExec=wgestures',
-        'Icon=input-mouse',
+        'Icon=crossgestures',
         'Terminal=false',
         'NoDisplay=true',
         `Hidden=${enabled ? 'false' : 'true'}`,

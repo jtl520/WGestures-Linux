@@ -19,6 +19,7 @@ except ValueError:
 from gi.repository import Gdk, Gio, GLib, Gtk, WebKit2
 
 from .settings_service import SettingsService
+from .branding import set_window_icon
 
 
 def ui_directory():
@@ -33,6 +34,7 @@ def ui_directory():
 class SettingsWindow(Gtk.ApplicationWindow):
     def __init__(self, application):
         Gtk.ApplicationWindow.__init__(self, application=application, title="CrossGestures 设置")
+        set_window_icon(self)
         self.set_default_size(1050, 780)
         self.set_size_request(640, 500)
         self.set_position(Gtk.WindowPosition.CENTER)

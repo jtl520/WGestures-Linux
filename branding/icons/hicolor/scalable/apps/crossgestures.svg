@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0.8" y2="1">
+      <stop stop-color="#f57632"/>
+      <stop offset="0.48" stop-color="#df4f20"/>
+      <stop offset="1" stop-color="#bc3614"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#fff" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#tile)"/>
+  <rect x="2.5" y="2.5" width="59" height="59" rx="13.5" fill="none" stroke="url(#edge)"/>
+  <g id="gesture" fill="#fff">
+    <circle cx="15" cy="46" r="5"/>
+    <path d="M16 44 L26.5 31.5 Q28.4 29.2 31.4 29.6 L36.8 30.2 Q40.5 30.6 42.7 27.5 L48.5 20" fill="none" stroke="#fff" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M41.8 18.1 L53.9 14.2 Q54.9 13.9 54.6 15 L51.6 27.1 Q51.4 28.1 50.6 27.4 L41.5 19.5 Q40.7 18.7 41.8 18.1 Z"/>
+  </g>
+</svg>

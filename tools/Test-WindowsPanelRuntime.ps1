@@ -23,6 +23,8 @@ using System.Runtime.InteropServices;
 public static class CrossGesturesPanelNative
 {
     public delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr FindWindow(string className, string windowName);
+    public static IntPtr FindHarnessWindow(int processId) { return FindWindow(null, "CrossGestures Acceptance Harness " + processId); }
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left, Top, Right, Bottom; }
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);
@@ -77,8 +79,8 @@ function Send-AbsoluteMouseMove([int]$X, [int]$Y) {
 
 function Set-HarnessForeground([Diagnostics.Process]$Harness) {
     $Harness.Refresh()
-    [CrossGesturesPanelNative]::ShowWindow($Harness.MainWindowHandle, 9) | Out-Null
-    [CrossGesturesPanelNative]::SetForegroundWindow($Harness.MainWindowHandle) | Out-Null
+    [CrossGesturesPanelNative]::ShowWindow(([CrossGesturesPanelNative]::FindHarnessWindow($Harness.Id)), 9) | Out-Null
+    [CrossGesturesPanelNative]::SetForegroundWindow(([CrossGesturesPanelNative]::FindHarnessWindow($Harness.Id))) | Out-Null
     Start-Sleep -Milliseconds 300
 }
 
@@ -149,9 +151,9 @@ try {
     do {
         Start-Sleep -Milliseconds 100
         $harness.Refresh()
-    } while ($harness.MainWindowHandle -eq 0 -and [DateTime]::UtcNow -lt $deadline)
-    if ($harness.MainWindowHandle -eq 0) { throw 'Acceptance harness did not open.' }
-    $harnessRect = Get-WindowRectangle $harness.MainWindowHandle
+    } while ((([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)) -eq 0 -or @(Read-HarnessEvents $eventLog | Where-Object { $_.type -eq 'shown' }).Count -eq 0) -and [DateTime]::UtcNow -lt $deadline)
+    if (([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)) -eq 0) { throw 'Acceptance harness did not open.' }
+    $harnessRect = Get-WindowRectangle ([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id))
     $centerX = [int](($harnessRect.Left + $harnessRect.Right) / 2)
     $centerY = [int](($harnessRect.Top + $harnessRect.Bottom) / 2)
 
@@ -281,10 +283,10 @@ try {
     try {
         Clear-HarnessEvents $eventLog
         Set-HarnessForeground $harness
-        [CrossGesturesPanelNative]::SetWindowPos($harness.MainWindowHandle,
+        [CrossGesturesPanelNative]::SetWindowPos(([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)),
             [IntPtr](-1), 0, 0, 0, 0, 0x0001 -bor 0x0002) | Out-Null
         Start-Sleep -Milliseconds 300
-        $harnessRect2 = Get-WindowRectangle $harness.MainWindowHandle
+        $harnessRect2 = Get-WindowRectangle ([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id))
         $cursorX = [int](($harnessRect2.Left + $harnessRect2.Right) / 2)
         $cursorY = [int](($harnessRect2.Top + $harnessRect2.Bottom) / 2)
         $probeRect = New-Object Drawing.Rectangle ($cursorX - 50), ($cursorY - 50), 100, 100
@@ -317,10 +319,10 @@ try {
         $baseline.Dispose()
         $during.Dispose()
         $trailVisibleAboveTopmost = $changed -gt 20
-        [CrossGesturesPanelNative]::SetWindowPos($harness.MainWindowHandle,
+        [CrossGesturesPanelNative]::SetWindowPos(([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)),
             [IntPtr](-2), 0, 0, 0, 0, 0x0001 -bor 0x0002) | Out-Null
     } catch {
-        [CrossGesturesPanelNative]::SetWindowPos($harness.MainWindowHandle,
+        [CrossGesturesPanelNative]::SetWindowPos(([CrossGesturesPanelNative]::FindHarnessWindow($harness.Id)),
             [IntPtr](-2), 0, 0, 0, 0, 0x0001 -bor 0x0002) | Out-Null
     }
 

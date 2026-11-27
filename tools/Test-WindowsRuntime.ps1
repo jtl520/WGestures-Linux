@@ -93,7 +93,13 @@ public static class CrossGesturesAcceptanceNative
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern IntPtr FindWindow(string className, string windowName);
+    private static extern IntPtr FindWindow(string className, string windowName);
+
+    // PowerShell converts $null to an empty string for string parameters.
+    public static IntPtr FindHarnessWindow(int processId)
+    {
+        return FindWindow(null, "CrossGestures Acceptance Harness " + processId);
+    }
 
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -120,7 +126,7 @@ function Clear-Events {
 
 function Set-HarnessForeground([Diagnostics.Process]$Harness) {
     $Harness.Refresh()
-    $handle = [CrossGesturesAcceptanceNative]::FindWindow($null, ('CrossGestures Acceptance Harness ' + $Harness.Id))
+    $handle = [CrossGesturesAcceptanceNative]::FindHarnessWindow($Harness.Id)
     if ($handle -eq [IntPtr]::Zero) { throw 'The acceptance form is no longer available.' }
     [CrossGesturesAcceptanceNative]::ShowWindow($handle, 9) | Out-Null
     [CrossGesturesAcceptanceNative]::SetForegroundWindow($handle) | Out-Null
@@ -209,7 +215,7 @@ try {
         if ($harnessProcess.HasExited) {
             throw ('Acceptance harness exited: ' + (Get-Content (Join-Path $OutputDirectory 'harness-stderr.log') -Raw))
         }
-        $harnessHandle = [CrossGesturesAcceptanceNative]::FindWindow($null, ('CrossGestures Acceptance Harness ' + $harnessProcess.Id))
+        $harnessHandle = [CrossGesturesAcceptanceNative]::FindHarnessWindow($harnessProcess.Id)
     } while (($harnessHandle -eq [IntPtr]::Zero -or @(Read-Events | Where-Object { $_.type -eq 'shown' }).Count -eq 0) -and [DateTime]::UtcNow -lt $deadline)
     if ($harnessHandle -eq [IntPtr]::Zero) {
         throw ('Acceptance harness window did not open. Events: ' + (Get-Content $EventLog -Raw) +

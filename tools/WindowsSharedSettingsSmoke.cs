@@ -119,6 +119,9 @@ internal static class WindowsSharedSettingsSmoke
                 await Task.Delay(100);
             }
             Check(web.CoreWebView2 != null, "WebView2 initialization failed");
+            await web.CoreWebView2.ExecuteScriptAsync("document.fonts.ready.then(()=>window.__fontsReady=true);'waiting'");
+            for (int i = 0; i < 100 && await web.CoreWebView2.ExecuteScriptAsync("window.__fontsReady === true") != "true"; i++) await Task.Delay(50);
+            Check(await web.CoreWebView2.ExecuteScriptAsync("Array.from(document.fonts).some(f=>f.family.includes('CrossGestures UI') && f.status==='loaded')") == "true", "Bundled UI font did not load");
             await Capture(web, "windows-general.png");
             await web.CoreWebView2.ExecuteScriptAsync("document.querySelector('[data-page=gestures]').click()");
             await Task.Delay(250);
@@ -145,7 +148,7 @@ internal static class WindowsSharedSettingsSmoke
             await Task.Delay(200); await Capture(web, "windows-edit-gesture.png");
             await web.CoreWebView2.ExecuteScriptAsync("closeDialog();document.querySelector('[data-page=general]').click()");
             form.ClientSize = new Size(660, 600); await Task.Delay(300); await Capture(web, "windows-narrow.png");
-            File.WriteAllText(Path.Combine(output, "result.json"), "{\"adapterChecks\":10,\"uiChecks\":4,\"ok\":true}");
+            File.WriteAllText(Path.Combine(output, "result.json"), "{\"adapterChecks\":10,\"uiChecks\":5,\"ok\":true}");
             Console.WriteLine("Windows WebView2: rendering, create, delete and dialog checks passed."); result = 0;
         }
         catch (Exception error) { Console.Error.WriteLine(error); }

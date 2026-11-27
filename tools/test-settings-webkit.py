@@ -55,6 +55,7 @@ script = r"""
  const wait = async predicate => { for(let i=0;i<150;i++){if(predicate()) return;await new Promise(r=>setTimeout(r,40));} throw new Error('UI timeout'); };
  const check = (value, message) => { if(!value) throw new Error(message); };
  try {
+  check(Array.from(document.fonts).some(f=>f.family.includes('CrossGestures UI') && f.status==='loaded'),'Bundled UI font did not load');
   document.querySelector('[data-page="gestures"]').click();
   check(document.querySelectorAll('.gesture-item').length===4,'Default gestures missing');
   document.querySelector('.toolbar .primary').click();
@@ -83,7 +84,7 @@ script = r"""
   const width=document.querySelector('input[aria-label="轨迹宽度"]');width.value='6.5';width.dispatchEvent(new Event('change'));
   await wait(()=>!busy);check(state.settings['path-width']===6.5,'Setting was not saved');
   await mutate('setting',{key:'path-width',value:4});
-  window.__smoke={done:true,ok:true,checks:8};
+  window.__smoke={done:true,ok:true,checks:9};
  } catch(error) {window.__smoke={done:true,ok:false,error:error.stack};}
 })();
 'started';
@@ -104,7 +105,7 @@ def poll():
                 Gtk.main_quit()
                 return
             evaluate("document.querySelector('[data-page=gestures]').click(); 'ok'", lambda _v: GLib.timeout_add(200, capture_gestures))
-    evaluate("JSON.stringify(window.__smoke || {ready: typeof state !== 'undefined' && !!state})", result)
+    evaluate("JSON.stringify(window.__smoke || {ready: typeof state !== 'undefined' && !!state && document.fonts.status==='loaded'})", result)
     return stage[0] < 2
 
 

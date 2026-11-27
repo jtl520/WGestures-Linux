@@ -7,6 +7,7 @@ check:
 	python3 tools/check-python.py
 	node --check gnome-extension/extension.js
 	node --check gnome-extension/prefs.js
+	node --check settings-ui/app.js
 	glib-compile-schemas --strict --dry-run gnome-extension/schemas
 
 test: test-python test-js

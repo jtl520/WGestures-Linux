@@ -94,3 +94,37 @@ begin
     'https://dotnet.microsoft.com/download/dotnet-framework/net48',
     '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
 end;
+
+
+function HasWebView2(): Boolean;
+var
+  Version: String;
+  Key: String;
+begin
+  Key := 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
+  Result :=
+    (RegQueryStringValue(HKLM32, Key, 'pv', Version) and (Version <> '') and (Version <> '0.0.0.0')) or
+    (RegQueryStringValue(HKLM64, Key, 'pv', Version) and (Version <> '') and (Version <> '0.0.0.0')) or
+    (RegQueryStringValue(HKCU, Key, 'pv', Version) and (Version <> '') and (Version <> '0.0.0.0'));
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ExitCode: Integer;
+begin
+  Result := '';
+  { Older Windows versions keep the legacy native editor. }
+  if (GetWindowsVersion < $0A000000) or HasWebView2() then
+    exit;
+  try
+    DownloadTemporaryFile('https://go.microsoft.com/fwlink/p/?LinkId=2124703',
+      'MicrosoftEdgeWebview2Setup.exe', '', nil);
+    if not Exec(ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe'),
+      '/silent /install', '', SW_HIDE, ewWaitUntilTerminated, ExitCode) then
+      Result := '无法启动 Microsoft WebView2 安装程序。'
+    else if not HasWebView2() then
+      Result := 'WebView2 安装未完成。请联网安装 Microsoft Edge WebView2 Runtime 后重试。';
+  except
+    Result := '无法下载 Microsoft WebView2。请检查网络后重试，或先安装 WebView2 Runtime。';
+  end;
+end;

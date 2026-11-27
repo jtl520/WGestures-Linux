@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>CrossGestures 设置</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-icon" aria-hidden="true">↗</span><div><strong>CrossGestures</strong><small>鼠标手势</small></div></div>
+    <nav aria-label="设置分类">
+      <button data-page="general" class="nav-item active"><span aria-hidden="true">⚙</span>常规</button>
+      <button data-page="gestures" class="nav-item"><span aria-hidden="true">↗</span>手势</button>
+      <button data-page="profiles" class="nav-item"><span aria-hidden="true">▦</span>应用配置</button>
+      <button data-page="backup" class="nav-item"><span aria-hidden="true">↻</span>导入与恢复</button>
+    </nav>
+    <div class="sidebar-bottom"><div id="runtime-status" class="status">正在连接…</div><small id="version"></small></div>
+  </aside>
+  <main>
+    <header><div><p class="eyebrow">设置</p><h1 id="page-title">常规</h1></div><span id="save-status" role="status" aria-live="polite"></span></header>
+    <div id="content"><div class="empty">正在读取设置…</div></div>
+  </main>
+  <div id="modal" class="modal" hidden><section role="dialog" aria-modal="true" aria-labelledby="dialog-title" class="dialog"><header><h2 id="dialog-title"></h2><button type="button" class="icon-button" id="dialog-close" aria-label="关闭对话框">×</button></header><form id="dialog-form"><div id="dialog-body"></div><p id="dialog-error" class="error" role="alert"></p><footer><button type="button" id="dialog-cancel">取消</button><button type="submit" class="primary" id="dialog-save">保存</button></footer></form></section></div>
+  <div id="toast" role="alert" hidden></div>
+</body>
+</html>

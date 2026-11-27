@@ -192,7 +192,7 @@ namespace WGestures.App.Migrate
             }
         }
 
-        private static PortableAction ExportAction(AbstractCommand command, ref int nextId,
+        internal static PortableAction ExportAction(AbstractCommand command, ref int nextId,
             string name, out string reason)
         {
             reason = string.Empty;
@@ -306,7 +306,7 @@ namespace WGestures.App.Migrate
             }
         }
 
-        private static AbstractCommand ImportAction(PortableAction action, out string reason)
+        internal static AbstractCommand ImportAction(PortableAction action, out string reason)
         {
             reason = string.Empty;
             if (action == null || !action.Enabled) { reason = "动作已禁用"; return null; }
@@ -498,7 +498,7 @@ namespace WGestures.App.Migrate
             [JsonProperty("profiles")] public List<PortableProfile> Profiles { get; set; }
         }
 
-        private sealed class PortableAction
+        internal sealed class PortableAction
         {
             [JsonProperty("id")] public string Id { get; set; }
             [JsonProperty("name")] public string Name { get; set; }

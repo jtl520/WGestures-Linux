@@ -49,7 +49,7 @@ namespace WGestures.View.Impl.Windows
             }
             set
             {
-                _mainPen.Width = _alternativePen.Width = _middleBtnPen.Width =value;
+                _mainPen.Width = _alternativePen.Width = _middleBtnPen.Width = _xBtnPen.Width = value;
             }
         }
         public float PathBorderWidth
@@ -73,6 +73,7 @@ namespace WGestures.View.Impl.Windows
         public bool ShowPath { get; set; }
         public bool ShowCommandName { get; set; }
         public bool ViewFadeOut { get; set; }
+        public int FadeDuration { get; set; } = 300;
         #endregion
 
         public bool IsDisposed { get; private set; }
@@ -650,6 +651,9 @@ namespace WGestures.View.Impl.Windows
         #region timer handlers
         private void FadeOut()
         {
+            if (FadeDuration <= 0) { EndView(); return; }
+            // Five opacity steps, including the final hide, span the selected duration.
+            _fadeOuTimer.Interval = Math.Max(1, FadeDuration / 5.0);
             _fadeOuTimer.Enabled = true;
         }
 

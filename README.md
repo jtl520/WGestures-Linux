@@ -1,5 +1,14 @@
 # CrossGestures — Linux 与 Windows
 
+2.2.0 的默认设置窗口在 Ubuntu/X11、Ubuntu/GNOME Wayland 和 Windows 10/11
+共用 `settings-ui/` 中的本地 HTML、CSS、JavaScript。页面沿用 Ubuntu 的常规、
+手势、应用配置、导入与恢复结构；常用手势和应用配置在同一界面编辑。
+Linux 使用 WebKitGTK，Windows 使用 WebView2。Windows 安装器在缺少 WebView2
+时联网安装运行时；Windows 7/8.1 和缺少网页运行时的环境保留原生兼容设置。
+Windows 的 Lua、CMD、热角、滚轮修饰动作及 `.wgb` 完整备份仍从“更多 Windows
+设置”进入原编辑器；不会因打开新界面而转换或删除这些配置。
+
+
 CrossGestures 是面向 Windows、Ubuntu、Kali 和其他 Debian 系桌面的全局鼠标手势软件。
 Linux 版本采用双后端：GNOME Shell 扩展负责 Ubuntu 24.04 Wayland，
 Python/GTK3 常驻进程负责 Ubuntu 18.04、Kali Xfce 及其他 X11 桌面。

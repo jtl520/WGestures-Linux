@@ -1,5 +1,6 @@
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 
@@ -84,7 +85,10 @@ export default class WGesturesExtension extends Extension {
 
         this._indicator = new WGesturesIndicator(
             this._settings,
-            () => this.openPreferences(),
+            () => {
+                try { Gio.Subprocess.new(['wgestures', '--settings'], Gio.SubprocessFlags.NONE); }
+                catch (_) { this.openPreferences(); }
+            },
             () => GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
                 const [x, y] = global.get_pointer();
                 this._panel?.showAt(x, y);

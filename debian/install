@@ -12,3 +12,4 @@ packaging/wgestures-autostart.desktop etc/xdg/autostart/
 linux/main.py usr/lib/wgestures/
 linux/wgestures/*.py usr/lib/wgestures/wgestures/
 README.ubuntu.md usr/share/doc/wgestures/
+settings-ui/* usr/lib/wgestures/settings-ui/

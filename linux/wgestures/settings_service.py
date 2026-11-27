@@ -9,6 +9,7 @@ import re
 import uuid
 
 from .autostart import set_session_autostart
+from . import __version__
 from .config import ACTION_TYPES, WINDOW_OPERATIONS, create_default_config, normalize_config
 from .gesture import DIRECTIONS, GestureRecognizer, gesture_key
 from .portable import export_portable_config, import_config
@@ -65,7 +66,7 @@ class SettingsService(object):
                 if gesture["action"]["type"] == "ShortcutAction":
                     gesture["action"]["accelerator"] = display_accelerator(gesture["action"]["accelerator"])
                 gesture["editable"] = gesture["button"] != "middle"
-        return {"platform": "Ubuntu / Linux", "version": "2.2.1", "revision": self._revision(config),
+        return {"platform": "Ubuntu / Linux", "version": __version__, "revision": self._revision(config),
                 "settings": self._values(), "profiles": profiles,
                 "capabilities": {"actions": list(ACTION_TYPES), "operations": list(WINDOW_OPERATIONS),
                                  "matchers": list(MATCHERS), "reorder": True, "legacy": True}}

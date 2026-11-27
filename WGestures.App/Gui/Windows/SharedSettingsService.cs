@@ -126,7 +126,7 @@ namespace WGestures.App.Gui.Windows
             foreach (var app in Apps()) profiles.Add(ProfileSnapshot(app));
             var snapshot = new JObject
             {
-                ["platform"] = "Windows", ["version"] = "2.2.0", ["settings"] = Settings(), ["profiles"] = profiles,
+                ["platform"] = "Windows", ["version"] = typeof(SharedSettingsService).Assembly.GetName().Version.ToString(3), ["settings"] = Settings(), ["profiles"] = profiles,
                 ["capabilities"] = new JObject
                 {
                     ["actions"] = new JArray("ShortcutAction", "CopyAction", "PasteAction", "WindowAction", "LaunchAction", "PauseAction", "NoopAction"),

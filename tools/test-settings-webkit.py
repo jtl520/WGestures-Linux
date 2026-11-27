@@ -9,13 +9,14 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--output-dir", required=True)
+parser.add_argument("--installed", action="store_true", help="Test /usr/lib/wgestures after installing the Debian package")
 args = parser.parse_args()
 output = Path(args.output_dir).resolve()
 output.mkdir(parents=True, exist_ok=True)
 temporary = tempfile.TemporaryDirectory(prefix="crossgestures-ui-")
 os.environ["XDG_CONFIG_HOME"] = temporary.name
 os.environ["GSETTINGS_BACKEND"] = "memory"
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "linux"))
+sys.path.insert(0, "/usr/lib/wgestures" if args.installed else str(Path(__file__).resolve().parents[1] / "linux"))
 
 from wgestures.webprefs import SettingsWindow, Gtk, GLib, WebKit2
 

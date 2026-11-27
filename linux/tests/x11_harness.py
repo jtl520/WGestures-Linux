@@ -17,7 +17,8 @@ class Harness(Gtk.Window):
         Gtk.Window.__init__(self, title="CrossGestures Acceptance Harness")
         self.log_path = log_path
         self._last_button_event = None
-        self.set_default_size(520, 360)
+        # Leave exposed target area around the monitor-scaled quick panel.
+        self.set_default_size(900, 680)
         self.move(180, 180)
         self.connect("destroy", Gtk.main_quit)
         self.connect("button-press-event", self._button_press)

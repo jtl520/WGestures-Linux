@@ -8,7 +8,7 @@ import subprocess
 import sys
 import time
 
-from Xlib import X, Xatom, display
+from Xlib import X, Xatom, Xutil, display
 from Xlib.ext import xtest
 from Xlib.protocol import event as xevent
 
@@ -816,12 +816,17 @@ def main():
     _clear(log_path)
     _gesture_directions(connection, window, root, ["left", "down"])
     _assert_no_click(log_path)
-    _wait_for(lambda: window.get_attributes().map_state != X.IsViewable,
-              "WindowAction minimize did not unmap the target")
+    # Mutter keeps composited clients mapped while iconic; ICCCM WM_STATE is
+    # the portable minimization signal, unlike the X server map state.
+    def is_minimized():
+        state = window.get_full_property(connection.intern_atom("WM_STATE"), X.AnyPropertyType)
+        return state is not None and len(state.value) and state.value[0] == Xutil.IconicState
+
+    _wait_for(is_minimized, "WindowAction minimize did not iconify the target")
     window.map()
     _activate_window(connection, window, root)
     connection.sync()
-    _wait_for(lambda: window.get_attributes().map_state == X.IsViewable,
+    _wait_for(lambda: window.get_attributes().map_state == X.IsViewable and not is_minimized(),
               "minimized test window could not be restored")
 
     # Stress the motion path and verify that a following short click still works.

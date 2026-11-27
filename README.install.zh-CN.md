@@ -7,6 +7,7 @@
 | 系统 | 需要使用的会话 | 后端 |
 | --- | --- | --- |
 | Ubuntu 24.04 | GNOME 46 / Wayland | GNOME Shell 扩展 |
+| Ubuntu 24.04 | GNOME / Xorg | X11 后台进程 |
 | Ubuntu 18.04 | GNOME / Xorg | X11 后台进程 |
 | Kali Xfce | X11 | X11 后台进程 |
 | 其他 Debian 系桌面 | X11 | 尽力兼容 |
@@ -17,8 +18,8 @@
 echo "$XDG_CURRENT_DESKTOP / $XDG_SESSION_TYPE"
 ```
 
-Ubuntu 24.04 应看到 `GNOME` 和 `wayland`。Ubuntu 18.04、Kali Xfce
-应看到 `x11`。KDE Wayland、非 GNOME 46 的 GNOME Wayland 以及其他
+Ubuntu 24.04 的 GNOME 会话可以是 `wayland` 或 `x11`；程序会选择对应后端。
+Ubuntu 18.04、Kali Xfce 应看到 `x11`。KDE Wayland、非 GNOME 46 的 GNOME Wayland 以及其他
 Wayland 合成器目前不支持；请在登录界面选择 X11/Xorg 会话。
 
 ## 2. 安装前是否需要手动安装依赖

@@ -1,8 +1,8 @@
 # CrossGestures Windows 安装与开发说明
 
 本仓库重新启用了原版 Windows C# 后端，并与 Ubuntu、Kali 等 Linux 后端并行维护。
-Windows 与 Linux 使用各自原生的输入后端和设置界面，不是在 Windows 上运行 Linux
-程序，也不要求 WSL。
+Windows 与 Linux 使用各自原生的输入后端。2.2.0 在 Windows 10/11 和 Ubuntu 上
+共用主设置界面；平台专有高级设置保留原生编辑器。Windows 版本不要求 WSL。
 
 ## 支持范围
 
@@ -147,7 +147,18 @@ build\windows\CrossGestures-2.2.0.0-Windows-Setup.exe
 
 ## 发布前实机验收
 
-每个声称支持的 Windows 版本至少检查：
+在已登录的交互桌面上，可使用安装后的程序执行自动验收：
+
+```powershell
+./tools/Test-WindowsRuntime.ps1 -AppPath "C:\Program Files\CrossGestures\CrossGestures.exe"
+./tools/Test-WindowsPanelRuntime.ps1 -AppPath "C:\Program Files\CrossGestures\CrossGestures.exe" -RequireVisibleTrail
+```
+
+运行前退出已有 CrossGestures；脚本使用独立测试配置。测试期间不要操作鼠标和
+键盘。`-RequireVisibleTrail` 要求实际截到置顶窗口上方的手势轨迹；无交互桌面的
+CI 仅记录这项诊断结果。截图与 JSON 结果保存在 `build/` 对应测试目录。
+
+每个声称支持的 Windows 版本还应检查：
 
 1. 安装、升级和卸载成功，卸载后用户配置仍保留；
 2. 首次运行、托盘图标和开始菜单“设置”入口正常；

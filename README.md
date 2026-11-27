@@ -252,8 +252,9 @@ wgestures --diagnose --json
 
 ## 源码结构
 
-- `gnome-extension/`：GNOME Shell 46 Wayland 扩展和 Libadwaita 设置页。
-- `linux/`：兼容 Python 3.6 的 X11 后端、GTK3 设置页及单元测试。
+- `settings-ui/`：两端共用的设置页面、样式、脚本与字体。
+- `gnome-extension/`：GNOME Shell 46 Wayland 扩展和原生兼容设置页。
+- `linux/`：兼容 Python 3.6 的 X11 后端、WebKitGTK 设置宿主、原生兼容页及测试。
 - `packaging/`、`debian/`：命令入口、自动启动、man page 和 Debian 打包。
 - `tests/fixtures/`：JavaScript/Python 双后端共用的一致性测试向量。
 - `tools/`：Kali、Ubuntu X11 与 GNOME Wayland 验收工具。
@@ -290,7 +291,10 @@ Windows Release 和 EXE 安装器：
 - WebKitGTK 共享界面：9 项检查通过；Windows WebView2：10 项配置桥接检查和
   5 项界面检查通过，包括字体加载、编辑保存、小数轨迹宽度持久化和导入去重。
 - Windows Server 2022 CI：Release 构建、安装包生成、原生鼠标手势和中键面板
-  自动验收通过。Windows 10 虚拟机的安装验收结果另行记录。
+  自动验收通过。
+- Windows 10 22H2 VMware：安装包已安装到本地账户，安装后共享界面、原生鼠标
+  手势、1000 次移动压力恢复及中键面板验收通过。Windows 备份恢复、导出到
+  Ubuntu 后再导回 Windows 的便携配置往返测试通过。
 - 本轮尚未在 GNOME Wayland、Windows 7/8.1 和 Ubuntu 18.04 上运行实机验收。
   中键快捷面板保留各平台原生实现；统一的是常用设置和手势编辑界面。
 

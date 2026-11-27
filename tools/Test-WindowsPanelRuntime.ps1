@@ -297,7 +297,7 @@ try {
         Send-AbsoluteMouseMove $cursorX $cursorY
         [CrossGesturesPanelNative]::mouse_event(0x0008, 0, 0, 0, [UIntPtr]::Zero)
         Start-Sleep -Milliseconds 60
-        foreach ($offset in 4, 8, 12) {
+        foreach ($offset in 8, 16, 24, 32, 40) {
             Send-AbsoluteMouseMove ($cursorX + $offset) ($cursorY - $offset)
         }
         Start-Sleep -Milliseconds 150
@@ -316,6 +316,8 @@ try {
                     [Math]::Abs($a.B - $b.B) -gt 40) { $changed++ }
             }
         }
+        $baseline.Save((Join-Path $OutputDirectory 'trail-before.png'))
+        $during.Save((Join-Path $OutputDirectory 'trail-during.png'))
         $baseline.Dispose()
         $during.Dispose()
         $trailVisibleAboveTopmost = $changed -gt 20

@@ -1,6 +1,7 @@
 param(
     [string]$AppPath = "$PSScriptRoot\..\WGestures.App\bin\Release\CrossGestures.exe",
-    [string]$OutputDirectory = "$PSScriptRoot\..\build\windows-backup"
+    [string]$OutputDirectory = "$PSScriptRoot\..\build\windows-backup",
+    [string]$LinuxPortablePath
 )
 
 Set-StrictMode -Version Latest
@@ -33,7 +34,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Windows backup smoke test compilation failed.'
 if ($LASTEXITCODE -ne 0) { throw 'Windows backup export/import round-trip failed.' }
 
 $windowsPortable = [IO.Path]::ChangeExtension($backup, '.cgestures')
-$linuxPortable = Join-Path $OutputDirectory 'linux-roundtrip.cgestures'
+$linuxPortable = if ($LinuxPortablePath) { [IO.Path]::GetFullPath($LinuxPortablePath) } else { Join-Path $OutputDirectory 'linux-roundtrip.cgestures' }
 $pythonCode = @'
 import os, sys
 root, source, target = sys.argv[1:]
@@ -45,8 +46,10 @@ assert imported["report"]["imported"] > 0
 with open(target, "w", encoding="utf-8", newline="\n") as stream:
     stream.write(export_portable_config(imported["config"]))
 '@
-& python -c $pythonCode $repoRoot $windowsPortable $linuxPortable
-if ($LASTEXITCODE -ne 0) { throw 'Linux portable import/export round-trip failed.' }
+if (-not $LinuxPortablePath) {
+    & python -c $pythonCode $repoRoot $windowsPortable $linuxPortable
+    if ($LASTEXITCODE -ne 0) { throw 'Linux portable import/export round-trip failed.' }
+}
 
 & $testExecutable $AppPath (Join-Path $OutputDirectory 'cross-platform-roundtrip.wgb') $linuxPortable
 if ($LASTEXITCODE -ne 0) { throw 'Windows could not import the Linux-generated portable configuration.' }

@@ -58,6 +58,10 @@ jobs:
           $env:CROSSGESTURES_SKIP_AUTOSTART = '1'
           ./tools/Test-WindowsRuntime.ps1 -AppPath "$PWD\WGestures.App\bin\Release\CrossGestures.exe"
 
+      - name: Test backup and cross-platform round trip
+        shell: pwsh
+        run: ./tools/Test-WindowsBackup.ps1
+
       - name: Test native quick panel
         shell: pwsh
         run: ./tools/Test-WindowsPanelRuntime.ps1 -AppPath "$PWD\WGestures.App\bin\Release\CrossGestures.exe"
